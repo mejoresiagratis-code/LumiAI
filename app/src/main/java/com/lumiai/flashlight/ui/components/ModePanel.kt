@@ -50,7 +50,7 @@ val aiModeItems = listOf(
         accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve"),
     FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "◈",
         accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit"),
-    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Rhythm by time of day",         "⬡",
+    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",         "⬡",
         accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen"),
     FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",      "◌",
         accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve"),
@@ -77,11 +77,12 @@ fun ModePanel(
     Column(modifier = modifier) {
 
         // ── Contextual slider (always on top, appears when needed) ────────────
-        val showSlider = currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco
+        // Only show slider on Flash tab, never on AI tab
+        val showSlider = selectedTab == 0 && (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
         AnimatedVisibility(
             visible = showSlider,
-            enter   = fadeIn(tween(180)) + expandVertically(tween(200)),
-            exit    = fadeOut(tween(150)) + shrinkVertically(tween(180)),
+            enter   = fadeIn(tween(150)) + expandVertically(tween(160)),
+            exit    = fadeOut(tween(80)) + shrinkVertically(tween(80)),
         ) {
             when (currentMode) {
                 is FlashMode.Strobe -> ContextSlider(
