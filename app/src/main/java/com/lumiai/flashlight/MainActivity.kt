@@ -1,11 +1,15 @@
 package com.lumiai.flashlight
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
@@ -28,6 +32,12 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var shakeDetector: ShakeDetector
 
+    // Runtime camera permission request
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) bindCameraIfPermitted()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !flashViewModel.isReady.value }
@@ -36,15 +46,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Shake detector — toggles flash if enabled in settings
         shakeDetector = ShakeDetector(this) {
             if (flashViewModel.uiState.value.shakeToToggle) {
                 flashViewModel.toggleFlash()
             }
         }
 
+        // Request camera permission then bind
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED) {
+            bindCameraIfPermitted()
+        } else {
+            requestCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+
         lifecycleScope.launch {
-            flashRepository.bindCamera(this@MainActivity)
             adManager.initWithConsent(this@MainActivity)
         }
 
@@ -55,9 +71,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun bindCameraIfPermitted() {
+        lifecycleScope.launch {
+            flashRepository.bindCamera(this@MainActivity)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         shakeDetector.register()
+        // Re-bind camera if it was released (e.g. another app used camera)
+        if (!flashRepository.isCameraReady.value &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            bindCameraIfPermitted()
+        }
     }
 
     override fun onPause() {
