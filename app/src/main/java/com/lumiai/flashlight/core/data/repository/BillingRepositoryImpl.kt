@@ -70,7 +70,6 @@ class BillingRepositoryImpl @Inject constructor(
             billingClient.queryProductDetailsAsync(params) { result, productDetailsList ->
                 if (result.responseCode == BillingClient.BillingResponseCode.OK && productDetailsList.isNotEmpty()) {
                     val productDetail = productDetailsList.first()
-                    val offerToken = productDetail.oneTimePurchaseOfferDetails?.zza() ?: ""
                     val billingFlowParams = BillingFlowParams.newBuilder()
                         .setProductDetailsParamsList(
                             listOf(
