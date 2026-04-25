@@ -28,11 +28,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # ── local.properties (sin keystore para debug) ────────────────────────
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
           echo "ADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713" >> local.properties
 
+      # ── Debug APK ─────────────────────────────────────────────────────────
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
 
@@ -43,22 +45,49 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
-      - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
-        continue-on-error: true
+      # ── Release APK firmado (solo en tags v*) ─────────────────────────────
+      - name: Decode keystore
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > lumiai_release.keystore
+          echo "Keystore decoded: $(ls -lh lumiai_release.keystore)"
 
-      - name: Upload Release APK (unsigned)
+      - name: Append signing config to local.properties
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "KEYSTORE_PATH=../lumiai_release.keystore" >> local.properties
+          echo "KEYSTORE_PASS=${{ secrets.KEYSTORE_PASS }}" >> local.properties
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
+          echo "KEY_PASS=${{ secrets.KEY_PASS }}" >> local.properties
+
+      - name: Build Release APK (signed)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+
+      - name: Upload Release APK (signed)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: LumiAI-release-unsigned-${{ github.sha }}
+          name: LumiAI-release-signed-${{ github.ref_name }}
           path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          retention-days: 90
 
-      # On tagged releases, attach APK to the GitHub Release
-      - name: Attach APK to Release
+      # ── Attach APK a GitHub Release ───────────────────────────────────────
+      - name: Attach APKs to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/debug/*.apk
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          body: |
+            ## LumiAI ${{ github.ref_name }}
+            
+            ### Descargas
+            - **release-signed** → subir a Play Store
+            - **debug** → instalar directamente para pruebas (`adb install` o abrir en móvil)
+            
+            ### SHA-256 keystore
+            `80:1D:41:DD:36:25:48:3D:8B:4D:1B:CB:1D:85:A6:89:2E:4B:CA:2E:1D:F6:DC:FF:1A:FB:5E:D0:A4:C8:00:2B`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
