@@ -46,11 +46,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        shakeDetector = ShakeDetector(this) {
+        shakeDetector = ShakeDetector(context = this, onShake = {
             if (flashViewModel.uiState.value.shakeToToggle) {
                 flashViewModel.toggleFlash()
             }
-        }
+        })
 
         // Request camera permission then bind
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
