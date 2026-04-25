@@ -43,22 +43,26 @@ fun ModeControls(
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             when (currentMode) {
-                is FlashMode.Strobe -> LiveSlider(
-                    label        = "STROBE",
-                    externalValue = strobeHz,
-                    range        = 0.5f..20f,
-                    accentColor  = LumiColor.Amber400,
-                    formatValue  = { "${it.toInt()} Hz" },
-                    onSettled    = onStrobeHzChange,
-                )
-                is FlashMode.Disco -> LiveSlider(
-                    label        = "TEMPO",
-                    externalValue = discoBpm,
-                    range        = 60f..200f,
-                    accentColor  = LumiColor.Amber500,
-                    formatValue  = { "${it.toInt()} BPM" },
-                    onSettled    = onDiscoBpmChange,
-                )
+                is FlashMode.Strobe -> key("strobe_slider") {
+                    LiveSlider(
+                        label         = "STROBE",
+                        externalValue = strobeHz,
+                        range         = 0.5f..20f,
+                        accentColor   = LumiColor.Amber400,
+                        formatValue   = { "${it.toInt()} Hz" },
+                        onSettled     = onStrobeHzChange,
+                    )
+                }
+                is FlashMode.Disco -> key("disco_slider") {
+                    LiveSlider(
+                        label         = "TEMPO",
+                        externalValue = discoBpm,
+                        range         = 60f..200f,
+                        accentColor   = LumiColor.Amber500,
+                        formatValue   = { "${it.toInt()} BPM" },
+                        onSettled     = onDiscoBpmChange,
+                    )
+                }
                 is FlashMode.Screen -> LiveSlider(
                     label        = "BRIGHTNESS",
                     externalValue = screenBrightness,

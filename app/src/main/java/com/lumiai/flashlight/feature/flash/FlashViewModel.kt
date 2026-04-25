@@ -105,6 +105,38 @@ class FlashViewModel @Inject constructor(
         }
     }
 
+
+    /**
+     * Update strobe Hz from the main screen slider.
+     * Persists to DataStore AND re-applies to the flash controller if currently strobing.
+     * Does NOT call activateMode() — avoids currentMode StateFlow emission
+     * which would destroy/recreate the LiveSlider composable mid-drag.
+     */
+    fun updateStrobeHz(hz: Float) {
+        viewModelScope.launch {
+            settingsRepository.updateStrobeHz(hz)
+            // Apply live if currently in strobe mode with flash on
+            val state = uiState.value
+            if (state.currentMode is FlashMode.Strobe && state.isFlashOn) {
+                flashRepository.activateMode(FlashMode.Strobe(hz))
+            }
+        }
+    }
+
+    /**
+     * Update disco BPM from the main screen slider.
+     * Same pattern as updateStrobeHz — persist + apply without mode change.
+     */
+    fun updateDiscoBpm(bpm: Float) {
+        viewModelScope.launch {
+            settingsRepository.updateDiscoBpm(bpm)
+            val state = uiState.value
+            if (state.currentMode is FlashMode.Disco && state.isFlashOn) {
+                flashRepository.activateMode(FlashMode.Disco(bpm))
+            }
+        }
+    }
+
     fun releaseCamera() {
         flashRepository.release()
     }

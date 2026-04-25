@@ -109,8 +109,8 @@ fun FlashScreen(
                 strobeHz           = uiState.strobeHz,
                 discoBpm           = uiState.discoBpm,
                 screenBrightness   = 1f,
-                onStrobeHzChange   = { viewModel.activateMode(FlashMode.Strobe(it)) },
-                onDiscoBpmChange   = { viewModel.activateMode(FlashMode.Disco(it)) },
+                onStrobeHzChange   = { viewModel.updateStrobeHz(it) },
+                onDiscoBpmChange   = { viewModel.updateDiscoBpm(it) },
                 onBrightnessChange = { },
                 modifier           = Modifier.padding(horizontal = 20.dp),
             )
