@@ -1,7 +1,11 @@
 package com.lumiai.flashlight.core.data.repository
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -13,14 +17,14 @@ class SettingsRepository @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
     private object Keys {
-        val LAST_MODE      = stringKey("last_mode")
-        val STROBE_HZ      = floatKey("strobe_hz")
-        val DISCO_BPM      = floatKey("disco_bpm")
-        val SCREEN_BRIGHT  = floatKey("screen_brightness")
-        val DARK_THEME     = booleanKey("dark_theme")
-        val SHAKE_TOGGLE   = booleanKey("shake_toggle")
-        val KEEP_SCREEN    = booleanKey("keep_screen_on")
-        val SEEN_ONBOARDING = booleanKey("seen_onboarding")
+        val LAST_MODE      = stringPreferencesKey("last_mode")
+        val STROBE_HZ      = floatPreferencesKey("strobe_hz")
+        val DISCO_BPM      = floatPreferencesKey("disco_bpm")
+        val SCREEN_BRIGHT  = floatPreferencesKey("screen_brightness")
+        val DARK_THEME     = booleanPreferencesKey("dark_theme")
+        val SHAKE_TOGGLE   = booleanPreferencesKey("shake_toggle")
+        val KEEP_SCREEN    = booleanPreferencesKey("keep_screen_on")
+        val SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->

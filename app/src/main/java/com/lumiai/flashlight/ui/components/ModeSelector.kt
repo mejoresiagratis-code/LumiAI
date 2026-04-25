@@ -1,7 +1,7 @@
 package com.lumiai.flashlight.ui.components
 
 import androidx.compose.animation.*
-import androidx.compose.animation.animateFloatAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,7 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ripple
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -185,7 +185,7 @@ private fun ModeChip(
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = LumiColor.Amber400.copy(alpha = 0.2f)),
+                indication = rememberRipple(color = LumiColor.Amber400.copy(alpha = 0.2f)),
                 onClick = onClick,
             )
             .semantics {
