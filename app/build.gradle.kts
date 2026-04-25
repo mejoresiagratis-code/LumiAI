@@ -45,7 +45,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            // applicationIdSuffix = ".debug" // removed: would require separate Firebase app
             isDebuggable        = true
             buildConfigField("Boolean", "IS_DEBUG", "true")
             // Test AdMob IDs in debug
