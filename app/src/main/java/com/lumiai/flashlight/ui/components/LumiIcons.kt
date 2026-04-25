@@ -38,7 +38,8 @@ object LumiIcons {
             defaultWidth = 24.dp, defaultHeight = 24.dp,
             viewportWidth = 24f, viewportHeight = 24f,
         ).apply {
-            path(fill = SolidColor(Color(0xFF52526A))) {
+            // Same bolt shape as FlashOn but very dim — indicates off state clearly
+            path(fill = SolidColor(Color(0xFF3A3A50))) {
                 moveTo(13f, 2f)
                 lineTo(7f, 13f)
                 horizontalLineTo(12f)
@@ -47,14 +48,6 @@ object LumiIcons {
                 horizontalLineTo(13f)
                 lineTo(13f, 2f)
                 close()
-            }
-            path(
-                stroke = SolidColor(Color(0xFFF87171)),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-            ) {
-                moveTo(3f, 3f)
-                lineTo(21f, 21f)
             }
         }.build()
 

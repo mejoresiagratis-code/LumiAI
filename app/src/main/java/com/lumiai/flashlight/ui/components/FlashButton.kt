@@ -167,7 +167,7 @@ fun FlashButton(
                         )
                     else
                         Brush.radialGradient(
-                            colors = listOf(LumiColor.Navy700, LumiColor.Navy850),
+                            colors = listOf(LumiColor.Navy600, LumiColor.Navy800),
                             radius = size.value * 2f,
                         )
                 )
@@ -194,7 +194,7 @@ fun FlashButton(
             Icon(
                 imageVector        = if (isOn) LumiIcons.FlashOn else LumiIcons.FlashOff,
                 contentDescription = null,
-                tint               = LumiColor.Gray400.copy(alpha = iconAlpha),
+                tint               = LumiColor.Gray400.copy(alpha = if (isOn) iconAlpha else 0.55f),
                 modifier           = Modifier.size(size * 0.42f),
             )
         }
