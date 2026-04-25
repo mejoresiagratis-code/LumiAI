@@ -1,7 +1,5 @@
 package com.lumiai.flashlight.ui.components
 
-import androidx.compose.animation.core.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -11,7 +9,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +39,7 @@ fun FlashButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // Scale animation using animation.core only
     val scale by animateFloatAsState(
         targetValue = when {
             isPressed -> 0.92f
@@ -58,42 +56,32 @@ fun FlashButton(
     val infiniteTransition = rememberInfiniteTransition(label = "glow")
 
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue  = 0.55f,
+        initialValue = 0.25f, targetValue = 0.55f,
         animationSpec = infiniteRepeatable(
-            animation  = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "glow_alpha",
+            tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse
+        ), label = "glow_alpha",
     )
     val glowRadius by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue  = 1.15f,
+        initialValue = 0.85f, targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation  = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "glow_radius",
+            tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse
+        ), label = "glow_radius",
     )
-
-    val ringInfinite = rememberInfiniteTransition(label = "ring")
-    val ringRotation by ringInfinite.animateFloat(
-        initialValue = 0f,
-        targetValue  = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-        ),
+    val ringRotation by rememberInfiniteTransition(label = "ring").animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing)),
         label = "ring_rotation",
     )
 
-    val centerColor by animateColorAsState(
-        if (isOn) LumiColor.Amber400 else LumiColor.Navy700, tween(300), label = "center"
+    // Animate color components individually (animation.core only — no animateColorAsState)
+    val iconAlpha by animateFloatAsState(
+        targetValue = if (isOn) 1f else 0.45f, tween(250), label = "icon_alpha"
     )
-    val ringColor by animateColorAsState(
-        if (isOn) LumiColor.Amber600 else LumiColor.Navy600, tween(300), label = "ring"
+    val bgAlpha by animateFloatAsState(
+        targetValue = if (isOn) 1f else 0f, tween(300), label = "bg_alpha"
     )
-    val iconTint by animateColorAsState(
-        if (isOn) LumiColor.Navy900 else LumiColor.Gray400, tween(250), label = "icon_tint"
+    val ringAlpha by animateFloatAsState(
+        targetValue = if (isOn) 0.6f else 0.2f, tween(300), label = "ring_alpha"
     )
 
     Box(
@@ -141,8 +129,8 @@ fun FlashButton(
             val r  = size.toPx() / 2f + 8.dp.toPx()
             val notchCount = 24
             val notchLen   = if (isOn) 6.dp.toPx() else 4.dp.toPx()
-            val notchAlpha = if (isOn) 0.6f else 0.2f
             val rotation   = if (isOn) ringRotation else 0f
+            val ringColor  = if (isOn) LumiColor.Amber400 else LumiColor.Navy500
 
             repeat(notchCount) { i ->
                 val angle = Math.toRadians((i * (360f / notchCount) + rotation).toDouble())
@@ -153,23 +141,19 @@ fun FlashButton(
                 val x2 = cx + (r + len / 2) * cos(angle).toFloat()
                 val y2 = cy + (r + len / 2) * sin(angle).toFloat()
                 drawLine(
-                    color       = (if (isOn) LumiColor.Amber400 else LumiColor.Navy500)
-                                      .copy(alpha = if (major) notchAlpha * 1.5f else notchAlpha),
-                    start       = Offset(x1, y1),
-                    end         = Offset(x2, y2),
+                    color       = ringColor.copy(alpha = if (major) ringAlpha * 1.5f else ringAlpha),
+                    start       = Offset(x1, y1), end = Offset(x2, y2),
                     strokeWidth = if (major) 2f else 1f,
                     cap         = StrokeCap.Round,
                 )
             }
             drawCircle(
-                color  = ringColor.copy(alpha = 0.35f),
-                radius = r,
-                center = Offset(cx, cy),
-                style  = Stroke(width = 0.5f),
+                color  = (if (isOn) LumiColor.Amber600 else LumiColor.Navy600).copy(alpha = 0.35f),
+                radius = r, center = Offset(cx, cy), style = Stroke(width = 0.5f),
             )
         }
 
-        // Main circle button
+        // Main circle button — no ripple, spring scale IS the press feedback
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -189,12 +173,8 @@ fun FlashButton(
                 )
                 .clickable(
                     interactionSource = interactionSource,
-                    indication        = ripple(
-                        color  = if (isOn) LumiColor.Navy900.copy(alpha = 0.2f)
-                                 else LumiColor.Amber400.copy(alpha = 0.15f),
-                        radius = size / 2,
-                    ),
-                    onClick = onClick,
+                    indication        = null, // spring scale IS the press feedback
+                    onClick           = onClick,
                 )
                 .semantics {
                     contentDescription = if (isOn) "Apagar linterna" else "Encender linterna"
@@ -204,10 +184,9 @@ fun FlashButton(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val cx = this.size.width / 2f
                 val cy = this.size.height / 2f
-                val r  = this.size.width / 2f - 3f
                 drawCircle(
                     color  = Color.Black.copy(alpha = if (isOn) 0.15f else 0.35f),
-                    radius = r,
+                    radius = this.size.width / 2f - 3f,
                     center = Offset(cx, cy),
                     style  = Stroke(width = 8f),
                 )
@@ -215,7 +194,7 @@ fun FlashButton(
             Icon(
                 imageVector        = if (isOn) LumiIcons.FlashOn else LumiIcons.FlashOff,
                 contentDescription = null,
-                tint               = iconTint,
+                tint               = LumiColor.Gray400.copy(alpha = iconAlpha),
                 modifier           = Modifier.size(size * 0.42f),
             )
         }
