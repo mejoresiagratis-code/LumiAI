@@ -2,12 +2,12 @@ package com.lumiai.flashlight.feature.flash
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
@@ -25,8 +24,7 @@ import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.ui.components.AdBanner
 import com.lumiai.flashlight.ui.components.FlashButton
 import com.lumiai.flashlight.ui.components.LumiIcons
-import com.lumiai.flashlight.ui.components.ModeControls
-import com.lumiai.flashlight.ui.components.ModeSelector
+import com.lumiai.flashlight.ui.components.ModePanel
 import com.lumiai.flashlight.ui.theme.LumiColor
 
 @Composable
@@ -35,38 +33,42 @@ fun FlashScreen(
     onOpenSettings: () -> Unit,
     onOpenPro: () -> Unit,
 ) {
-    val uiState      by viewModel.uiState.collectAsState()
-    val isPro         = uiState.proStatus == ProStatus.Pro
-    val isOn          = uiState.isFlashOn
-    val mode          = uiState.currentMode
-    val isScreenMode  = mode is FlashMode.Screen && isOn
+    val uiState     by viewModel.uiState.collectAsState()
+    val isPro        = uiState.proStatus == ProStatus.Pro
+    val isOn         = uiState.isFlashOn
+    val mode         = uiState.currentMode
+    val isScreenMode = mode is FlashMode.Screen && isOn
 
     val bgColor = if (isScreenMode) LumiColor.BeamColor else LumiColor.Navy950
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().background(bgColor),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bgColor),
     ) {
         val screenH = maxHeight
 
-        // Subtle top glow when flash is ON
+        // Subtle top glow when ON
         if (isOn && !isScreenMode) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
+                    .height(200.dp)
                     .background(
                         Brush.verticalGradient(
-                            listOf(LumiColor.Amber400.copy(alpha = 0.06f), Color.Transparent)
+                            listOf(LumiColor.Amber400.copy(alpha = 0.05f), Color.Transparent)
                         )
                     )
             )
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().systemBarsPadding(),
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-
             // ── Top bar ────────────────────────────────────────────────────
             TopBar(
                 isPro          = isPro,
@@ -75,66 +77,45 @@ fun FlashScreen(
                 onOpenPro      = onOpenPro,
             )
 
-            // ── Status text — single Text, no AnimatedContent overlap ──────
+            // ── Status ─────────────────────────────────────────────────────
             Spacer(Modifier.height(4.dp))
-            val statusText = statusLabel(isOn, mode, isScreenMode, uiState)
-            val statusColor = when {
-                isScreenMode -> LumiColor.Navy900.copy(alpha = 0.35f)
-                isOn         -> LumiColor.Amber400.copy(alpha = 0.8f)
-                else         -> LumiColor.Gray600
-            }
             Text(
-                text          = statusText,
+                text          = statusLabel(isOn, mode, uiState),
                 fontSize      = 10.sp,
-                fontWeight    = FontWeight.W600,
+                fontWeight    = FontWeight.W500,
                 letterSpacing = 0.14.sp,
-                color         = statusColor,
-                textAlign     = TextAlign.Center,
-                modifier      = Modifier.fillMaxWidth(),
+                color         = when {
+                    isScreenMode -> LumiColor.Navy900.copy(.35f)
+                    isOn         -> LumiColor.Amber400.copy(.7f)
+                    else         -> LumiColor.Gray600
+                },
             )
 
-            // ── Button: 32% of screen height ──────────────────────────────
-            Spacer(Modifier.weight(1f))
-            val btnSize = (screenH * 0.32f).coerceIn(144.dp, 196.dp)
+            // ── Hero button ────────────────────────────────────────────────
+            val btnSize = (screenH * 0.28f).coerceIn(130.dp, 180.dp)
+            Spacer(Modifier.height(20.dp))
             FlashButton(
                 isOn    = isOn,
                 onClick = { viewModel.toggleFlash() },
                 size    = btnSize,
             )
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(28.dp))
 
-            // ── Contextual Hz/BPM slider ───────────────────────────────────
-            ModeControls(
-                currentMode        = mode,
-                strobeHz           = uiState.strobeHz,
-                discoBpm           = uiState.discoBpm,
-                screenBrightness   = 1f,
-                onStrobeHzChange   = { viewModel.updateStrobeHz(it) },
-                onDiscoBpmChange   = { viewModel.updateDiscoBpm(it) },
-                onBrightnessChange = { },
-                modifier           = Modifier.padding(horizontal = 20.dp),
-            )
-
-            Spacer(Modifier.height(14.dp))
-
-            // ── Mode chips ─────────────────────────────────────────────────
+            // ── Mode panel (tabs + cards + slider) ─────────────────────────
             if (!isScreenMode) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
-                ) {
-                    ModeSelector(
-                        currentMode  = mode,
-                        isPro        = isPro,
-                        onModeSelect = { viewModel.activateMode(it) },
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
+                ModePanel(
+                    currentMode      = mode,
+                    strobeHz         = uiState.strobeHz,
+                    discoBpm         = uiState.discoBpm,
+                    onModeSelect     = { viewModel.activateMode(it) },
+                    onStrobeHzChange = { viewModel.updateStrobeHz(it) },
+                    onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
+                    modifier         = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
             }
 
-            // ── Ad banner (Free) ───────────────────────────────────────────
+            // ── Ad banner ──────────────────────────────────────────────────
             if (!isPro && !isScreenMode) {
                 AdBanner(modifier = Modifier.navigationBarsPadding())
             } else {
@@ -152,8 +133,6 @@ private fun TopBar(
     onOpenSettings: () -> Unit,
     onOpenPro: () -> Unit,
 ) {
-    val onDark = !isScreenMode
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,19 +143,11 @@ private fun TopBar(
         // Wordmark
         Column {
             Text(
-                "LUMI",
-                fontSize      = 17.sp,
-                fontWeight    = FontWeight.W900,
-                letterSpacing = 0.12.sp,
-                color         = if (onDark) LumiColor.Amber400 else LumiColor.Navy800,
-            )
-            Text(
-                "AI",
-                fontSize      = 9.sp,
-                fontWeight    = FontWeight.W400,
-                letterSpacing = 0.2.sp,
-                color         = if (onDark) LumiColor.Gray600 else LumiColor.Navy800.copy(0.4f),
-                modifier      = Modifier.offset(y = (-2).dp),
+                "LUMI·AI",
+                fontSize      = 14.sp,
+                fontWeight    = FontWeight.W700,
+                letterSpacing = 0.16.sp,
+                color         = if (isScreenMode) LumiColor.Navy800 else LumiColor.White,
             )
         }
 
@@ -184,92 +155,79 @@ private fun TopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment     = Alignment.CenterVertically,
         ) {
-            // Pro badge — only show upgrade if not Pro, keep it small
             if (!isPro) {
+                // Star upgrade button
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(LumiColor.Purple900)
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(LumiColor.Navy800)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication        = null,
-                            onClick           = onOpenPro,
-                        )
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                            indication = null,
+                            onClick = onOpenPro,
+                        ),
                 ) {
-                    Row(
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text("✦", fontSize = 9.sp, color = LumiColor.Purple300)
-                        Text(
-                            "Pro",
-                            fontSize   = 12.sp,
-                            fontWeight = FontWeight.W600,
-                            color      = LumiColor.Purple300,
-                        )
-                    }
+                    Icon(
+                        LumiIcons.Star,
+                        contentDescription = "Pro",
+                        tint     = LumiColor.Purple300,
+                        modifier = Modifier.size(14.dp),
+                    )
                 }
             } else {
-                // Pro active — minimal pill
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(LumiColor.Purple900.copy(0.6f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                        .background(LumiColor.Navy800)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(
                         "PRO",
                         fontSize      = 9.sp,
                         fontWeight    = FontWeight.W700,
-                        letterSpacing = 0.08.sp,
+                        letterSpacing = 0.1.sp,
                         color         = LumiColor.Purple400,
                     )
                 }
             }
 
-            // Settings — 44dp touch target
+            // Settings
             Box(
                 contentAlignment = Alignment.Center,
-                modifier         = Modifier
-                    .size(44.dp)
+                modifier = Modifier
+                    .size(32.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (onDark) LumiColor.Navy800 else LumiColor.Navy800.copy(0.12f)
-                    )
+                    .background(LumiColor.Navy800)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication        = null,
-                        onClick           = onOpenSettings,
+                        indication = null,
+                        onClick = onOpenSettings,
                     ),
             ) {
                 Icon(
                     LumiIcons.Settings,
                     contentDescription = "Ajustes",
-                    tint               = if (onDark) LumiColor.Gray400 else LumiColor.Navy800.copy(0.6f),
-                    modifier           = Modifier.size(18.dp),
+                    tint     = LumiColor.Gray500,
+                    modifier = Modifier.size(14.dp),
                 )
             }
         }
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-private fun statusLabel(
-    isOn: Boolean,
-    mode: FlashMode,
-    isScreenMode: Boolean,
-    uiState: FlashUiState,
-): String = when {
-    !isOn            -> "TAP TO TURN ON"
-    isScreenMode     -> "SCREEN MODE"
-    mode is FlashMode.Sos              -> "SOS · · · — — —"
-    mode is FlashMode.Strobe           -> "STROBE · ${uiState.strobeHz.toInt()} HZ"
-    mode is FlashMode.Disco            -> "DISCO · ${uiState.discoBpm.toInt()} BPM"
-    mode is FlashMode.SmartBrightness  -> "AI SMART MODE"
-    mode is FlashMode.ReadingMode      -> "AI READING MODE"
-    mode is FlashMode.AmbientSmart     -> "AI AMBIENT"
-    mode is FlashMode.CustomRhythm     -> "AI CUSTOM RHYTHM"
-    mode is FlashMode.SleepTimer       -> "AI SLEEP TIMER"
-    else             -> "FLASHLIGHT ON"
+// ── Status label ──────────────────────────────────────────────────────────────
+private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): String = when {
+    !isOn                        -> "TAP TO TURN ON"
+    mode is FlashMode.Screen     -> "SCREEN MODE"
+    mode is FlashMode.Sos        -> "SOS · · · — — —"
+    mode is FlashMode.Strobe     -> "STROBE · ${uiState.strobeHz.toInt()} HZ"
+    mode is FlashMode.Disco      -> "DISCO · ${uiState.discoBpm.toInt()} BPM"
+    mode is FlashMode.SmartBrightness -> "◎ SMART MODE"
+    mode is FlashMode.ReadingMode     -> "☽ READING MODE"
+    mode is FlashMode.AmbientSmart    -> "◈ AMBIENT MODE"
+    mode is FlashMode.CustomRhythm    -> "⬡ CUSTOM RHYTHM"
+    mode is FlashMode.SleepTimer      -> "◌ SLEEP TIMER"
+    else                         -> "FLASHLIGHT ON"
 }
