@@ -90,26 +90,11 @@ class FlashRepositoryImpl constructor(
             is FlashMode.Sos    -> strobeController.startSos { setTorch(it) }
             is FlashMode.Strobe -> strobeController.startStrobe(mode.hz) { setTorch(it) }
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
-            is FlashMode.SmartBrightness -> {
-                setTorch(false) // aiController manages torch directly
-                aiController.startSmart { setTorch(it) }
-            }
-            is FlashMode.ReadingMode -> {
-                setTorch(false)
-                aiController.startReading { setTorch(it) }
-            }
-            is FlashMode.AmbientSmart -> {
-                setTorch(false)
-                aiController.startAmbient { setTorch(it) }
-            }
-            is FlashMode.CustomRhythm -> {
-                setTorch(false)
-                aiController.startCustomRhythm { setTorch(it) }
-            }
-            is FlashMode.SleepTimer -> {
-                setTorch(false)
-                aiController.startSleepTimer { setTorch(it) }
-            }
+            is FlashMode.SmartBrightness -> aiController.startSmart { setTorch(it) }
+            is FlashMode.ReadingMode -> aiController.startReading { setTorch(it) }
+            is FlashMode.AmbientSmart -> aiController.startAmbient { setTorch(it) }
+            is FlashMode.CustomRhythm -> aiController.startCustomRhythm { setTorch(it) }
+            is FlashMode.SleepTimer -> aiController.startSleepTimer { setTorch(it) }
             else -> setTorch(true)
         }
     }
