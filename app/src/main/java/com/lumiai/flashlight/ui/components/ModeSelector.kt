@@ -6,8 +6,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Text
@@ -27,6 +29,47 @@ import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.ui.theme.LumiColor
 
+// ── Each AI mode has its own visual identity ──────────────────────────────────
+data class AiModeStyle(
+    val symbol: String,       // Unicode symbol shown above label
+    val accentColor: Color,   // unique per mode
+    val gradientEnd: Color,   // selected background gradient end
+    val description: String,  // what it actually does
+)
+
+val aiModeStyles: Map<String, AiModeStyle> = mapOf(
+    "smart_brightness" to AiModeStyle(
+        symbol      = "◎",
+        accentColor = Color(0xFFFBBF24),  // warm amber
+        gradientEnd = Color(0xFFB45309),
+        description = "Auto adjust",
+    ),
+    "reading_mode" to AiModeStyle(
+        symbol      = "☽",
+        accentColor = Color(0xFFFF9A6C),  // warm orange
+        gradientEnd = Color(0xFFB45309),
+        description = "Warm light",
+    ),
+    "ambient_smart" to AiModeStyle(
+        symbol      = "◈",
+        accentColor = Color(0xFF34D399),  // teal/green
+        gradientEnd = Color(0xFF065F46),
+        description = "Scene detect",
+    ),
+    "custom_rhythm" to AiModeStyle(
+        symbol      = "⬡",
+        accentColor = Color(0xFFA78BFA),  // light purple
+        gradientEnd = Color(0xFF4C1D95),
+        description = "AI rhythm",
+    ),
+    "sleep_timer" to AiModeStyle(
+        symbol      = "◌",
+        accentColor = Color(0xFF60A5FA),  // soft blue
+        gradientEnd = Color(0xFF1E3A5F),
+        description = "Fade out",
+    ),
+)
+
 data class ModeItem(
     val mode: FlashMode,
     val label: String,
@@ -34,49 +77,50 @@ data class ModeItem(
     val isAi: Boolean = false,
 )
 
-val allModeItems = listOf(
-    // Free modes
-    ModeItem(FlashMode.Steady,       "STEADY",   "Continuous"),
-    ModeItem(FlashMode.Screen,       "SCREEN",   "White fill"),
-    ModeItem(FlashMode.Sos,          "SOS",      "· · · — — —"),
-    ModeItem(FlashMode.Strobe(),     "STROBE",   "1–20 Hz"),
-    ModeItem(FlashMode.Disco(),      "DISCO",    "Beat sync"),
-    // AI modes (unlocked, marked visually)
-    ModeItem(FlashMode.SmartBrightness, "SMART",   "AI adaptive", isAi = true),
-    ModeItem(FlashMode.ReadingMode,     "READ",    "Warm AI",      isAi = true),
-    ModeItem(FlashMode.AmbientSmart,    "AMBIENT", "Scene AI",     isAi = true),
-    ModeItem(FlashMode.CustomRhythm(),  "CUSTOM",  "AI rhythm",    isAi = true),
-    ModeItem(FlashMode.SleepTimer,      "SLEEP",   "Fade out",     isAi = true),
+val freeModeItems = listOf(
+    ModeItem(FlashMode.Steady,   "STEADY", "Continuous"),
+    ModeItem(FlashMode.Screen,   "SCREEN", "White fill"),
+    ModeItem(FlashMode.Sos,      "SOS",    "· · · — — —"),
+    ModeItem(FlashMode.Strobe(), "STROBE", "1–20 Hz"),
+    ModeItem(FlashMode.Disco(),  "DISCO",  "Beat sync"),
 )
 
-// Keep for backwards compatibility
-val freeModeItems  = allModeItems.filter { !it.isAi }
-val proModeItems   = allModeItems.filter { it.isAi }
+val proModeItems = listOf(
+    ModeItem(FlashMode.SmartBrightness, "SMART",   "Auto adjust", isAi = true),
+    ModeItem(FlashMode.ReadingMode,     "READ",    "Warm light",  isAi = true),
+    ModeItem(FlashMode.AmbientSmart,    "AMBIENT", "Scene detect",isAi = true),
+    ModeItem(FlashMode.CustomRhythm(),  "CUSTOM",  "AI rhythm",   isAi = true),
+    ModeItem(FlashMode.SleepTimer,      "SLEEP",   "Fade out",    isAi = true),
+)
 
 @Composable
 fun ModeSelector(
     currentMode: FlashMode,
-    isPro: Boolean,          // kept for future use; currently all modes unlocked
+    isPro: Boolean,
     onModeSelect: (FlashMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier            = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Free modes — single scrolling row at top
-        ModeRow(
-            items       = freeModeItems,
-            currentMode = currentMode,
-            onSelect    = onModeSelect,
-        )
+        // ── Free modes ─────────────────────────────────────────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            freeModeItems.forEach { item ->
+                FreeModeChip(
+                    item       = item,
+                    isSelected = item.mode.id == currentMode.id,
+                    onClick    = { onModeSelect(item.mode) },
+                )
+            }
+        }
 
-        // AI modes row — visually distinct with subtle purple tint
+        // ── AI modes — each visually unique ────────────────────────────────
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // AI label pill
+            // "AI" label pill
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
@@ -85,102 +129,60 @@ fun ModeSelector(
             ) {
                 Text(
                     "AI",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.W700,
-                    letterSpacing = 0.08.sp,
-                    color = LumiColor.Purple300,
+                    fontSize      = 9.sp,
+                    fontWeight    = FontWeight.W700,
+                    letterSpacing = 0.06.sp,
+                    color         = LumiColor.Purple300,
                 )
             }
-            ModeRow(
-                items       = proModeItems,
-                currentMode = currentMode,
-                onSelect    = onModeSelect,
-                isAiRow     = true,
-            )
+
+            proModeItems.forEach { item ->
+                val style = aiModeStyles[item.mode.id]
+                    ?: AiModeStyle("✦", LumiColor.Purple400, LumiColor.Purple600, item.sublabel)
+                AiModeChip(
+                    item       = item,
+                    style      = style,
+                    isSelected = item.mode.id == currentMode.id,
+                    onClick    = { onModeSelect(item.mode) },
+                )
+            }
         }
     }
 }
 
+// ── Free mode chip — amber selection, simple layout ───────────────────────────
 @Composable
-private fun ModeRow(
-    items: List<ModeItem>,
-    currentMode: FlashMode,
-    onSelect: (FlashMode) -> Unit,
-    isAiRow: Boolean = false,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        items.forEach { item ->
-            ModeChip(
-                item       = item,
-                isSelected = item.mode.id == currentMode.id,
-                isAiRow    = isAiRow,
-                onClick    = { onSelect(item.mode) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun ModeChip(
+private fun FreeModeChip(
     item: ModeItem,
     isSelected: Boolean,
-    isAiRow: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-
     val scale by animateFloatAsState(
-        targetValue    = if (isSelected) 1.0f else 0.97f,
-        animationSpec  = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label          = "chip_scale_${item.label}",
+        targetValue   = if (isSelected) 1.0f else 0.97f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label         = "free_scale_${item.label}",
     )
-
-    val bgColor = when {
-        isSelected && isAiRow -> LumiColor.Purple500
-        isSelected            -> LumiColor.Amber400
-        isAiRow               -> LumiColor.Navy700
-        else                  -> LumiColor.Navy700
-    }
-    val borderColor = when {
-        isSelected && isAiRow -> LumiColor.Purple400
-        isSelected            -> LumiColor.Amber500
-        isAiRow               -> LumiColor.Purple500.copy(alpha = 0.25f)
-        else                  -> LumiColor.Navy600
-    }
-    val labelColor = when {
-        isSelected && isAiRow -> LumiColor.White
-        isSelected            -> LumiColor.Navy900
-        isAiRow               -> LumiColor.Purple300
-        else                  -> LumiColor.Gray400
-    }
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier         = Modifier
             .scale(scale)
-            // Min 48dp height for touch target (Material guideline)
             .defaultMinSize(minWidth = 64.dp, minHeight = 52.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(bgColor)
+            .background(if (isSelected) LumiColor.Amber400 else LumiColor.Navy700)
             .border(
                 width = if (isSelected) 1.5.dp else 0.5.dp,
-                color = borderColor,
+                color = if (isSelected) LumiColor.Amber500 else LumiColor.Navy600,
                 shape = RoundedCornerShape(10.dp),
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication        = rememberRipple(
-                    color = if (isAiRow) LumiColor.Purple300.copy(alpha = 0.2f)
-                            else LumiColor.Amber400.copy(alpha = 0.2f),
-                ),
-                onClick = onClick,
+                indication        = rememberRipple(color = LumiColor.Amber400.copy(alpha = 0.2f)),
+                onClick           = onClick,
             )
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .semantics {
-                contentDescription = "${item.label} flash mode"
-            },
+            .semantics { contentDescription = "${item.label} mode" },
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -191,13 +193,86 @@ private fun ModeChip(
                 fontSize      = 11.sp,
                 fontWeight    = FontWeight.W700,
                 letterSpacing = 0.04.sp,
-                color         = labelColor,
+                color         = if (isSelected) LumiColor.Navy900 else LumiColor.Gray400,
                 textAlign     = TextAlign.Center,
             )
             Text(
                 text      = item.sublabel,
                 fontSize  = 9.sp,
-                color     = labelColor.copy(alpha = 0.65f),
+                color     = if (isSelected) LumiColor.Navy900.copy(0.65f) else LumiColor.Gray600,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+// ── AI mode chip — each has unique symbol + accent color ─────────────────────
+@Composable
+private fun AiModeChip(
+    item: ModeItem,
+    style: AiModeStyle,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val scale by animateFloatAsState(
+        targetValue   = if (isSelected) 1.02f else 0.97f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label         = "ai_scale_${item.label}",
+    )
+
+    val bgModifier = if (isSelected) {
+        Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(style.accentColor.copy(alpha = 0.85f), style.gradientEnd)
+            )
+        )
+    } else {
+        Modifier.background(LumiColor.Navy700)
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier         = Modifier
+            .scale(scale)
+            .defaultMinSize(minWidth = 64.dp, minHeight = 60.dp)  // taller for symbol
+            .clip(RoundedCornerShape(10.dp))
+            .then(bgModifier)
+            .border(
+                width = if (isSelected) 1.5.dp else 0.5.dp,
+                color = if (isSelected) style.accentColor else style.accentColor.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(10.dp),
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication        = rememberRipple(color = style.accentColor.copy(alpha = 0.25f)),
+                onClick           = onClick,
+            )
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .semantics { contentDescription = "${item.label} AI mode" },
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            // Unique symbol — the main visual differentiator
+            Text(
+                text     = style.symbol,
+                fontSize = 14.sp,
+                color    = if (isSelected) Color.White else style.accentColor.copy(alpha = 0.7f),
+            )
+            Text(
+                text          = item.label,
+                fontSize      = 10.sp,
+                fontWeight    = FontWeight.W700,
+                letterSpacing = 0.04.sp,
+                color         = if (isSelected) Color.White else style.accentColor,
+                textAlign     = TextAlign.Center,
+            )
+            Text(
+                text      = style.description,
+                fontSize  = 8.5.sp,
+                color     = if (isSelected) Color.White.copy(0.75f) else LumiColor.Gray500,
                 textAlign = TextAlign.Center,
             )
         }
