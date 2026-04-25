@@ -6,19 +6,20 @@ import javax.inject.Inject
 
 /**
  * Activates or deactivates a flash mode.
- * Validates Pro restriction before delegating to repository.
+ * Pro restriction is DISABLED until payment is implemented.
+ * All modes are accessible regardless of Pro status.
  */
 class ToggleFlashUseCase @Inject constructor(
     private val flashRepository: FlashRepository,
 ) {
     suspend operator fun invoke(mode: FlashMode, isPro: Boolean): Result<Unit> {
-        if (mode.isPro && !isPro) {
-            return Result.failure(ProRequiredException(mode))
-        }
+        // TODO: re-enable Pro restriction when billing is live
+        // if (mode.isPro && !isPro) return Result.failure(ProRequiredException(mode))
         return flashRepository.activateMode(mode)
     }
 
     suspend fun turnOff() = flashRepository.turnOff()
 }
 
+// Kept for future use when billing is re-enabled
 class ProRequiredException(val mode: FlashMode) : Exception("Mode ${mode.id} requires Pro")

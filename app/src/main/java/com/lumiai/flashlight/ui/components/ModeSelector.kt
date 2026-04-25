@@ -1,25 +1,21 @@
 package com.lumiai.flashlight.ui.components
 
-import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -35,101 +31,93 @@ data class ModeItem(
     val mode: FlashMode,
     val label: String,
     val sublabel: String,
-    val isPro: Boolean = false,
+    val isAi: Boolean = false,
 )
 
-val freeModeItems = listOf(
-    ModeItem(FlashMode.Steady, "STEADY", "Continuous"),
-    ModeItem(FlashMode.Screen, "SCREEN", "White fill"),
-    ModeItem(FlashMode.Sos,    "SOS",    "Morse · · ·"),
-    ModeItem(FlashMode.Strobe(), "STROBE", "1–20 Hz"),
-    ModeItem(FlashMode.Disco(),  "DISCO",  "Beat sync"),
+val allModeItems = listOf(
+    // Free modes
+    ModeItem(FlashMode.Steady,       "STEADY",   "Continuous"),
+    ModeItem(FlashMode.Screen,       "SCREEN",   "White fill"),
+    ModeItem(FlashMode.Sos,          "SOS",      "· · · — — —"),
+    ModeItem(FlashMode.Strobe(),     "STROBE",   "1–20 Hz"),
+    ModeItem(FlashMode.Disco(),      "DISCO",    "Beat sync"),
+    // AI modes (unlocked, marked visually)
+    ModeItem(FlashMode.SmartBrightness, "SMART",   "AI adaptive", isAi = true),
+    ModeItem(FlashMode.ReadingMode,     "READ",    "Warm AI",      isAi = true),
+    ModeItem(FlashMode.AmbientSmart,    "AMBIENT", "Scene AI",     isAi = true),
+    ModeItem(FlashMode.CustomRhythm(),  "CUSTOM",  "AI rhythm",    isAi = true),
+    ModeItem(FlashMode.SleepTimer,      "SLEEP",   "Fade out",     isAi = true),
 )
 
-val proModeItems = listOf(
-    ModeItem(FlashMode.SmartBrightness, "SMART",   "AI adaptive", isPro = true),
-    ModeItem(FlashMode.ReadingMode,     "READ",    "Warm AI",      isPro = true),
-    ModeItem(FlashMode.AmbientSmart,    "AMBIENT", "Scene detect", isPro = true),
-    ModeItem(FlashMode.CustomRhythm(),  "CUSTOM",  "AI rhythm",    isPro = true),
-    ModeItem(FlashMode.SleepTimer,      "SLEEP",   "Fade out",     isPro = true),
-)
+// Keep for backwards compatibility
+val freeModeItems  = allModeItems.filter { !it.isAi }
+val proModeItems   = allModeItems.filter { it.isAi }
 
 @Composable
 fun ModeSelector(
     currentMode: FlashMode,
-    isPro: Boolean,
+    isPro: Boolean,          // kept for future use; currently all modes unlocked
     onModeSelect: (FlashMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        // ── Section label ──────────────────────────────────────────────────
-        SectionLabel("MODES")
+        // Free modes — single scrolling row at top
+        ModeRow(
+            items       = freeModeItems,
+            currentMode = currentMode,
+            onSelect    = onModeSelect,
+        )
 
-        // ── Free modes row ─────────────────────────────────────────────────
+        // AI modes row — visually distinct with subtle purple tint
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            freeModeItems.forEach { item ->
-                ModeChip(
-                    item       = item,
-                    isSelected = item.mode.id == currentMode.id,
-                    locked     = false,
-                    onClick    = { onModeSelect(item.mode) },
+            // AI label pill
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(LumiColor.Purple900)
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    "AI",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.W700,
+                    letterSpacing = 0.08.sp,
+                    color = LumiColor.Purple300,
                 )
             }
-        }
-
-        // ── Pro modes row ──────────────────────────────────────────────────
-        SectionLabel("AI PRO", isProLabel = true)
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-        ) {
-            proModeItems.forEach { item ->
-                ModeChip(
-                    item       = item,
-                    isSelected = item.mode.id == currentMode.id,
-                    locked     = !isPro,
-                    onClick    = { onModeSelect(item.mode) },
-                )
-            }
+            ModeRow(
+                items       = proModeItems,
+                currentMode = currentMode,
+                onSelect    = onModeSelect,
+                isAiRow     = true,
+            )
         }
     }
 }
 
 @Composable
-private fun SectionLabel(text: String, isProLabel: Boolean = false) {
+private fun ModeRow(
+    items: List<ModeItem>,
+    currentMode: FlashMode,
+    onSelect: (FlashMode) -> Unit,
+    isAiRow: Boolean = false,
+) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            text       = text,
-            fontSize   = 10.sp,
-            fontWeight = FontWeight.W600,
-            letterSpacing = 0.12.sp,
-            color      = if (isProLabel) LumiColor.Purple400 else LumiColor.Gray500,
-        )
-        if (isProLabel) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(LumiColor.Purple900)
-                    .padding(horizontal = 5.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = "ONE-TIME UNLOCK",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.W700,
-                    letterSpacing = 0.06.sp,
-                    color = LumiColor.Purple300,
-                )
-            }
+        items.forEach { item ->
+            ModeChip(
+                item       = item,
+                isSelected = item.mode.id == currentMode.id,
+                isAiRow    = isAiRow,
+                onClick    = { onSelect(item.mode) },
+            )
         }
     }
 }
@@ -138,83 +126,79 @@ private fun SectionLabel(text: String, isProLabel: Boolean = false) {
 private fun ModeChip(
     item: ModeItem,
     isSelected: Boolean,
-    locked: Boolean,
+    isAiRow: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
+    val scale by animateFloatAsState(
+        targetValue    = if (isSelected) 1.0f else 0.97f,
+        animationSpec  = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label          = "chip_scale_${item.label}",
+    )
+
     val bgColor = when {
-        isSelected && item.isPro -> LumiColor.Purple500
-        isSelected               -> LumiColor.Amber400
-        else                     -> LumiColor.Navy700
+        isSelected && isAiRow -> LumiColor.Purple500
+        isSelected            -> LumiColor.Amber400
+        isAiRow               -> LumiColor.Navy700
+        else                  -> LumiColor.Navy700
     }
     val borderColor = when {
-        isSelected && item.isPro -> LumiColor.Purple400
-        isSelected               -> LumiColor.Amber400
-        item.isPro               -> LumiColor.Purple500.copy(alpha = 0.3f)
-        else                     -> LumiColor.Navy600
+        isSelected && isAiRow -> LumiColor.Purple400
+        isSelected            -> LumiColor.Amber500
+        isAiRow               -> LumiColor.Purple500.copy(alpha = 0.25f)
+        else                  -> LumiColor.Navy600
     }
     val labelColor = when {
-        isSelected && item.isPro -> LumiColor.White
-        isSelected               -> LumiColor.Navy900
-        item.isPro               -> LumiColor.Purple300
-        else                     -> LumiColor.Gray400
+        isSelected && isAiRow -> LumiColor.White
+        isSelected            -> LumiColor.Navy900
+        isAiRow               -> LumiColor.Purple300
+        else                  -> LumiColor.Gray400
     }
-    val sublabelColor = when {
-        isSelected -> labelColor.copy(alpha = 0.7f)
-        else       -> LumiColor.Gray500
-    }
-
-    val chipScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.0f else 0.97f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "chip_scale",
-    )
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .width(72.dp)
-            .height(60.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .scale(scale)
+            // Min 48dp height for touch target (Material guideline)
+            .defaultMinSize(minWidth = 64.dp, minHeight = 52.dp)
+            .clip(RoundedCornerShape(10.dp))
             .background(bgColor)
             .border(
                 width = if (isSelected) 1.5.dp else 0.5.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(10.dp),
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = rememberRipple(color = LumiColor.Amber400.copy(alpha = 0.2f)),
+                indication        = rememberRipple(
+                    color = if (isAiRow) LumiColor.Purple300.copy(alpha = 0.2f)
+                            else LumiColor.Amber400.copy(alpha = 0.2f),
+                ),
                 onClick = onClick,
             )
+            .padding(horizontal = 8.dp, vertical = 6.dp)
             .semantics {
-                contentDescription = "${item.label} mode${if (locked) ", requires Pro" else ""}"
+                contentDescription = "${item.label} flash mode"
             },
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Lock indicator for pro modes when locked
-            if (locked) {
-                Text("🔒", fontSize = 10.sp)
-            }
             Text(
-                text       = item.label,
-                fontSize   = 11.sp,
-                fontWeight = FontWeight.W700,
-                letterSpacing = 0.05.sp,
-                color      = labelColor,
-                textAlign  = TextAlign.Center,
+                text          = item.label,
+                fontSize      = 11.sp,
+                fontWeight    = FontWeight.W700,
+                letterSpacing = 0.04.sp,
+                color         = labelColor,
+                textAlign     = TextAlign.Center,
             )
             Text(
-                text       = item.sublabel,
-                fontSize   = 9.sp,
-                fontWeight = FontWeight.W400,
-                color      = sublabelColor,
-                textAlign  = TextAlign.Center,
-                letterSpacing = 0.02.sp,
+                text      = item.sublabel,
+                fontSize  = 9.sp,
+                color     = labelColor.copy(alpha = 0.65f),
+                textAlign = TextAlign.Center,
             )
         }
     }

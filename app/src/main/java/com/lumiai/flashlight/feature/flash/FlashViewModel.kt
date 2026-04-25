@@ -90,12 +90,7 @@ class FlashViewModel @Inject constructor(
     fun activateMode(mode: FlashMode) {
         viewModelScope.launch {
             val isPro = uiState.value.proStatus == ProStatus.Pro
-            toggleFlashUseCase(mode, isPro).onFailure { e ->
-                if (e is com.lumiai.flashlight.core.domain.usecase.ProRequiredException) {
-                    // Show paywall instead of error
-                    showPaywall()
-                }
-            }
+            toggleFlashUseCase(mode, isPro) // Pro restriction disabled until billing live
             settingsRepository.updateLastMode(mode.id)
         }
     }
