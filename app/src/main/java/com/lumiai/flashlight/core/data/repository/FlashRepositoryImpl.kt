@@ -110,6 +110,10 @@ class FlashRepositoryImpl constructor(
                 _isFlashOn.value = true
                 aiController.startSleepTimer { setTorch(it) }
             }
+            is FlashMode.Music -> {
+                _isFlashOn.value = true
+                aiController.startMusic { setTorch(it) }
+            }
             else -> setTorch(true)
         }
     }

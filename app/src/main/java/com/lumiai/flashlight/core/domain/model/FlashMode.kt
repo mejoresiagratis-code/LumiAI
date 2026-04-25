@@ -20,10 +20,11 @@ sealed class FlashMode(val id: String, val isPro: Boolean = false) {
     object AmbientSmart    : FlashMode("ambient_smart",    isPro = true)   // MLKit detects scene
     data class CustomRhythm(val pattern: LongArray = longArrayOf()) : FlashMode("custom_rhythm", isPro = true)
     object SleepTimer      : FlashMode("sleep_timer",      isPro = true)   // Gradual power-off AI
+    object Music           : FlashMode("music",            isPro = true)   // Beat detection via mic
 
     companion object {
         fun freeModes(): List<FlashMode> = listOf(Steady, Screen, Sos, Strobe(), Disco())
-        fun proModes(): List<FlashMode>  = listOf(SmartBrightness, ReadingMode, AmbientSmart, CustomRhythm(), SleepTimer)
+        fun proModes(): List<FlashMode>  = listOf(SmartBrightness, ReadingMode, AmbientSmart, CustomRhythm(), SleepTimer, Music)
         fun all(): List<FlashMode>       = freeModes() + proModes()
     }
 }

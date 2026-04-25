@@ -27,6 +27,7 @@ class AiModeController @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var activeJob: Job? = null
+    private var musicDetector: MusicBeatDetector? = null
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private var lightLevel = 50f   // lux, default mid-light
 
@@ -49,7 +50,26 @@ class AiModeController @Inject constructor(
     fun stop() {
         activeJob?.cancel()
         activeJob = null
+        musicDetector?.stop()
+        musicDetector = null
         sensorManager.unregisterListener(lightListener)
+    }
+
+    // ── MUSIC: real-time beat detection via microphone ────────────────────────
+    // Fires torch ON for 80ms on each detected beat (kick drum / clap level)
+    // Requires RECORD_AUDIO permission — caller must verify before invoking
+    fun startMusic(setTorch: (Boolean) -> Unit) {
+        musicDetector?.stop()
+        musicDetector = MusicBeatDetector {
+            // Beat detected — flash for 80ms then off
+            setTorch(true)
+            activeJob?.cancel()
+            activeJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+                delay(80L)
+                setTorch(false)
+            }
+        }
+        musicDetector?.start()
     }
 
     // ── SMART: ambient-aware pulsing ──────────────────────────────────────────

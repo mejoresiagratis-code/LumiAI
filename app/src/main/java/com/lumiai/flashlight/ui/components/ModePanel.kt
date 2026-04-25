@@ -54,6 +54,8 @@ val aiModeItems = listOf(
         accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen"),
     FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",      "◌",
         accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve"),
+    FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",      "♩",
+        accentColor = Color(0xFF60A5FA), sensorTag = "Microphone"),
 )
 
 // ── ModePanel — tabbed Flash / AI ─────────────────────────────────────────────

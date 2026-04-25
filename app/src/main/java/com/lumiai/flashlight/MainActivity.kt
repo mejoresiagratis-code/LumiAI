@@ -1,6 +1,7 @@
 package com.lumiai.flashlight
 
 import android.Manifest
+import com.lumiai.flashlight.core.domain.model.FlashMode
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
@@ -32,6 +33,12 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var shakeDetector: ShakeDetector
 
+    // Runtime microphone permission (for Music beat detection mode)
+    private val requestMicPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+            // Result handled by mode — if denied, Music mode will fail silently
+        }
+
     // Runtime camera permission request
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -62,6 +69,20 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             adManager.initWithConsent(this@MainActivity)
+        }
+
+        // Observe mode changes to request mic permission lazily
+        lifecycleScope.launch {
+            flashViewModel.uiState.collect { state ->
+                if (state.currentMode is FlashMode.Music) {
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity, Manifest.permission.RECORD_AUDIO
+                        ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) {
+                        requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+            }
         }
 
         setContent {
