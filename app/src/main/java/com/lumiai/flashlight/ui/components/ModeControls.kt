@@ -9,16 +9,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.ui.theme.LumiColor
 
-/**
- * Contextual controls that appear based on the active mode.
- * Strobe → Hz slider | Disco → BPM slider | Screen → brightness slider
- */
 @Composable
 fun ModeControls(
     currentMode: FlashMode,
@@ -31,11 +28,11 @@ fun ModeControls(
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
-        visible = currentMode is FlashMode.Strobe ||
-                  currentMode is FlashMode.Disco  ||
-                  currentMode is FlashMode.Screen,
-        enter = fadeIn() + expandVertically(),
-        exit  = fadeOut() + shrinkVertically(),
+        visible  = currentMode is FlashMode.Strobe ||
+                   currentMode is FlashMode.Disco  ||
+                   currentMode is FlashMode.Screen,
+        enter    = fadeIn() + expandVertically(),
+        exit     = fadeOut() + shrinkVertically(),
         modifier = modifier,
     ) {
         Box(
@@ -46,29 +43,29 @@ fun ModeControls(
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             when (currentMode) {
-                is FlashMode.Strobe -> ControlSlider(
-                    label    = "STROBE",
-                    value    = strobeHz,
-                    valueLabel = "${strobeHz.toInt()} Hz",
-                    range    = 0.5f..20f,
-                    accentColor = LumiColor.Amber400,
-                    onChange = onStrobeHzChange,
+                is FlashMode.Strobe -> LiveSlider(
+                    label        = "STROBE",
+                    externalValue = strobeHz,
+                    range        = 0.5f..20f,
+                    accentColor  = LumiColor.Amber400,
+                    formatValue  = { "${it.toInt()} Hz" },
+                    onSettled    = onStrobeHzChange,
                 )
-                is FlashMode.Disco  -> ControlSlider(
-                    label    = "TEMPO",
-                    value    = discoBpm,
-                    valueLabel = "${discoBpm.toInt()} BPM",
-                    range    = 60f..200f,
-                    accentColor = LumiColor.Amber500,
-                    onChange = onDiscoBpmChange,
+                is FlashMode.Disco -> LiveSlider(
+                    label        = "TEMPO",
+                    externalValue = discoBpm,
+                    range        = 60f..200f,
+                    accentColor  = LumiColor.Amber500,
+                    formatValue  = { "${it.toInt()} BPM" },
+                    onSettled    = onDiscoBpmChange,
                 )
-                is FlashMode.Screen -> ControlSlider(
-                    label    = "BRIGHTNESS",
-                    value    = screenBrightness,
-                    valueLabel = "${(screenBrightness * 100).toInt()}%",
-                    range    = 0.1f..1f,
-                    accentColor = LumiColor.White,
-                    onChange = onBrightnessChange,
+                is FlashMode.Screen -> LiveSlider(
+                    label        = "BRIGHTNESS",
+                    externalValue = screenBrightness,
+                    range        = 0.1f..1f,
+                    accentColor  = LumiColor.White,
+                    formatValue  = { "${(it * 100).toInt()}%" },
+                    onSettled    = onBrightnessChange,
                 )
                 else -> {}
             }
@@ -76,43 +73,68 @@ fun ModeControls(
     }
 }
 
+/**
+ * Slider que responde visualmente de forma inmediata mientras se arrastra
+ * y propaga el valor final al ViewModel solo al soltar (onSettled).
+ *
+ * El truco: mantiene estado local [localValue] que se actualiza en cada frame
+ * del drag. El [externalValue] (del StateFlow del ViewModel) solo se usa para
+ * inicializar — no se reaplica durante el drag para evitar el efecto de
+ * "freezing" causado por la latencia DataStore → StateFlow → recomposición.
+ */
 @Composable
-private fun ControlSlider(
+private fun LiveSlider(
     label: String,
-    value: Float,
-    valueLabel: String,
+    externalValue: Float,
     range: ClosedFloatingPointRange<Float>,
-    accentColor: androidx.compose.ui.graphics.Color,
-    onChange: (Float) -> Unit,
+    accentColor: Color,
+    formatValue: (Float) -> String,
+    onSettled: (Float) -> Unit,
 ) {
+    // Local state: initialized from external, updated instantly on drag
+    var localValue by remember { mutableFloatStateOf(externalValue) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    // Sync from external only when NOT dragging (avoids overwriting during drag)
+    LaunchedEffect(externalValue) {
+        if (!isDragging) localValue = externalValue
+    }
+
     Column {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
         ) {
             Text(
-                text = label,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.W600,
+                text          = label,
+                fontSize      = 10.sp,
+                fontWeight    = FontWeight.W600,
                 letterSpacing = 0.1.sp,
-                color = LumiColor.Gray500,
+                color         = LumiColor.Gray500,
             )
             Text(
-                text = valueLabel,
-                fontSize = 13.sp,
+                text       = formatValue(localValue),
+                fontSize   = 13.sp,
                 fontWeight = FontWeight.W700,
-                color = accentColor,
+                color      = accentColor,
             )
         }
         Spacer(Modifier.height(6.dp))
         Slider(
-            value = value,
-            onValueChange = onChange,
+            value    = localValue,
+            onValueChange = { newValue ->
+                isDragging   = true
+                localValue   = newValue   // instant visual update
+            },
+            onValueChangeFinished = {
+                isDragging = false
+                onSettled(localValue)     // persist + apply to flash only on release
+            },
             valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor        = accentColor,
-                activeTrackColor  = accentColor,
+            colors     = SliderDefaults.colors(
+                thumbColor         = accentColor,
+                activeTrackColor   = accentColor,
                 inactiveTrackColor = LumiColor.Navy600,
             ),
             modifier = Modifier.fillMaxWidth(),

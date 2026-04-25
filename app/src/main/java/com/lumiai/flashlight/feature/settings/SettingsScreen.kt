@@ -220,8 +220,10 @@ private fun SettingsSliderRow(
     displayValue: (Float) -> String,
     onChange: (Float) -> Unit,
 ) {
-    // Local state for smooth dragging; persists to DataStore on settle
-    var current by remember(value) { mutableFloatStateOf(value) }
+    var current by remember { mutableFloatStateOf(value) }
+    var isDragging by remember { mutableStateOf(false) }
+    // Sync external value only when not dragging
+    LaunchedEffect(value) { if (!isDragging) current = value }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -230,8 +232,8 @@ private fun SettingsSliderRow(
         }
         Slider(
             value = current,
-            onValueChange = { current = it },
-            onValueChangeFinished = { onChange(current) }, // persist only when finger lifts
+            onValueChange = { isDragging = true; current = it },
+            onValueChangeFinished = { isDragging = false; onChange(current) },
             valueRange = range,
             colors = SliderDefaults.colors(
                 thumbColor        = LumiColor.Amber400,
