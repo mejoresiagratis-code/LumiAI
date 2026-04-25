@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "123241192865",
+    "project_id": "lumiai-54bbc",
+    "storage_bucket": "lumiai-54bbc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123241192865:android:36102d3cdf061507423fe0",
+        "android_client_info": {
+          "package_name": "com.lumiai.flashlight"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJRyV_htf3OS67e2RCfCUmGhzc4rx0WfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
