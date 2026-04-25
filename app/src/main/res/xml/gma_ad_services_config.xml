@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AdMob Ad Services configuration.
+  Required by play-services-ads 23.x to declare which ad technologies are used.
+-->
+<ad-services-config>
+    <attribution-reporting allowAllToAccess="false" allowAdTechAccess="false" />
+    <custom-audiences allowAllToAccess="false" allowAdTechAccess="false" />
+    <topics allowAllToAccess="false" allowAdTechAccess="false" />
+</ad-services-config>
