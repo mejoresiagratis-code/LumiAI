@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.lumiai.flashlight.core.data.repository.*
+import com.lumiai.flashlight.core.util.AiModeController
 import com.lumiai.flashlight.core.util.StrobeController
 import dagger.Module
 import dagger.Provides
@@ -20,13 +21,19 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 object AppModule {
 
     @Provides @Singleton
+    fun provideAiModeController(
+        @ApplicationContext context: Context,
+    ): AiModeController = AiModeController(context)
+
+    @Provides @Singleton
     fun provideStrobeController(): StrobeController = StrobeController()
 
     @Provides @Singleton
     fun provideFlashRepositoryImpl(
         @ApplicationContext context: Context,
         strobeController: StrobeController,
-    ): FlashRepositoryImpl = FlashRepositoryImpl(context, strobeController)
+        aiController: AiModeController,
+    ): FlashRepositoryImpl = FlashRepositoryImpl(context, strobeController, aiController)
 
     /** Expose as interface for use cases that depend on FlashRepository */
     @Provides @Singleton

@@ -11,6 +11,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.lumiai.flashlight.core.domain.model.FlashMode
+import com.lumiai.flashlight.core.util.AiModeController
 import com.lumiai.flashlight.core.util.StrobeController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import kotlin.coroutines.resume
 class FlashRepositoryImpl constructor(
     private val context: Context,
     private val strobeController: StrobeController,
+    private val aiController: AiModeController,
 ) : FlashRepository {
 
     private val _isFlashOn        = MutableStateFlow(false)
@@ -75,6 +77,7 @@ class FlashRepositoryImpl constructor(
 
     override suspend fun activateMode(mode: FlashMode): Result<Unit> = runCatching {
         strobeController.stop()
+        aiController.stop()
         _currentMode.value = mode
 
         when (mode) {
@@ -87,12 +90,33 @@ class FlashRepositoryImpl constructor(
             is FlashMode.Sos    -> strobeController.startSos { setTorch(it) }
             is FlashMode.Strobe -> strobeController.startStrobe(mode.hz) { setTorch(it) }
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
-            else                -> setTorch(true)
+            is FlashMode.SmartBrightness -> {
+                setTorch(false) // aiController manages torch directly
+                aiController.startSmart { setTorch(it) }
+            }
+            is FlashMode.ReadingMode -> {
+                setTorch(false)
+                aiController.startReading { setTorch(it) }
+            }
+            is FlashMode.AmbientSmart -> {
+                setTorch(false)
+                aiController.startAmbient { setTorch(it) }
+            }
+            is FlashMode.CustomRhythm -> {
+                setTorch(false)
+                aiController.startCustomRhythm { setTorch(it) }
+            }
+            is FlashMode.SleepTimer -> {
+                setTorch(false)
+                aiController.startSleepTimer { setTorch(it) }
+            }
+            else -> setTorch(true)
         }
     }
 
     override suspend fun turnOff(): Result<Unit> = runCatching {
         strobeController.stop()
+        aiController.stop()
         setTorch(false)
         _isFlashOn.value = false
         _currentMode.value = FlashMode.Steady
@@ -100,6 +124,7 @@ class FlashRepositoryImpl constructor(
 
     override fun release() {
         strobeController.stop()
+        aiController.stop()
         runCatching { setTorchCamera2(false) }
         cameraProvider?.unbindAll()
         cameraXCamera = null
