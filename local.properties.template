@@ -1,0 +1,14 @@
+## Copy this file to local.properties and fill in your values.
+## local.properties is in .gitignore — never commit it.
+
+# Android SDK path
+sdk.dir=/path/to/Android/sdk
+
+# AdMob App ID (from AdMob console)
+ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX
+
+# Release keystore (for signing release builds)
+KEYSTORE_PATH=../lumiai_release.keystore
+KEYSTORE_PASS=your_keystore_password
+KEY_ALIAS=lumiai_key
+KEY_PASS=your_key_password

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LumiAI Flashlight</string>
+    <string name="tile_flash_label">Flash</string>
+    <string name="btn_turn_on">Turn on</string>
+    <string name="btn_turn_off">Turn off</string>
+    <string name="mode_steady">Steady</string>
+    <string name="mode_screen">Screen</string>
+    <string name="mode_sos">SOS</string>
+    <string name="mode_strobe">Strobe</string>
+    <string name="mode_disco">Disco</string>
+    <string name="pro_smart">Smart</string>
+    <string name="pro_reading">Reading</string>
+    <string name="pro_ambient">Ambient</string>
+    <string name="pro_custom">Custom</string>
+    <string name="pro_sleep">Sleep</string>
+</resources>

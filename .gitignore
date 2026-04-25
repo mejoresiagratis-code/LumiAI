@@ -1,0 +1,21 @@
+# Local secrets — never commit
+local.properties
+google-services.json
+lumiai_release.keystore
+*.jks
+
+# Build
+*.iml
+.gradle/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.DS_Store
+
+# Room schemas (optional: commit if you want migration history)
+app/schemas/
