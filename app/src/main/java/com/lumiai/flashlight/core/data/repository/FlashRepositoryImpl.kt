@@ -90,11 +90,26 @@ class FlashRepositoryImpl constructor(
             is FlashMode.Sos    -> strobeController.startSos { setTorch(it) }
             is FlashMode.Strobe -> strobeController.startStrobe(mode.hz) { setTorch(it) }
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
-            is FlashMode.SmartBrightness -> aiController.startSmart { setTorch(it) }
-            is FlashMode.ReadingMode -> aiController.startReading { setTorch(it) }
-            is FlashMode.AmbientSmart -> aiController.startAmbient { setTorch(it) }
-            is FlashMode.CustomRhythm -> aiController.startCustomRhythm { setTorch(it) }
-            is FlashMode.SleepTimer -> aiController.startSleepTimer { setTorch(it) }
+            is FlashMode.SmartBrightness -> {
+                _isFlashOn.value = true
+                aiController.startSmart { setTorch(it) }
+            }
+            is FlashMode.ReadingMode -> {
+                _isFlashOn.value = true
+                aiController.startReading { setTorch(it) }
+            }
+            is FlashMode.AmbientSmart -> {
+                _isFlashOn.value = true
+                aiController.startAmbient { setTorch(it) }
+            }
+            is FlashMode.CustomRhythm -> {
+                _isFlashOn.value = true
+                aiController.startCustomRhythm { setTorch(it) }
+            }
+            is FlashMode.SleepTimer -> {
+                _isFlashOn.value = true
+                aiController.startSleepTimer { setTorch(it) }
+            }
             else -> setTorch(true)
         }
     }
@@ -105,6 +120,11 @@ class FlashRepositoryImpl constructor(
         setTorch(false)
         _isFlashOn.value = false
         _currentMode.value = FlashMode.Steady
+    }
+
+    /** Change the current mode without activating flash (used when flash is OFF) */
+    override fun setCurrentMode(mode: FlashMode) {
+        _currentMode.value = mode
     }
 
     override fun release() {

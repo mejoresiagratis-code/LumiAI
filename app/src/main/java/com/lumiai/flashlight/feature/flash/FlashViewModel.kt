@@ -82,15 +82,24 @@ class FlashViewModel @Inject constructor(
             if (state.isFlashOn) {
                 toggleFlashUseCase.turnOff()
             } else {
-                activateMode(state.currentMode)
+                // Force activate current mode (bypass isFlashOn guard in activateMode)
+                val isPro = state.proStatus == com.lumiai.flashlight.core.domain.model.ProStatus.Pro
+                toggleFlashUseCase(state.currentMode, isPro)
             }
         }
     }
 
     fun activateMode(mode: FlashMode) {
         viewModelScope.launch {
-            val isPro = uiState.value.proStatus == ProStatus.Pro
-            toggleFlashUseCase(mode, isPro) // Pro restriction disabled until billing live
+            val state = uiState.value
+            val isPro = state.proStatus == ProStatus.Pro
+            if (state.isFlashOn) {
+                // Flash is ON → switch to new mode immediately
+                toggleFlashUseCase(mode, isPro)
+            } else {
+                // Flash is OFF → just preview the mode (no flash, no blink)
+                flashRepository.setCurrentMode(mode)
+            }
             settingsRepository.updateLastMode(mode.id)
         }
     }

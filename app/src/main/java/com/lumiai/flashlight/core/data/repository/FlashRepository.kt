@@ -10,5 +10,6 @@ interface FlashRepository {
 
     suspend fun activateMode(mode: FlashMode): Result<Unit>
     suspend fun turnOff(): Result<Unit>
+    fun setCurrentMode(mode: FlashMode)
     fun release()
 }
