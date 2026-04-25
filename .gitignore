@@ -1,6 +1,5 @@
 # Local secrets — never commit
 local.properties
-google-services.json
 lumiai_release.keystore
 *.jks
 
@@ -19,3 +18,4 @@ captures/
 
 # Room schemas (optional: commit if you want migration history)
 app/schemas/
+*.keystore
