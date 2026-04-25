@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.lumiai.flashlight.core.data.repository.*
 import com.lumiai.flashlight.core.util.StrobeController
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,20 +17,33 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class AppModule {
+object AppModule {
 
-    @Binds @Singleton
-    abstract fun bindFlashRepository(impl: FlashRepositoryImpl): FlashRepository
+    @Provides @Singleton
+    fun provideStrobeController(): StrobeController = StrobeController()
 
-    @Binds @Singleton
-    abstract fun bindBillingRepository(impl: BillingRepositoryImpl): BillingRepository
+    @Provides @Singleton
+    fun provideFlashRepositoryImpl(
+        @ApplicationContext context: Context,
+        strobeController: StrobeController,
+    ): FlashRepositoryImpl = FlashRepositoryImpl(context, strobeController)
 
-    companion object {
-        @Provides @Singleton
-        fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-            context.dataStore
+    /** Expose as interface for use cases that depend on FlashRepository */
+    @Provides @Singleton
+    fun provideFlashRepository(impl: FlashRepositoryImpl): FlashRepository = impl
 
-        @Provides @Singleton
-        fun provideStrobeController(): StrobeController = StrobeController()
-    }
+    @Provides @Singleton
+    fun provideBillingRepository(
+        @ApplicationContext context: Context,
+    ): BillingRepository = BillingRepositoryImpl(context)
+
+    /** Expose BillingRepositoryImpl directly for any direct injection */
+    @Provides @Singleton
+    fun provideBillingRepositoryImpl(
+        @ApplicationContext context: Context,
+    ): BillingRepositoryImpl = BillingRepositoryImpl(context)
+
+    @Provides @Singleton
+    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+        context.dataStore
 }

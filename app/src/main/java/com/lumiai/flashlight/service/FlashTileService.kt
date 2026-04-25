@@ -1,7 +1,10 @@
 package com.lumiai.flashlight.service
 
 import android.service.quicksettings.Tile
+import android.annotation.SuppressLint
+import android.os.Build
 import android.service.quicksettings.TileService
+import androidx.annotation.RequiresApi
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -11,6 +14,7 @@ import javax.inject.Inject
  * Quick Settings tile — toggles the flashlight from the notification shade.
  * Requires android.permission.BIND_QUICK_SETTINGS_TILE.
  */
+@RequiresApi(Build.VERSION_CODES.N)
 @AndroidEntryPoint
 class FlashTileService : TileService() {
 

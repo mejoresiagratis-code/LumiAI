@@ -213,7 +213,11 @@ fun ProPaywallScreen(
                     } else {
                         // Purchase button
                         PurchaseButton(
-                            onClick = { viewModel.purchasePro(context as android.app.Activity) }
+                            onClick = {
+                                (context as? android.app.Activity)?.let {
+                                    viewModel.purchasePro(it)
+                                }
+                            }
                         )
 
                         // Restore

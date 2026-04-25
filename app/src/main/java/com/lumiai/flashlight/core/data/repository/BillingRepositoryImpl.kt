@@ -8,14 +8,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 private const val PRO_PRODUCT_ID = "pro_unlock"
 
 @Singleton
-class BillingRepositoryImpl @Inject constructor(
+class BillingRepositoryImpl constructor(
     @ApplicationContext private val context: Context,
 ) : BillingRepository, PurchasesUpdatedListener {
 

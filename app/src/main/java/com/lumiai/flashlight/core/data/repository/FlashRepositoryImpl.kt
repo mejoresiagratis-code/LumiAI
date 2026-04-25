@@ -13,12 +13,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 @Singleton
-class FlashRepositoryImpl @Inject constructor(
+class FlashRepositoryImpl constructor(
     @ApplicationContext private val context: Context,
     private val strobeController: StrobeController,
 ) : FlashRepository {

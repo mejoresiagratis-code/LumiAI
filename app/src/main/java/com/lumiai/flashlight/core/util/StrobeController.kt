@@ -1,7 +1,6 @@
 package com.lumiai.flashlight.core.util
 
 import kotlinx.coroutines.*
-import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToLong
 
@@ -10,7 +9,7 @@ import kotlin.math.roundToLong
  * All patterns run on a dedicated IO dispatcher and are cancellable.
  */
 @Singleton
-class StrobeController @Inject constructor() {
+class StrobeController constructor() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var activeJob: Job? = null
