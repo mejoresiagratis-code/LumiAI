@@ -10,6 +10,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.di.AdManager
+import com.lumiai.flashlight.core.util.ShakeDetector
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
 import com.lumiai.flashlight.ui.theme.LumiAITheme
@@ -25,6 +26,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var adManager: AdManager
     @Inject lateinit var flashRepository: FlashRepositoryImpl
 
+    private lateinit var shakeDetector: ShakeDetector
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !flashViewModel.isReady.value }
@@ -33,10 +36,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // Shake detector — toggles flash if enabled in settings
+        shakeDetector = ShakeDetector(this) {
+            if (flashViewModel.uiState.value.shakeToToggle) {
+                flashViewModel.toggleFlash()
+            }
+        }
+
         lifecycleScope.launch {
-            // Bind CameraX to this lifecycle — gives flash control
             flashRepository.bindCamera(this@MainActivity)
-            // Init AdMob after UMP consent (GDPR)
             adManager.initWithConsent(this@MainActivity)
         }
 
@@ -45,6 +53,16 @@ class MainActivity : ComponentActivity() {
                 LumiNavHost()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        shakeDetector.register()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        shakeDetector.unregister()
     }
 
     override fun onDestroy() {

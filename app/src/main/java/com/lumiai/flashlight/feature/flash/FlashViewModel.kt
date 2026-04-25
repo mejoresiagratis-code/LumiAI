@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
+import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.usecase.GetProStatusUseCase
@@ -22,6 +23,10 @@ data class FlashUiState(
     val hasHardwareFlash: Boolean    = false,
     val errorMessage: String?        = null,
     val showProPaywall: Boolean      = false,
+    // Settings — read from DataStore
+    val strobeHz: Float              = 5f,
+    val discoBpm: Float              = 120f,
+    val shakeToToggle: Boolean       = true,
 )
 
 @HiltViewModel
@@ -41,12 +46,21 @@ class FlashViewModel @Inject constructor(
         flashRepository.currentMode,
         getProStatusUseCase(),
         flashRepository.hasHardwareFlash,
-    ) { isOn, mode, proStatus, hasFlash ->
+        settingsRepository.settings,
+    ) { args ->
+        val isOn      = args[0] as Boolean
+        val mode      = args[1] as FlashMode
+        val proStatus = args[2] as ProStatus
+        val hasFlash  = args[3] as Boolean
+        val settings  = args[4] as com.lumiai.flashlight.core.domain.model.UserSettings
         FlashUiState(
-            isFlashOn         = isOn,
-            currentMode       = mode,
-            proStatus         = proStatus,
-            hasHardwareFlash  = hasFlash,
+            isFlashOn        = isOn,
+            currentMode      = mode,
+            proStatus        = proStatus,
+            hasHardwareFlash = hasFlash,
+            strobeHz         = settings.strobeHz,
+            discoBpm         = settings.discoBpm,
+            shakeToToggle    = settings.shakeToToggle,
         )
     }.stateIn(
         scope         = viewModelScope,

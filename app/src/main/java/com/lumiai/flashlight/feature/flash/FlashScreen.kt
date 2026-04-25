@@ -99,12 +99,12 @@ fun FlashScreen(
             if (!isScreenMode) {
                 ModeControls(
                     currentMode       = mode,
-                    strobeHz          = (mode as? FlashMode.Strobe)?.hz ?: 5f,
-                    discoBpm          = (mode as? FlashMode.Disco)?.bpm ?: 120f,
+                    strobeHz          = uiState.strobeHz,
+                    discoBpm          = uiState.discoBpm,
                     screenBrightness  = 1f,
                     onStrobeHzChange  = { viewModel.activateMode(FlashMode.Strobe(it)) },
                     onDiscoBpmChange  = { viewModel.activateMode(FlashMode.Disco(it)) },
-                    onBrightnessChange = { /* TODO: screen brightness */ },
+                    onBrightnessChange = { /* handled via SettingsScreen */ },
                     modifier          = Modifier.padding(horizontal = 24.dp),
                 )
                 Spacer(Modifier.height(16.dp))
