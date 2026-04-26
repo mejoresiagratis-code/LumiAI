@@ -153,6 +153,34 @@ fun ModePanel(
             }
         }
 
+        // ── Slider BELOW tabs — can never visually overlap cards ─────────────
+        val showSlider = selectedTab == 0 && (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
+        if (showSlider) {
+            when (currentMode) {
+                is FlashMode.Strobe -> key("strobe_slider") {
+                    ContextSlider(
+                        label    = "FREQUENCY",
+                        value    = strobeHz,
+                        range    = 1f..20f,
+                        format   = { "${it.toInt()} Hz" },
+                        onSettle = onStrobeHzChange,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                    )
+                }
+                is FlashMode.Disco -> key("disco_slider") {
+                    ContextSlider(
+                        label    = "TEMPO",
+                        value    = discoBpm,
+                        range    = 60f..200f,
+                        format   = { "${it.toInt()} BPM" },
+                        onSettle = onDiscoBpmChange,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                    )
+                }
+                else -> {}
+            }
+        }
+
         // ── Tab content ───────────────────────────────────────────────────────
         AnimatedContent(
             targetState   = selectedTab,

@@ -111,11 +111,17 @@ class FlashRepositoryImpl constructor(
             }
             is FlashMode.ReadingMode -> {
                 _isFlashOn.value = true
-                aiController.startReading { setTorch(it) }
+                aiController.startReading(
+                    setTorch    = { setTorch(it) },
+                    setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                )
             }
             is FlashMode.AmbientSmart -> {
                 _isFlashOn.value = true
-                aiController.startAmbient { setTorch(it) }
+                aiController.startAmbient(
+                    setTorch    = { setTorch(it) },
+                    setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                )
             }
             is FlashMode.CustomRhythm -> {
                 _isFlashOn.value = true
