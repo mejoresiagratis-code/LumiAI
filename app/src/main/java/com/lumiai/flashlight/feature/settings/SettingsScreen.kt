@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lumiai.flashlight.feature.flash.AutoOffOption
+import com.lumiai.flashlight.service.FlashNotificationService
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.ui.theme.LumiColor
 
@@ -128,6 +130,78 @@ fun SettingsScreen(
                     checked  = settings.isDarkTheme,
                     onChange = { viewModel.setDarkTheme(it) },
                 )
+            }
+
+
+            // ── TIMER ─────────────────────────────────────────────────────────
+            SettingsSection("AUTO-OFF TIMER") {
+                AutoOffOption.entries.forEachIndexed { i, option ->
+                    if (i > 0) SettingsDivider()
+                    val isSelected = option == uiState.settings.let { AutoOffOption.NONE }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setAutoOffTimer(option) }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(option.label, fontSize = 14.sp,
+                            fontWeight = FontWeight.W500, color = LumiColor.White)
+                        if (viewModel.currentAutoOff.value == option) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(LumiColor.Amber400)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── FLASH NOTIFICATIONS ────────────────────────────────────────────
+            SettingsSection("FLASH NOTIFICATIONS") {
+                val hasPermission = FlashNotificationService.isPermissionGranted(context)
+                if (hasPermission) {
+                    SettingsToggleRow(
+                        label    = "Enable flash alerts",
+                        sublabel = "Flash on calls, messages and apps",
+                        checked  = viewModel.notifFlashEnabled.value,
+                        onChange = { viewModel.setNotifFlashEnabled(it) },
+                    )
+                    SettingsDivider()
+                    SettingsToggleRow(
+                        label    = "Calls",
+                        sublabel = "3 fast pulses on incoming calls",
+                        checked  = viewModel.notifFlashCalls.value,
+                        onChange = { viewModel.setNotifFlashCalls(it) },
+                    )
+                    SettingsDivider()
+                    SettingsToggleRow(
+                        label    = "Messages",
+                        sublabel = "WhatsApp, SMS, Telegram, email",
+                        checked  = viewModel.notifFlashMessages.value,
+                        onChange = { viewModel.setNotifFlashMessages(it) },
+                    )
+                    SettingsDivider()
+                    SettingsToggleRow(
+                        label    = "Other apps",
+                        sublabel = "All other notifications",
+                        checked  = viewModel.notifFlashOther.value,
+                        onChange = { viewModel.setNotifFlashOther(it) },
+                    )
+                } else {
+                    SettingsActionRow(
+                        label    = "Grant notification access",
+                        sublabel = "Required to flash on notifications",
+                        onClick  = {
+                            context.startActivity(
+                                Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                            )
+                        },
+                    )
+                }
             }
 
             // ── PRO ───────────────────────────────────────────────────────

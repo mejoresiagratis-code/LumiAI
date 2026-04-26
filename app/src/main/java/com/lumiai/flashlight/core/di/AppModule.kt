@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.lumiai.flashlight.core.data.repository.*
 import com.lumiai.flashlight.core.util.AiModeController
+import com.lumiai.flashlight.service.NotificationFlashController
 import com.lumiai.flashlight.core.util.StrobeController
 import dagger.Module
 import dagger.Provides
@@ -19,6 +20,11 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides @Singleton
+    fun provideNotificationFlashController(
+        @ApplicationContext context: Context,
+    ): NotificationFlashController = NotificationFlashController(context)
 
     @Provides @Singleton
     fun provideAiModeController(

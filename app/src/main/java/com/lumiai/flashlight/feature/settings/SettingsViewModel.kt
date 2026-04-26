@@ -14,6 +14,11 @@ import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.usecase.GetProStatusUseCase
 import com.lumiai.flashlight.core.domain.usecase.PurchaseProUseCase
+import com.lumiai.flashlight.feature.flash.AutoOffOption
+import com.lumiai.flashlight.service.NotificationFlashController
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -32,6 +37,7 @@ class SettingsViewModel @Inject constructor(
     private val billingRepository: BillingRepositoryImpl,
     private val getProStatusUseCase: GetProStatusUseCase,
     private val purchaseProUseCase: PurchaseProUseCase,
+    private val notificationFlashController: NotificationFlashController,
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -44,6 +50,30 @@ class SettingsViewModel @Inject constructor(
         started      = SharingStarted.WhileSubscribed(5_000),
         initialValue = SettingsUiState(),
     )
+
+
+    // ── Notification flash state ────────────────────────────────────────────
+    private val _notifFlashEnabled  = MutableStateFlow(false)
+    private val _notifFlashCalls    = MutableStateFlow(true)
+    private val _notifFlashMessages = MutableStateFlow(true)
+    private val _notifFlashOther    = MutableStateFlow(false)
+    val notifFlashEnabled:  StateFlow<Boolean> = _notifFlashEnabled.asStateFlow()
+    val notifFlashCalls:    StateFlow<Boolean> = _notifFlashCalls.asStateFlow()
+    val notifFlashMessages: StateFlow<Boolean> = _notifFlashMessages.asStateFlow()
+    val notifFlashOther:    StateFlow<Boolean> = _notifFlashOther.asStateFlow()
+
+    fun setNotifFlashEnabled(v: Boolean)  { _notifFlashEnabled.value  = v; notificationFlashController.isEnabled  = v }
+    fun setNotifFlashCalls(v: Boolean)    { _notifFlashCalls.value    = v; notificationFlashController.enabledForCalls    = v }
+    fun setNotifFlashMessages(v: Boolean) { _notifFlashMessages.value = v; notificationFlashController.enabledForMessages = v }
+    fun setNotifFlashOther(v: Boolean)    { _notifFlashOther.value    = v; notificationFlashController.enabledForOther    = v }
+
+    // ── Auto-off timer ────────────────────────────────────────────────────
+    private val _currentAutoOff = MutableStateFlow(AutoOffOption.NONE)
+    val currentAutoOff: StateFlow<AutoOffOption> = _currentAutoOff.asStateFlow()
+
+    fun setAutoOffTimer(option: AutoOffOption) {
+        _currentAutoOff.value = option
+    }
 
     // ── Strobe Hz ──────────────────────────────────────────────────────────
     fun setStrobeHz(hz: Float) {

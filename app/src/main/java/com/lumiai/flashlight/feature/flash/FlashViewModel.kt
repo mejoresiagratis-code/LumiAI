@@ -7,6 +7,8 @@ import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
+import com.lumiai.flashlight.feature.flash.AutoOffOption
+import kotlinx.coroutines.Job
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.usecase.GetProStatusUseCase
 import com.lumiai.flashlight.core.domain.usecase.PurchaseProUseCase
@@ -27,6 +29,8 @@ data class FlashUiState(
     val strobeHz: Float              = 5f,
     val discoBpm: Float              = 120f,
     val shakeToToggle: Boolean       = true,
+    val screenColor: ScreenColor     = ScreenColor.WHITE,
+    val autoOffOption: AutoOffOption = AutoOffOption.NONE,
 )
 
 @HiltViewModel
@@ -40,6 +44,12 @@ class FlashViewModel @Inject constructor(
 
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    // Auto-off timer
+    private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
+    private val _autoOff = MutableStateFlow(AutoOffOption.NONE)
+    val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
+    private var autoOffJob: Job? = null
 
     val uiState: StateFlow<FlashUiState> = combine(
         flashRepository.isFlashOn,
@@ -61,6 +71,8 @@ class FlashViewModel @Inject constructor(
             strobeHz         = settings.strobeHz,
             discoBpm         = settings.discoBpm,
             shakeToToggle    = settings.shakeToToggle,
+            screenColor      = _currentScreenColor.value,
+            autoOffOption    = _autoOff.value,
         )
     }.stateIn(
         scope         = viewModelScope,
@@ -80,11 +92,12 @@ class FlashViewModel @Inject constructor(
         viewModelScope.launch {
             val state = uiState.value
             if (state.isFlashOn) {
+                autoOffJob?.cancel()
                 toggleFlashUseCase.turnOff()
             } else {
-                // Force activate current mode (bypass isFlashOn guard in activateMode)
                 val isPro = state.proStatus == com.lumiai.flashlight.core.domain.model.ProStatus.Pro
                 toggleFlashUseCase(state.currentMode, isPro)
+                scheduleAutoOff(_autoOff.value)
             }
         }
     }
@@ -144,6 +157,32 @@ class FlashViewModel @Inject constructor(
                 flashRepository.activateMode(FlashMode.Disco(bpm))
             }
         }
+    }
+
+
+    /** Set auto-off timer. Restarts whenever flash is turned on. */
+    fun setAutoOff(option: AutoOffOption) {
+        _autoOff.value = option
+        scheduleAutoOff(option)
+    }
+
+    private fun scheduleAutoOff(option: AutoOffOption) {
+        autoOffJob?.cancel()
+        autoOffJob = null
+        if (option == AutoOffOption.NONE || !uiState.value.isFlashOn) return
+        autoOffJob = viewModelScope.launch {
+            delay(option.minutes * 60_000L)
+            toggleFlashUseCase.turnOff()
+        }
+    }
+
+    fun setScreenColor(color: ScreenColor) {
+        // Stored in memory only — no DataStore needed for session preference
+        _currentScreenColor.value = color
+    }
+
+    fun setAutoOffFromSettings(option: AutoOffOption) {
+        setAutoOff(option)
     }
 
     fun releaseCamera() {

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.domain.model.ProStatus
+import com.lumiai.flashlight.feature.flash.ScreenColor
+import com.lumiai.flashlight.feature.flash.AutoOffOption
 import com.lumiai.flashlight.ui.components.AdBanner
 import com.lumiai.flashlight.ui.components.FlashButton
 import com.lumiai.flashlight.ui.components.LumiIcons
@@ -39,7 +41,7 @@ fun FlashScreen(
     val mode         = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
 
-    val bgColor = if (isScreenMode) LumiColor.BeamColor else LumiColor.Navy950
+    val bgColor = if (isScreenMode) uiState.screenColor.color else LumiColor.Navy950
 
     BoxWithConstraints(
         modifier = Modifier
@@ -230,4 +232,56 @@ private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): 
     mode is FlashMode.CustomRhythm    -> "⬡ CUSTOM RHYTHM"
     mode is FlashMode.SleepTimer      -> "◌ SLEEP TIMER"
     else                         -> "FLASHLIGHT ON"
+}
+
+// ── Screen color picker ───────────────────────────────────────────────────────
+@Composable
+private fun ScreenColorPicker(
+    current: ScreenColor,
+    onSelect: (ScreenColor) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier              = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        ScreenColor.entries.forEach { sc ->
+            val isSelected = sc == current
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(sc.color)
+                    .then(if (isSelected) Modifier.border(
+                        2.dp, LumiColor.White,
+                        androidx.compose.foundation.shape.CircleShape
+                    ) else Modifier)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onSelect(sc) },
+                    ),
+            )
+        }
+    }
+}
+
+// ── Auto-off countdown chip ───────────────────────────────────────────────────
+@Composable
+private fun AutoOffChip(
+    option: AutoOffOption,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(LumiColor.Navy700)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    ) {
+        Text(
+            "⏱ Auto-off: ${option.label}",
+            fontSize  = 11.sp,
+            color     = LumiColor.Gray400,
+        )
+    }
 }
