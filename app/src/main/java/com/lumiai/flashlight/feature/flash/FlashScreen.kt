@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
+import com.lumiai.flashlight.feature.flash.AutoOffOption
+import com.lumiai.flashlight.feature.flash.ScreenColor
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.util.MorseEncoder
 import com.lumiai.flashlight.ui.components.AdBanner
