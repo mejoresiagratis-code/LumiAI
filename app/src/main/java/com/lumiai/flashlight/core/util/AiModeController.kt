@@ -30,6 +30,7 @@ class AiModeController @Inject constructor(
 
     // All registered sensor listeners tracked for proper cleanup
     private val registeredListeners = mutableListOf<SensorEventListener>()
+    private var pulseJob: Job? = null  // for beat/step pulse OFF timers
 
     private val lightListener = object : SensorEventListener {
         override fun onSensorChanged(e: SensorEvent) {
@@ -55,6 +56,8 @@ class AiModeController @Inject constructor(
     fun stop() {
         activeJob?.cancel()
         activeJob = null
+        pulseJob?.cancel()
+        pulseJob = null
         musicDetector?.stop()
         musicDetector = null
         registeredListeners.forEach { sensorManager.unregisterListener(it) }
@@ -181,10 +184,8 @@ class AiModeController @Inject constructor(
         stop()
         musicDetector = MusicBeatDetector(onBeat = {
             setTorch(true)
-            activeJob?.cancel()
-            activeJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-                delay(80L); setTorch(false)
-            }
+            pulseJob?.cancel()
+            pulseJob = scope.launch { delay(80L); setTorch(false) }
         })
         musicDetector?.start()
     }
@@ -198,10 +199,8 @@ class AiModeController @Inject constructor(
                 override fun onSensorChanged(e: SensorEvent) {
                     if (e.sensor.type != Sensor.TYPE_STEP_DETECTOR) return
                     setTorch(true)
-                    // Use a separate scope so cancel of activeJob doesn't kill the pulse
-                    CoroutineScope(Dispatchers.IO).launch {
-                        delay(120L); setTorch(false)
-                    }
+                    pulseJob?.cancel()
+                    pulseJob = scope.launch { delay(120L); setTorch(false) }
                 }
                 override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
             }
@@ -225,10 +224,8 @@ class AiModeController @Inject constructor(
         musicDetector = MusicBeatDetector(
             onBeat        = {
                 setTorch(true)
-                activeJob?.cancel()
-                activeJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-                    delay(150L); setTorch(false)
-                }
+                pulseJob?.cancel()
+                pulseJob = scope.launch { delay(150L); setTorch(false) }
             },
             threshold     = 1.3f,
             minIntervalMs = 200L,
