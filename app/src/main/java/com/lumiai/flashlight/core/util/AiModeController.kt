@@ -116,10 +116,17 @@ class AiModeController @Inject constructor(
     // Uses torch strength if available; otherwise just stays ON at full brightness.
     fun startAmbient(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
         stop()
+        lightLevel = 200f  // reset to safe indoor default before sensor kicks in
         startLightSensor()
         activeJob = scope.launch {
             setTorch(true)
-            delay(600) // sensor warmup
+            // Wait for a real sensor reading (up to 1.5s), default=200 if none arrives
+            var waited = 0
+            while (waited < 1500) {
+                delay(100)
+                waited += 100
+                if (lightLevel != 200f) break  // got real reading
+            }
             val lux = lightLevel
             if (setStrength != null) {
                 // True adaptive brightness — no blink at all

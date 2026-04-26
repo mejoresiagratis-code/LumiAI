@@ -77,12 +77,7 @@ fun ModePanel(
     onDiscoBpmChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-
-    // Auto-switch to AI tab if an AI mode is active
-    LaunchedEffect(currentMode) {
-        if (currentMode.isPro && selectedTab == 0) selectedTab = 1
-    }
+    var selectedTab by remember { mutableIntStateOf(if (currentMode.isPro) 1 else 0) }
 
     Column(modifier = modifier) {
 
@@ -272,8 +267,8 @@ private fun FlashModeCard(
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
-                width = if (isSelected) 1.dp else 0.5.dp,
-                color = if (isSelected) LumiColor.Amber400.copy(.3f) else LumiColor.Navy700,
+                width = if (isSelected) 2.dp else 0.5.dp,
+                color = if (isSelected) LumiColor.Amber400.copy(.7f) else LumiColor.Navy700,
                 shape = RoundedCornerShape(14.dp),
             )
             .clickable(
@@ -283,16 +278,7 @@ private fun FlashModeCard(
             )
             .padding(14.dp),
     ) {
-        // Amber top edge when selected
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.5.dp)
-                    .background(LumiColor.Amber400.copy(.5f))
-                    .align(Alignment.TopCenter)
-            )
-        }
+
         Column {
             Text(
                 text     = item.symbol,
@@ -344,8 +330,8 @@ private fun AiModeCard(
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
-                width = if (isSelected) 1.dp else 0.5.dp,
-                color = if (isSelected) accent.copy(.35f) else LumiColor.Navy700,
+                width = if (isSelected) 2.dp else 0.5.dp,
+                color = if (isSelected) accent.copy(.8f) else LumiColor.Navy700,
                 shape = RoundedCornerShape(14.dp),
             )
             .clickable(
@@ -355,16 +341,7 @@ private fun AiModeCard(
             )
             .padding(14.dp),
     ) {
-        // Accent top edge when selected
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.5.dp)
-                    .background(accent.copy(.7f))
-                    .align(Alignment.TopCenter)
-            )
-        }
+
         Column {
             Text(
                 text     = item.symbol,
