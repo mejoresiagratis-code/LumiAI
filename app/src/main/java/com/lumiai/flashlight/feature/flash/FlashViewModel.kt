@@ -8,6 +8,7 @@ import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.feature.flash.AutoOffOption
+import com.lumiai.flashlight.feature.flash.ScreenColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import com.lumiai.flashlight.core.domain.model.ProStatus

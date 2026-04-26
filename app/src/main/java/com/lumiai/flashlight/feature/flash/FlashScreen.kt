@@ -96,7 +96,8 @@ fun FlashScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding(),
+                .systemBarsPadding()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // ── Top bar ────────────────────────────────────────────────────
@@ -143,6 +144,33 @@ fun FlashScreen(
                     modifier         = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
+            }
+
+
+            // ── Screen color picker (Screen mode) ───────────────────────
+            if (mode is com.lumiai.flashlight.core.domain.model.FlashMode.Screen) {
+                ScreenColorPicker(
+                    current  = uiState.screenColor,
+                    onSelect = { viewModel.setScreenColor(it) },
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                )
+            }
+
+            // ── Morse text input ─────────────────────────────────────────
+            if (mode is com.lumiai.flashlight.core.domain.model.FlashMode.MorseCustom) {
+                MorseInputPanel(
+                    text     = uiState.morseText,
+                    onText   = { viewModel.updateMorseText(it) },
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                )
+            }
+
+            // ── Auto-off chip ────────────────────────────────────────────
+            if (uiState.autoOffOption != AutoOffOption.NONE && isOn) {
+                AutoOffChip(
+                    option   = uiState.autoOffOption,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
             }
 
             // ── Ad banner ──────────────────────────────────────────────────
