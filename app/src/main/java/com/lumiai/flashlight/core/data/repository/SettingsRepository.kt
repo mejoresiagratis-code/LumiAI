@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,7 @@ class SettingsRepository @Inject constructor(
         val STROBE_HZ      = floatPreferencesKey("strobe_hz")
         val DISCO_BPM      = floatPreferencesKey("disco_bpm")
         val SCREEN_BRIGHT  = floatPreferencesKey("screen_brightness")
+        val AUTO_OFF       = intPreferencesKey("auto_off_minutes")
         val DARK_THEME     = booleanPreferencesKey("dark_theme")
         val SHAKE_TOGGLE   = booleanPreferencesKey("shake_toggle")
         val KEEP_SCREEN    = booleanPreferencesKey("keep_screen_on")
@@ -33,6 +35,7 @@ class SettingsRepository @Inject constructor(
             strobeHz          = prefs[Keys.STROBE_HZ]     ?: 5f,
             discoBpm          = prefs[Keys.DISCO_BPM]     ?: 120f,
             screenBrightness  = prefs[Keys.SCREEN_BRIGHT] ?: 1f,
+            autoOffMinutes    = prefs[Keys.AUTO_OFF]     ?: 0,
             isDarkTheme       = prefs[Keys.DARK_THEME]    ?: true,
             shakeToToggle     = prefs[Keys.SHAKE_TOGGLE]  ?: true,
             keepScreenOn      = prefs[Keys.KEEP_SCREEN]   ?: true,
@@ -52,6 +55,10 @@ class SettingsRepository @Inject constructor(
     suspend fun updateScreenBrightness(v: Float) {
         dataStore.edit { it[Keys.SCREEN_BRIGHT] = v }
     }
+    suspend fun setAutoOffMinutes(minutes: Int) {
+        dataStore.edit { it[Keys.AUTO_OFF] = minutes }
+    }
+
     suspend fun setDarkTheme(dark: Boolean) {
         dataStore.edit { it[Keys.DARK_THEME] = dark }
     }

@@ -137,7 +137,7 @@ fun SettingsScreen(
             SettingsSection("AUTO-OFF TIMER") {
                 AutoOffOption.entries.forEachIndexed { i, option ->
                     if (i > 0) SettingsDivider()
-                    val isSelected = option == uiState.settings.let { AutoOffOption.NONE }
+                    val isSelected = option.minutes == uiState.settings.autoOffMinutes
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
