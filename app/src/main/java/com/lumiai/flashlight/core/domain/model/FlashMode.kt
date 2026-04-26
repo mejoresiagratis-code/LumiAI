@@ -11,6 +11,7 @@ sealed class FlashMode(val id: String, val isPro: Boolean = false) {
     object Steady    : FlashMode("steady")
     object Screen    : FlashMode("screen")          // White screen fallback (no camera flash)
     object Sos       : FlashMode("sos")
+    data class MorseCustom(val text: String = "") : FlashMode("morse_custom")
     data class Strobe(val hz: Float = 5f) : FlashMode("strobe")
     data class Disco  (val bpm: Float = 120f) : FlashMode("disco")
 
@@ -25,7 +26,7 @@ sealed class FlashMode(val id: String, val isPro: Boolean = false) {
     object Voice           : FlashMode("voice",            isPro = true)   // React to voice/sound level
 
     companion object {
-        fun freeModes(): List<FlashMode> = listOf(Steady, Screen, Sos, Strobe(), Disco())
+        fun freeModes(): List<FlashMode> = listOf(Steady, Screen, Sos, MorseCustom(), Strobe(), Disco())
         fun proModes(): List<FlashMode>  = listOf(SmartBrightness, ReadingMode, AmbientSmart, CustomRhythm(), SleepTimer, Music, Walk, Voice)
         fun all(): List<FlashMode>       = freeModes() + proModes()
     }

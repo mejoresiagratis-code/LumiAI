@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.core.util
 
+import com.lumiai.flashlight.core.util.MorseEncoder
+
 import kotlinx.coroutines.*
 import javax.inject.Singleton
 import kotlin.math.roundToLong
@@ -68,6 +70,22 @@ class StrobeController constructor() {
                 delay(onMs)
                 setTorch(false)
                 delay(beatMs - onMs)
+            }
+        }
+    }
+
+
+    /** Custom Morse: encodes arbitrary text and flashes it in a loop */
+    fun startMorse(text: String, setTorch: (Boolean) -> Unit) {
+        if (text.isBlank()) return
+        val pattern = MorseEncoder.encode(text)
+        if (pattern.isEmpty()) return
+        activeJob = scope.launch {
+            while (isActive) {
+                pattern.forEach { (onMs, offMs) ->
+                    if (onMs > 0)  { setTorch(true);  delay(onMs)  }
+                    if (offMs > 0) { setTorch(false); delay(offMs) }
+                }
             }
         }
     }

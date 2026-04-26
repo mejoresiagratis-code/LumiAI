@@ -32,6 +32,8 @@ data class FlashUiState(
     val shakeToToggle: Boolean       = true,
     val screenColor: ScreenColor     = ScreenColor.WHITE,
     val autoOffOption: AutoOffOption = AutoOffOption.NONE,
+    val morseText: String          = "",
+    val screenBrightness: Float    = 1f,
 )
 
 @HiltViewModel
@@ -47,6 +49,7 @@ class FlashViewModel @Inject constructor(
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     // Auto-off timer
+    private val _morseText = MutableStateFlow("")
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
     private val _autoOff = MutableStateFlow(AutoOffOption.NONE)
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
@@ -72,6 +75,8 @@ class FlashViewModel @Inject constructor(
             strobeHz         = settings.strobeHz,
             discoBpm         = settings.discoBpm,
             shakeToToggle    = settings.shakeToToggle,
+            morseText        = _morseText.value,
+            screenBrightness = settings.screenBrightness,
             screenColor      = _currentScreenColor.value,
             autoOffOption    = _autoOff.value,
         )
@@ -174,6 +179,20 @@ class FlashViewModel @Inject constructor(
         autoOffJob = viewModelScope.launch {
             delay(option.minutes * 60_000L)
             toggleFlashUseCase.turnOff()
+        }
+    }
+
+    fun updateMorseText(text: String) {
+        _morseText.value = text
+        // Re-activate if Morse mode is currently on
+        val state = uiState.value
+        if (state.currentMode is com.lumiai.flashlight.core.domain.model.FlashMode.MorseCustom
+            && state.isFlashOn) {
+            viewModelScope.launch {
+                flashRepository.activateMode(
+                    com.lumiai.flashlight.core.domain.model.FlashMode.MorseCustom(text)
+                )
+            }
         }
     }
 

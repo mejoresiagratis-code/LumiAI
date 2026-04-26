@@ -99,7 +99,13 @@ class FlashRepositoryImpl constructor(
                 setTorch(false)
                 _isFlashOn.value = true
             }
-            is FlashMode.Sos    -> strobeController.startSos { setTorch(it) }
+            is FlashMode.Sos        -> strobeController.startSos { setTorch(it) }
+            is FlashMode.MorseCustom -> {
+                if (mode.text.isNotBlank())
+                    strobeController.startMorse(mode.text) { setTorch(it) }
+                else
+                    setTorch(true) // no text yet — steady until user types
+            }
             is FlashMode.Strobe -> strobeController.startStrobe(mode.hz) { setTorch(it) }
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
             is FlashMode.SmartBrightness -> {

@@ -10,7 +10,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.domain.model.ProStatus
+import com.lumiai.flashlight.core.util.MorseEncoder
 import com.lumiai.flashlight.feature.flash.ScreenColor
 import com.lumiai.flashlight.feature.flash.AutoOffOption
 import com.lumiai.flashlight.ui.components.AdBanner
@@ -43,6 +50,27 @@ fun FlashScreen(
     val isScreenMode = mode is FlashMode.Screen && isOn
 
     val bgColor = if (isScreenMode) uiState.screenColor.color else LumiColor.Navy950
+
+    // Apply screen brightness when Screen mode is active
+    val view = LocalView.current
+    if (isScreenMode) {
+        val brightness = uiState.screenBrightness
+        androidx.compose.runtime.LaunchedEffect(brightness) {
+            val window = (view.context as? android.app.Activity)?.window
+            window?.attributes = window?.attributes?.also { lp ->
+                lp.screenBrightness = brightness
+            }
+        }
+        // Restore full brightness when leaving Screen mode
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            onDispose {
+                val window = (view.context as? android.app.Activity)?.window
+                window?.attributes = window?.attributes?.also { lp ->
+                    lp.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                }
+            }
+        }
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -283,6 +311,71 @@ private fun AutoOffChip(
             "⏱ Auto-off: ${option.label}",
             fontSize  = 11.sp,
             color     = LumiColor.Gray400,
+        )
+    }
+}
+
+// ── Morse text input panel ────────────────────────────────────────────────────
+@Composable
+private fun MorseInputPanel(
+    text: String,
+    onText: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val morsePreview = remember(text) {
+        if (text.isBlank()) "" else MorseEncoder.toReadable(text)
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(LumiColor.Navy800)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            "MORSE — TYPE YOUR MESSAGE",
+            fontSize      = 9.sp,
+            letterSpacing = 0.12.sp,
+            color         = LumiColor.Gray600,
+            fontWeight    = FontWeight.W500,
+        )
+
+        OutlinedTextField(
+            value         = text,
+            onValueChange = { onText(it.take(60)) }, // max 60 chars
+            placeholder   = { Text("SOS, HELLO, your name...",
+                fontSize = 13.sp, color = LumiColor.Gray600) },
+            singleLine    = true,
+            colors        = TextFieldDefaults.colors(
+                focusedContainerColor   = LumiColor.Navy700,
+                unfocusedContainerColor = LumiColor.Navy700,
+                focusedTextColor        = LumiColor.White,
+                unfocusedTextColor      = LumiColor.White,
+                focusedBorderColor      = LumiColor.Amber400.copy(.6f),
+                unfocusedBorderColor    = LumiColor.Navy600,
+                cursorColor             = LumiColor.Amber400,
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            modifier        = Modifier.fillMaxWidth(),
+        )
+
+        // Morse preview
+        if (morsePreview.isNotBlank()) {
+            Text(
+                text       = morsePreview,
+                fontSize   = 11.sp,
+                color      = LumiColor.Amber400.copy(.7f),
+                letterSpacing = 0.06.sp,
+                lineHeight = 16.sp,
+            )
+        }
+        Text(
+            "${text.length}/60 chars",
+            fontSize = 9.sp,
+            color    = LumiColor.Gray600,
+            modifier = Modifier.align(Alignment.End),
         )
     }
 }

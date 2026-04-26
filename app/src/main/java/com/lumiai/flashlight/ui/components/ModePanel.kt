@@ -9,6 +9,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.OutlinedTextField
+import com.lumiai.flashlight.core.util.MorseEncoder
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -38,6 +41,7 @@ data class FlashModeItem(
 val flashModeItems = listOf(
     FlashModeItem(FlashMode.Steady,   "Steady",  "Full brightness, continuous", "⚡"),
     FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "▢"),
+    FlashModeItem(FlashMode.MorseCustom(), "Morse",  "Text to flash",              "—·"),
     FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "⊙"),
     FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "◬"),
     FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◇"),
