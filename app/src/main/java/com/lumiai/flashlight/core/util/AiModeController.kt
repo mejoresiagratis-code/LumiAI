@@ -12,31 +12,27 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Implements the actual behavior of each AI flash mode.
- * No Gemini Nano needed for these — all run on-device with sensors + coroutines.
+ * Implements each AI flash mode.
+ * All modes are designed to feel intentional — no unintended blinks.
  *
- * SMART   → reads ambient light sensor, adjusts pulse frequency
- * READ    → slow warm-temperature pulse (3s cycle), auto-dims over time
- * AMBIENT → detects light level and picks the right intensity pattern
- * CUSTOM  → generative rhythm based on time-of-day + randomness
- * SLEEP   → starts at full brightness, dims gradually over ~3 minutes then off
+ * Design principle: start with torch ON, then transition to the mode pattern.
+ * This avoids any dark flash at activation.
  */
 @Singleton
 class AiModeController @Inject constructor(
     private val context: Context,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope  = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var activeJob: Job? = null
     private var musicDetector: MusicBeatDetector? = null
-    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private var lightLevel = 50f   // lux, default mid-light
 
-    // ── Light sensor listener — used by SMART and AMBIENT ────────────────────
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private var lightLevel = 200f   // default: indoor. Updated by sensor.
+
     private val lightListener = object : SensorEventListener {
         override fun onSensorChanged(e: SensorEvent) {
-            if (e.sensor.type == Sensor.TYPE_LIGHT) {
+            if (e.sensor.type == Sensor.TYPE_LIGHT)
                 lightLevel = e.values[0].coerceIn(0f, 10000f)
-            }
         }
         override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
     }
@@ -55,114 +51,104 @@ class AiModeController @Inject constructor(
         sensorManager.unregisterListener(lightListener)
     }
 
-    // ── MUSIC: real-time beat detection via microphone ────────────────────────
-    // Fires torch ON for 80ms on each detected beat (kick drum / clap level)
-    // Requires RECORD_AUDIO permission — caller must verify before invoking
-    fun startMusic(setTorch: (Boolean) -> Unit) {
-        musicDetector?.stop()
-        musicDetector = MusicBeatDetector {
-            // Beat detected — flash for 80ms then off
-            setTorch(true)
-            activeJob?.cancel()
-            activeJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-                delay(80L)
-                setTorch(false)
-            }
-        }
-        musicDetector?.start()
-    }
-
-    // ── SMART: ambient-aware pulsing ──────────────────────────────────────────
-    // In bright light → faster short pulses (more noticeable)
-    // In dark → slow steady on (less jarring)
+    // ── ◎ SMART — adapts to ambient light ────────────────────────────────────
+    // Starts STEADY for 1.5s while sensor warms up, then transitions to
+    // adaptive pulsing. In dark environments stays mostly ON.
     fun startSmart(setTorch: (Boolean) -> Unit) {
         startLightSensor()
         activeJob = scope.launch {
+            // Warmup: steady ON while sensor stabilizes
+            setTorch(true)
+            delay(1500)
+
             while (isActive) {
                 val lux = lightLevel
                 val (onMs, offMs) = when {
-                    lux > 1000f -> Pair(80L,  120L)   // bright: fast blink
-                    lux > 200f  -> Pair(200L, 300L)   // indoor: medium pulse
-                    lux > 30f   -> Pair(400L, 600L)   // dim: slow pulse
-                    else        -> Pair(800L, 200L)   // dark: mostly on, brief off
+                    lux > 1000f -> 200L to 200L    // bright outdoor: noticeable pulse
+                    lux > 200f  -> 400L to 300L    // indoor: soft pulse
+                    lux > 30f   -> 800L to 400L    // dim: mostly on
+                    else        -> 1500L to 200L   // dark: nearly steady
                 }
-                setTorch(true)
-                delay(onMs)
-                setTorch(false)
-                delay(offMs)
+                setTorch(true);  delay(onMs)
+                setTorch(false); delay(offMs)
             }
         }
     }
 
-    // ── READ: gentle slow pulse — easy on eyes ────────────────────────────────
-    // Full on for 2.5s, brief dim (off) for 0.3s, repeat
-    // Gets progressively dimmer over 10 minutes (simulated via longer off periods)
+    // ── ☽ READ — warm slow pulse, eyes-friendly ───────────────────────────────
+    // Long ON, very brief OFF. Progressive auto-dim over time.
     fun startReading(setTorch: (Boolean) -> Unit) {
         activeJob = scope.launch {
             val startMs = System.currentTimeMillis()
+            setTorch(true)
             while (isActive) {
                 val elapsedMin = (System.currentTimeMillis() - startMs) / 60_000f
-                // After 10 min, off period grows: 0.3s → up to 2s
-                val offMs = min(300L + (elapsedMin * 170L).toLong(), 2000L)
+                val offMs = min(150L + (elapsedMin * 200L).toLong(), 1800L)
+                val onMs  = max(2000L, 3000L - (elapsedMin * 100L).toLong())
+                delay(onMs)
+                setTorch(false); delay(offMs)
                 setTorch(true)
-                delay(2500L)
-                setTorch(false)
-                delay(offMs)
             }
         }
     }
 
-    // ── AMBIENT: scene detection via light sensor ─────────────────────────────
-    // Reads ambient lux once, picks a matching pattern and holds it
+    // ── ◈ AMBIENT — reads scene, stays ON while reading ──────────────────────
+    // Torch stays ON during sensor warmup (no dark flash).
+    // Then picks pattern based on measured lux.
     fun startAmbient(setTorch: (Boolean) -> Unit) {
         startLightSensor()
         activeJob = scope.launch {
-            delay(600) // let sensor stabilize
+            // Stay ON while sensor warms up — no blink
+            setTorch(true)
+            delay(800)
+
             val lux = lightLevel
             when {
-                // Total darkness → SOS pattern (signal mode)
-                lux < 5f    -> {
+                lux < 5f -> {
+                    // Total darkness → SOS
+                    val sos = listOf(200L,200L,200L,200L,200L,600L,
+                                     600L,200L,600L,200L,600L,600L,
+                                     200L,200L,200L,200L,200L,1400L)
                     while (isActive) {
-                        listOf(200L, 200L, 200L, 200L, 200L, 600L,
-                               600L, 200L, 600L, 200L, 600L, 600L,
-                               200L, 200L, 200L, 200L, 200L, 1400L)
-                            .forEachIndexed { i, ms ->
-                                setTorch(i % 2 == 0)
-                                delay(ms)
-                            }
+                        sos.forEachIndexed { i, ms ->
+                            setTorch(i % 2 == 0); delay(ms)
+                        }
                     }
                 }
-                // Dark room → steady on (best for navigation)
-                lux < 50f   -> { setTorch(true); awaitCancellation() }
-                // Indoor → slow pulse (comfortable reading)
-                lux < 500f  -> {
+                lux < 50f -> {
+                    // Dark room → steady (already ON)
+                    awaitCancellation()
+                }
+                lux < 500f -> {
+                    // Indoor → slow breath pulse
                     while (isActive) {
-                        setTorch(true); delay(2000L)
-                        setTorch(false); delay(500L)
+                        delay(2000L); setTorch(false)
+                        delay(400L);  setTorch(true)
                     }
                 }
-                // Outdoor bright → fast attention pulses
-                else        -> {
+                else -> {
+                    // Bright outdoor → attention pulses
                     while (isActive) {
-                        setTorch(true); delay(100L)
-                        setTorch(false); delay(150L)
+                        delay(300L); setTorch(false)
+                        delay(200L); setTorch(true)
                     }
                 }
             }
         }
     }
 
-    // ── CUSTOM: generative rhythm based on time-of-day ───────────────────────
-    // Morning → energetic   Afternoon → steady   Evening → warm slow   Night → minimal
+    // ── ⬡ CUSTOM — generative rhythm by time of day ──────────────────────────
+    // All patterns have minimum 300ms ON to feel intentional.
     fun startCustomRhythm(setTorch: (Boolean) -> Unit) {
         activeJob = scope.launch {
+            setTorch(true)
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
             val pattern: List<Pair<Long, Long>> = when (hour) {
-                in 6..9   -> listOf(100L to 100L, 100L to 200L, 300L to 100L) // morning burst
-                in 10..14 -> listOf(500L to 300L, 200L to 200L)               // midday steady
-                in 15..19 -> listOf(800L to 400L, 300L to 600L)               // afternoon warm
-                in 20..22 -> listOf(1200L to 300L, 600L to 800L)              // evening slow
-                else      -> listOf(2000L to 500L)                            // night minimal
+                in 6..9   -> listOf(400L to 300L, 300L to 400L, 600L to 200L)
+                in 10..14 -> listOf(600L to 300L, 400L to 300L)
+                in 15..19 -> listOf(900L to 300L, 500L to 500L)
+                in 20..22 -> listOf(1500L to 300L, 700L to 600L)
+                else      -> listOf(2500L to 400L)
             }
             var idx = 0
             while (isActive) {
@@ -174,31 +160,38 @@ class AiModeController @Inject constructor(
         }
     }
 
-    // ── SLEEP: gradual fade simulation ────────────────────────────────────────
-    // Flash can't truly dim, so we simulate by increasing off-time over 3 minutes
-    // 0–1min: on 90%, off 10%  →  1–2min: on 60%  →  2–3min: on 20%  →  off
+    // ── ◌ SLEEP — gradual fade simulation over 3 minutes ─────────────────────
     fun startSleepTimer(setTorch: (Boolean) -> Unit) {
         activeJob = scope.launch {
             val totalMs = 3 * 60 * 1000L
             val startMs = System.currentTimeMillis()
-            val cycleMs = 400L
-
+            val cycleMs = 500L
+            setTorch(true)
             while (isActive) {
-                val elapsed = System.currentTimeMillis() - startMs
-                if (elapsed >= totalMs) {
-                    setTorch(false)
-                    break
-                }
+                val elapsed  = System.currentTimeMillis() - startMs
+                if (elapsed >= totalMs) { setTorch(false); break }
                 val progress = (elapsed.toFloat() / totalMs).coerceIn(0f, 1f)
-                // duty cycle goes from 0.9 → 0.0 linearly
-                val duty = max(0f, 1f - (progress * 1.1f))
-                val onMs = (cycleMs * duty).toLong().coerceAtLeast(0L)
-                val offMs = cycleMs - onMs
-
-                if (onMs > 0) { setTorch(true); delay(onMs) }
+                val duty     = max(0f, 1f - progress * 1.1f)
+                val onMs     = (cycleMs * duty).toLong().coerceAtLeast(0L)
+                val offMs    = cycleMs - onMs
+                if (onMs  > 0) { setTorch(true);  delay(onMs)  }
                 if (offMs > 0) { setTorch(false); delay(offMs) }
             }
             setTorch(false)
         }
+    }
+
+    // ── ♩ MUSIC — beat detection via microphone ───────────────────────────────
+    fun startMusic(setTorch: (Boolean) -> Unit) {
+        musicDetector?.stop()
+        musicDetector = MusicBeatDetector {
+            setTorch(true)
+            activeJob?.cancel()
+            activeJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+                delay(80L)
+                setTorch(false)
+            }
+        }
+        musicDetector?.start()
     }
 }

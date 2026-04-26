@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.feature.settings
 
+import com.lumiai.flashlight.BuildConfig
+
 import android.app.Activity
 import android.view.WindowManager
 import androidx.lifecycle.ViewModel
@@ -20,7 +22,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val settings: UserSettings = UserSettings(),
     val proStatus: ProStatus   = ProStatus.Loading,
-    val appVersion: String     = "1.0.0",
+    val appVersion: String     = BuildConfig.VERSION_NAME,
 )
 
 @HiltViewModel
