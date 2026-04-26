@@ -36,6 +36,18 @@ class FlashRepositoryImpl constructor(
 
     private var cameraXCamera:   androidx.camera.core.Camera? = null
     private var cameraProvider:  ProcessCameraProvider? = null
+
+    // Torch strength support (API 33+)
+    val maxTorchStrength: Int get() = if (android.os.Build.VERSION.SDK_INT >= 33) {
+        try {
+            backCameraId?.let { id ->
+                cameraManager.getCameraCharacteristics(id)
+                    .get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL) ?: 1
+            } ?: 1
+        } catch (e: Exception) { 1 }
+    } else 1
+
+    val supportsTorchStrength: Boolean get() = maxTorchStrength > 1
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // Fallback: CameraManager (camera2) for torch without preview
@@ -92,7 +104,10 @@ class FlashRepositoryImpl constructor(
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
             is FlashMode.SmartBrightness -> {
                 _isFlashOn.value = true
-                aiController.startSmart { setTorch(it) }
+                aiController.startSmart(
+                    setTorch    = { setTorch(it) },
+                    setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                )
             }
             is FlashMode.ReadingMode -> {
                 _isFlashOn.value = true
@@ -108,11 +123,22 @@ class FlashRepositoryImpl constructor(
             }
             is FlashMode.SleepTimer -> {
                 _isFlashOn.value = true
-                aiController.startSleepTimer { setTorch(it) }
+                aiController.startSleepTimer(
+                    setTorch    = { setTorch(it) },
+                    setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                )
             }
             is FlashMode.Music -> {
                 _isFlashOn.value = true
                 aiController.startMusic { setTorch(it) }
+            }
+            is FlashMode.Walk -> {
+                _isFlashOn.value = true
+                aiController.startWalk { setTorch(it) }
+            }
+            is FlashMode.Voice -> {
+                _isFlashOn.value = true
+                aiController.startVoice { setTorch(it) }
             }
             else -> setTorch(true)
         }
@@ -127,6 +153,28 @@ class FlashRepositoryImpl constructor(
     }
 
     /** Change the current mode without activating flash (used when flash is OFF) */
+    /**
+     * Sets torch to a specific brightness level (0.0–1.0).
+     * Only available on API 33+ devices with multi-level torch support.
+     * Falls back to regular on/off on unsupported devices.
+     */
+    fun setTorchStrength(level: Float) {
+        val clamped = level.coerceIn(0f, 1f)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && supportsTorchStrength) {
+            try {
+                backCameraId?.let { id ->
+                    val strength = (clamped * maxTorchStrength).toInt().coerceAtLeast(1)
+                    cameraManager.turnOnTorchWithStrengthLevel(id, strength)
+                    _isFlashOn.value = clamped > 0f
+                }
+            } catch (e: Exception) {
+                setTorch(clamped > 0.5f) // fallback
+            }
+        } else {
+            setTorch(clamped > 0.5f)
+        }
+    }
+
     override fun setCurrentMode(mode: FlashMode) {
         _currentMode.value = mode
     }

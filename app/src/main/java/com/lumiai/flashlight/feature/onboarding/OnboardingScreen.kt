@@ -34,7 +34,10 @@ private val pages = listOf(
 )
 
 @Composable
-fun OnboardingScreen(onFinished: () -> Unit) {
+fun OnboardingScreen(
+    onFinished: () -> Unit,
+    onMarkSeen: (() -> Unit)? = null,
+) {
     var page by remember { mutableIntStateOf(0) }
     val current = pages[page]
 
@@ -73,7 +76,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     "Skip",
                     fontSize = 14.sp,
                     color = LumiColor.Gray500,
-                    modifier = Modifier.clickable(onClick = onFinished).padding(8.dp),
+                    modifier = Modifier.clickable(onClick = { onMarkSeen?.invoke(); onFinished() }).padding(8.dp),
                 )
             }
 
@@ -161,7 +164,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                         )
                         .clickable {
                             if (page < pages.lastIndex) page++
-                            else onFinished()
+                            else { onMarkSeen?.invoke(); onFinished() }
                         },
                 ) {
                     Text(

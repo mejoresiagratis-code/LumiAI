@@ -1,7 +1,6 @@
 package com.lumiai.flashlight
 
 import android.Manifest
-import com.lumiai.flashlight.core.domain.model.FlashMode
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
@@ -14,12 +13,15 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
+import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.di.AdManager
+import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.util.ShakeDetector
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
 import com.lumiai.flashlight.ui.theme.LumiAITheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,16 +32,13 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var adManager: AdManager
     @Inject lateinit var flashRepository: FlashRepositoryImpl
+    @Inject lateinit var settingsRepository: SettingsRepository
 
     private lateinit var shakeDetector: ShakeDetector
 
-    // Runtime microphone permission (for Music beat detection mode)
     private val requestMicPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
-            // Result handled by mode — if denied, Music mode will fail silently
-        }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    // Runtime camera permission request
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) bindCameraIfPermitted()
@@ -59,49 +58,50 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Request camera permission then bind
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            == PackageManager.PERMISSION_GRANTED) {
+                == PackageManager.PERMISSION_GRANTED) {
             bindCameraIfPermitted()
         } else {
             requestCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+
+        // Mic permission — lazy on Music mode selection
+        lifecycleScope.launch {
+            flashViewModel.uiState.collect { state ->
+                if (state.currentMode is FlashMode.Music &&
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity, Manifest.permission.RECORD_AUDIO
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
         }
 
         lifecycleScope.launch {
             adManager.initWithConsent(this@MainActivity)
         }
 
-        // Observe mode changes to request mic permission lazily
-        lifecycleScope.launch {
-            flashViewModel.uiState.collect { state ->
-                if (state.currentMode is FlashMode.Music) {
-                    if (ContextCompat.checkSelfPermission(
-                            this@MainActivity, Manifest.permission.RECORD_AUDIO
-                        ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-                    ) {
-                        requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-                }
-            }
-        }
-
         setContent {
-            LumiAITheme {
+            // Collect dark theme preference from DataStore
+            val settings by settingsRepository.settings
+                .collectAsStateWithLifecycle(
+                    initialValue = com.lumiai.flashlight.core.domain.model.UserSettings()
+                )
+
+            LumiAITheme(darkTheme = settings.isDarkTheme) {
                 LumiNavHost()
             }
         }
     }
 
     private fun bindCameraIfPermitted() {
-        lifecycleScope.launch {
-            flashRepository.bindCamera(this@MainActivity)
-        }
+        lifecycleScope.launch { flashRepository.bindCamera(this@MainActivity) }
     }
 
     override fun onResume() {
         super.onResume()
         shakeDetector.register()
-        // Re-bind camera if it was released (e.g. another app used camera)
         if (!flashRepository.isCameraReady.value &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {

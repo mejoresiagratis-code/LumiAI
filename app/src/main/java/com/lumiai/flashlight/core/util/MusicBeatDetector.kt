@@ -21,6 +21,9 @@ import kotlin.math.sqrt
  */
 class MusicBeatDetector(
     private val onBeat: () -> Unit,
+    private val threshold: Float = 1.5f,
+    private val minIntervalMs: Long = 300L,
+    private val minEnergy: Float = 50f,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var job: Job? = null
@@ -29,9 +32,9 @@ class MusicBeatDetector(
     private val SAMPLE_RATE          = 44100
     private val BUFFER_FRAMES        = 1024   // ~23ms at 44.1kHz
     private val HISTORY_SIZE         = 43     // ~1 second of energy history
-    private val BEAT_THRESHOLD       = 1.5f   // current energy must be 1.5x avg
-    private val MIN_BEAT_INTERVAL_MS = 300L   // max 200 BPM
-    private val MIN_ENERGY           = 50f    // ignore silence
+    private val BEAT_THRESHOLD       get() = threshold
+    private val MIN_BEAT_INTERVAL_MS get() = minIntervalMs
+    private val MIN_ENERGY           get() = minEnergy
 
     fun start() {
         job = scope.launch {

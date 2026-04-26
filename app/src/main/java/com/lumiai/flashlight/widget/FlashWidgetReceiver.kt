@@ -33,7 +33,24 @@ class FlashWidgetReceiver : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == "com.lumiai.flashlight.TOGGLE_FLASH") {
-            // TODO: toggle via repository (need to handle out-of-process flash control)
+            toggleTorchCamera2(context)
         }
+    }
+
+    private fun toggleTorchCamera2(context: Context) {
+        val cm = context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
+        try {
+            val backId = cm.cameraIdList.firstOrNull { id ->
+                cm.getCameraCharacteristics(id)
+                    .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING) ==
+                android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK
+            } ?: return
+            // Read current torch state and toggle
+            val torchOn = context.getSharedPreferences("widget_prefs", 0)
+                .getBoolean("torch_on", false)
+            cm.setTorchMode(backId, !torchOn)
+            context.getSharedPreferences("widget_prefs", 0).edit()
+                .putBoolean("torch_on", !torchOn).apply()
+        } catch (e: Exception) { /* camera busy or no flash */ }
     }
 }

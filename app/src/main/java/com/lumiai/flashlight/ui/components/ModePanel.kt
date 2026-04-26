@@ -56,6 +56,10 @@ val aiModeItems = listOf(
         accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve"),
     FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",      "♩",
         accentColor = Color(0xFF60A5FA), sensorTag = "Microphone"),
+    FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",           "◉",
+        accentColor = Color(0xFF818CF8), sensorTag = "Step detector"),
+    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◌",
+        accentColor = Color(0xFFF472B6), sensorTag = "Microphone"),
 )
 
 // ── ModePanel — tabbed Flash / AI ─────────────────────────────────────────────

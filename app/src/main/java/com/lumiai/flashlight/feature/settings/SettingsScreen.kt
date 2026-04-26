@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -160,13 +162,25 @@ fun SettingsScreen(
                 SettingsActionRow(
                     label   = "Privacy Policy",
                     sublabel = "How we handle your data",
-                    onClick = { /* TODO: open URL */ },
+                    onClick = {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("https://mejoresiagratis.com/lumiai-privacy"))
+                        context.startActivity(intent)
+                    },
                 )
                 SettingsDivider()
                 SettingsActionRow(
                     label   = "Rate on Play Store",
                     sublabel = "Help us grow with a review ⭐",
-                    onClick = { /* TODO: open Play Store */ },
+                    onClick = {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("market://details?id=com.lumiai.flashlight"))
+                        try { context.startActivity(intent) }
+                        catch (e: Exception) {
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.lumiai.flashlight")))
+                        }
+                    },
                 )
             }
 

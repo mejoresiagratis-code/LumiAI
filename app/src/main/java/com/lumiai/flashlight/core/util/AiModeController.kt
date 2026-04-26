@@ -54,7 +54,7 @@ class AiModeController @Inject constructor(
     // ── ◎ SMART — adapts to ambient light ────────────────────────────────────
     // Starts STEADY for 1.5s while sensor warms up, then transitions to
     // adaptive pulsing. In dark environments stays mostly ON.
-    fun startSmart(setTorch: (Boolean) -> Unit) {
+    fun startSmart(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
         startLightSensor()
         activeJob = scope.launch {
             // Warmup: steady ON while sensor stabilizes
@@ -161,7 +161,7 @@ class AiModeController @Inject constructor(
     }
 
     // ── ◌ SLEEP — gradual fade simulation over 3 minutes ─────────────────────
-    fun startSleepTimer(setTorch: (Boolean) -> Unit) {
+    fun startSleepTimer(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
         activeJob = scope.launch {
             val totalMs = 3 * 60 * 1000L
             val startMs = System.currentTimeMillis()
@@ -172,13 +172,71 @@ class AiModeController @Inject constructor(
                 if (elapsed >= totalMs) { setTorch(false); break }
                 val progress = (elapsed.toFloat() / totalMs).coerceIn(0f, 1f)
                 val duty     = max(0f, 1f - progress * 1.1f)
-                val onMs     = (cycleMs * duty).toLong().coerceAtLeast(0L)
-                val offMs    = cycleMs - onMs
-                if (onMs  > 0) { setTorch(true);  delay(onMs)  }
-                if (offMs > 0) { setTorch(false); delay(offMs) }
+                if (setStrength != null) {
+                    // Smooth real dimming if device supports it
+                    setStrength(duty)
+                    delay(cycleMs)
+                } else {
+                    val onMs  = (cycleMs * duty).toLong().coerceAtLeast(0L)
+                    val offMs = cycleMs - onMs
+                    if (onMs  > 0) { setTorch(true);  delay(onMs)  }
+                    if (offMs > 0) { setTorch(false); delay(offMs) }
+                }
             }
             setTorch(false)
         }
+    }
+
+
+    // ── ◉ WALK — pulse on each step ──────────────────────────────────────────
+    // TYPE_STEP_DETECTOR fires once per step. Flash pulses 120ms per step.
+    // No permission needed. Falls back to accelerometer simulation if unavailable.
+    fun startWalk(setTorch: (Boolean) -> Unit) {
+        val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
+        if (stepSensor != null) {
+            val stepListener = object : android.hardware.SensorEventListener {
+                override fun onSensorChanged(e: android.hardware.SensorEvent) {
+                    if (e.sensor.type == Sensor.TYPE_STEP_DETECTOR) {
+                        setTorch(true)
+                        activeJob?.cancel()
+                        activeJob = scope.launch {
+                            delay(120L)
+                            setTorch(false)
+                        }
+                    }
+                }
+                override fun onAccuracyChanged(s: android.hardware.Sensor?, a: Int) = Unit
+            }
+            sensorManager.registerListener(stepListener, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
+            // Store listener for cleanup
+            activeJob = scope.launch { awaitCancellation() }
+        } else {
+            // Fallback: simulate step cadence at 1.8 steps/second (walking pace)
+            activeJob = scope.launch {
+                while (isActive) {
+                    setTorch(true);  delay(120L)
+                    setTorch(false); delay(440L)
+                }
+            }
+        }
+    }
+
+    // ── ◌ VOICE — react to sound level via microphone ─────────────────────────
+    // Uses MusicBeatDetector with lower threshold — reacts to voice and claps.
+    // Same permission as Music mode (RECORD_AUDIO).
+    fun startVoice(setTorch: (Boolean) -> Unit) {
+        musicDetector?.stop()
+        musicDetector = MusicBeatDetector(
+            onBeat    = {
+                setTorch(true)
+                activeJob?.cancel()
+                activeJob = scope.launch { delay(150L); setTorch(false) }
+            },
+            threshold     = 1.3f,   // more sensitive than Music (1.5f)
+            minIntervalMs = 200L,   // faster reaction: max 5 flashes/sec
+            minEnergy     = 30f,    // lower silence floor
+        )
+        musicDetector?.start()
     }
 
     // ── ♩ MUSIC — beat detection via microphone ───────────────────────────────

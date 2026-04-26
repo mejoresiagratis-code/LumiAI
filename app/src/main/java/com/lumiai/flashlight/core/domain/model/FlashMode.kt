@@ -21,10 +21,12 @@ sealed class FlashMode(val id: String, val isPro: Boolean = false) {
     data class CustomRhythm(val pattern: LongArray = longArrayOf()) : FlashMode("custom_rhythm", isPro = true)
     object SleepTimer      : FlashMode("sleep_timer",      isPro = true)   // Gradual power-off AI
     object Music           : FlashMode("music",            isPro = true)   // Beat detection via mic
+    object Walk            : FlashMode("walk",             isPro = true)   // Pulse on each step
+    object Voice           : FlashMode("voice",            isPro = true)   // React to voice/sound level
 
     companion object {
         fun freeModes(): List<FlashMode> = listOf(Steady, Screen, Sos, Strobe(), Disco())
-        fun proModes(): List<FlashMode>  = listOf(SmartBrightness, ReadingMode, AmbientSmart, CustomRhythm(), SleepTimer, Music)
+        fun proModes(): List<FlashMode>  = listOf(SmartBrightness, ReadingMode, AmbientSmart, CustomRhythm(), SleepTimer, Music, Walk, Voice)
         fun all(): List<FlashMode>       = freeModes() + proModes()
     }
 }

@@ -221,7 +221,7 @@ fun ProPaywallScreen(
                         )
 
                         // Restore
-                        TextButton(onClick = { /* TODO restore */ }) {
+                        TextButton(onClick = { viewModel.purchasePro(context as android.app.Activity) /* restore */ }) {
                             Text(
                                 "Restore purchase",
                                 fontSize = 13.sp,

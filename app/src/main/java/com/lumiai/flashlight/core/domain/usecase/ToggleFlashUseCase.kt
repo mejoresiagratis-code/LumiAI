@@ -13,7 +13,7 @@ class ToggleFlashUseCase @Inject constructor(
     private val flashRepository: FlashRepository,
 ) {
     suspend operator fun invoke(mode: FlashMode, isPro: Boolean): Result<Unit> {
-        // TODO: re-enable Pro restriction when billing is live
+        // ACTIVATE when pro_unlock product is created in Play Console:
         // if (mode.isPro && !isPro) return Result.failure(ProRequiredException(mode))
         return flashRepository.activateMode(mode)
     }
