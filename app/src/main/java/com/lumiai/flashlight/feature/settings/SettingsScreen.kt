@@ -197,7 +197,7 @@ fun SettingsScreen(
                         sublabel = "Required to flash on notifications",
                         onClick  = {
                             context.startActivity(
-                                Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
                             )
                         },
                     )

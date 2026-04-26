@@ -9,6 +9,7 @@ import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.feature.flash.AutoOffOption
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.usecase.GetProStatusUseCase
 import com.lumiai.flashlight.core.domain.usecase.PurchaseProUseCase
