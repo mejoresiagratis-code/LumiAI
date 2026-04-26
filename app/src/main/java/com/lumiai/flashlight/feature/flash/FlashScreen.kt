@@ -96,8 +96,7 @@ fun FlashScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding()
-                // no verticalScroll — TextField needs focus, use LazyColumn if needed,
+                .systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // ── Top bar ────────────────────────────────────────────────────
