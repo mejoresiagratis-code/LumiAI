@@ -84,35 +84,6 @@ fun ModePanel(
 
         // ── Contextual slider (always on top, appears when needed) ────────────
         // Only show slider on Flash tab, never on AI tab
-        val showSlider = selectedTab == 0 && (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
-        // No AnimatedVisibility — instant show/hide prevents slider from
-        // appearing inside cards during exit animation overlap
-        if (showSlider) {
-            when (currentMode) {
-                is FlashMode.Strobe -> key("strobe_slider") {
-                    ContextSlider(
-                        label    = "FREQUENCY",
-                        value    = strobeHz,
-                        range    = 1f..20f,
-                        format   = { "\${it.toInt()} Hz" },
-                        onSettle = onStrobeHzChange,
-                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
-                    )
-                }
-                is FlashMode.Disco -> key("disco_slider") {
-                    ContextSlider(
-                        label    = "TEMPO",
-                        value    = discoBpm,
-                        range    = 60f..200f,
-                        format   = { "\${it.toInt()} BPM" },
-                        onSettle = onDiscoBpmChange,
-                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
-                    )
-                }
-                else -> {}
-            }
-        }
-
         // ── Tab row ───────────────────────────────────────────────────────────
         Row(
             modifier = Modifier
