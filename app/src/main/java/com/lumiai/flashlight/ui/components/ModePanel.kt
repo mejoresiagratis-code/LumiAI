@@ -37,10 +37,10 @@ data class FlashModeItem(
 
 val flashModeItems = listOf(
     FlashModeItem(FlashMode.Steady,   "Steady",  "Full brightness, continuous", "⚡"),
-    FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "◻"),
-    FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "◑"),
-    FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "△"),
-    FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◈"),
+    FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "▢"),
+    FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "⊙"),
+    FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "◬"),
+    FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◇"),
 )
 
 val aiModeItems = listOf(
@@ -48,7 +48,7 @@ val aiModeItems = listOf(
         accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor"),
     FlashModeItem(FlashMode.ReadingMode,     "Read",    "Warm pulse, auto-dims",         "☽",
         accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve"),
-    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "◈",
+    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "⬨",
         accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit"),
     FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",         "⬡",
         accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen"),
@@ -85,28 +85,30 @@ fun ModePanel(
         // ── Contextual slider (always on top, appears when needed) ────────────
         // Only show slider on Flash tab, never on AI tab
         val showSlider = selectedTab == 0 && (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
-        AnimatedVisibility(
-            visible = showSlider,
-            enter   = fadeIn(tween(150)) + expandVertically(tween(160)),
-            exit    = fadeOut(tween(80)) + shrinkVertically(tween(80)),
-        ) {
+        // No AnimatedVisibility — instant show/hide prevents slider from
+        // appearing inside cards during exit animation overlap
+        if (showSlider) {
             when (currentMode) {
-                is FlashMode.Strobe -> ContextSlider(
-                    label    = "FREQUENCY",
-                    value    = strobeHz,
-                    range    = 1f..20f,
-                    format   = { "${it.toInt()} Hz" },
-                    onSettle = onStrobeHzChange,
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
-                )
-                is FlashMode.Disco  -> ContextSlider(
-                    label    = "TEMPO",
-                    value    = discoBpm,
-                    range    = 60f..200f,
-                    format   = { "${it.toInt()} BPM" },
-                    onSettle = onDiscoBpmChange,
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
-                )
+                is FlashMode.Strobe -> key("strobe_slider") {
+                    ContextSlider(
+                        label    = "FREQUENCY",
+                        value    = strobeHz,
+                        range    = 1f..20f,
+                        format   = { "\${it.toInt()} Hz" },
+                        onSettle = onStrobeHzChange,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
+                    )
+                }
+                is FlashMode.Disco -> key("disco_slider") {
+                    ContextSlider(
+                        label    = "TEMPO",
+                        value    = discoBpm,
+                        range    = 60f..200f,
+                        format   = { "\${it.toInt()} BPM" },
+                        onSettle = onDiscoBpmChange,
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
+                    )
+                }
                 else -> {}
             }
         }
