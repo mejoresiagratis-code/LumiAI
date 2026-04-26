@@ -41,31 +41,45 @@ data class FlashModeItem(
 )
 
 val flashModeItems = listOf(
-    FlashModeItem(FlashMode.Steady,   "Steady",  "Full brightness, continuous", "⚡"),, info = "Continuous full-brightness flash. Best for general lighting.")
-    FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "▢"),, info = "Uses screen as white light source. Adjustable color and brightness.")
-    FlashModeItem(FlashMode.MorseCustom(), "Morse",  "Text to flash",              "—·"),, info = "Type any text — flash transmits it in Morse code on loop.")
-    FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "⊙"),, info = "Rapid 1–20 Hz pulse. Use with caution near photosensitive people.")
-    FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "◬"),, info = "SOS signal: · · · — — — · · · repeating. International distress.")
-    FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◇"),, info = "Beat-synced flash 60–200 BPM. Great for parties.")
+    FlashModeItem(FlashMode.Steady,       "Steady",  "Full brightness, continuous",  "⚡",
+        info = "Continuous full-brightness flash. Best for general lighting."),
+    FlashModeItem(FlashMode.Screen,       "Screen",  "White screen, no flash",       "▢",
+        info = "Uses screen as white light source. Adjustable color and brightness."),
+    FlashModeItem(FlashMode.MorseCustom(),"Morse",   "Text to flash",                "—·",
+        info = "Type any text — flash transmits it in Morse code on loop."),
+    FlashModeItem(FlashMode.Strobe(),     "Strobe",  "1–20 Hz pulse",                "⊙",
+        info = "Rapid 1–20 Hz pulse. Use with caution near photosensitive people."),
+    FlashModeItem(FlashMode.Sos,          "SOS",     "Morse · · · — — —",            "◬",
+        info = "SOS signal: · · · — — — · · · repeating. International distress."),
+    FlashModeItem(FlashMode.Disco(),      "Disco",   "Beat sync · 60–200 BPM",       "◇",
+        info = "Beat-synced flash 60–200 BPM. Great for parties."),
 )
 
 val aiModeItems = listOf(
-    FlashModeItem(FlashMode.SmartBrightness, "Smart",   "Adapts to ambient light",      "◎",, info = "Reads light sensor and adjusts pulse speed automatically.")
-        accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor"),
-    FlashModeItem(FlashMode.ReadingMode,     "Read",    "Warm pulse, auto-dims",         "☽",, info = "Steady warm light that dims over 20 min. Ideal for reading.")
-        accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve"),
-    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "⬨",, info = "Detects scene brightness and picks the best light pattern.")
-        accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit"),
-    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",         "⬡",, info = "Rhythm pattern changes automatically by time of day.")
-        accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen"),
-    FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",      "◌",, info = "Gradually fades out over 3 minutes, then turns off.")
-        accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve"),
-    FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",      "♩",, info = "Syncs to audio beats via mic. Works with any music.")
-        accentColor = Color(0xFF60A5FA), sensorTag = "Microphone"),
-    FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",           "◉",, info = "Pulses on each step from step detector. Hands-free.")
-        accentColor = Color(0xFF818CF8), sensorTag = "Step detector"),
-    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◍",, info = "Reacts to voice and sound spikes. Great for signaling.")
-        accentColor = Color(0xFFF472B6), sensorTag = "Microphone"),
+    FlashModeItem(FlashMode.SmartBrightness, "Smart",   "Adapts to ambient light",    "◎",
+        accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor",
+        info = "Reads light sensor and adjusts pulse speed automatically."),
+    FlashModeItem(FlashMode.ReadingMode,     "Read",    "Warm pulse, auto-dims",       "☽",
+        accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve",
+        info = "Steady warm light that dims over 20 min. Ideal for reading."),
+    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",  "⬨",
+        accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit",
+        info = "Detects scene brightness and picks the best light pattern."),
+    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",      "⬡",
+        accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen",
+        info = "Rhythm pattern changes automatically by time of day."),
+    FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",    "◌",
+        accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve",
+        info = "Gradually fades out over 3 minutes, then turns off."),
+    FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",   "♩",
+        accentColor = Color(0xFF60A5FA), sensorTag = "Microphone",
+        info = "Syncs to audio beats via mic. Works with any music."),
+    FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",         "◉",
+        accentColor = Color(0xFF818CF8), sensorTag = "Step detector",
+        info = "Pulses on each step from step detector. Hands-free."),
+    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",   "◍",
+        accentColor = Color(0xFFF472B6), sensorTag = "Microphone",
+        info = "Reacts to voice and sound spikes. Great for signaling."),
 )
 
 // ── ModePanel — tabbed Flash / AI ─────────────────────────────────────────────
