@@ -19,6 +19,8 @@ import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.util.ShakeDetector
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.lumiai.flashlight.ui.theme.LumiAITheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first

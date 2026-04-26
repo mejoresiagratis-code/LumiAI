@@ -58,7 +58,7 @@ val aiModeItems = listOf(
         accentColor = Color(0xFF60A5FA), sensorTag = "Microphone"),
     FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",           "◉",
         accentColor = Color(0xFF818CF8), sensorTag = "Step detector"),
-    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◌",
+    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◍",
         accentColor = Color(0xFFF472B6), sensorTag = "Microphone"),
 )
 
