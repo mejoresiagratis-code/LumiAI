@@ -158,8 +158,9 @@ fun FlashScreen(
 
             // ── Morse text input ─────────────────────────────────────────
             if (mode is com.lumiai.flashlight.core.domain.model.FlashMode.MorseCustom) {
+                val morseText by viewModel.morseText.collectAsState()
                 MorseInputPanel(
-                    text     = uiState.morseText,
+                    text     = morseText,
                     onText   = { viewModel.updateMorseText(it) },
                     modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
                 )

@@ -14,6 +14,8 @@ import androidx.compose.material3.OutlinedTextField
 import com.lumiai.flashlight.core.util.MorseEncoder
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,30 +41,30 @@ data class FlashModeItem(
 )
 
 val flashModeItems = listOf(
-    FlashModeItem(FlashMode.Steady,   "Steady",  "Full brightness, continuous", "⚡"),
-    FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "▢"),
-    FlashModeItem(FlashMode.MorseCustom(), "Morse",  "Text to flash",              "—·"),
-    FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "⊙"),
-    FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "◬"),
-    FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◇"),
+    FlashModeItem(FlashMode.Steady,   "Steady",  "Full brightness, continuous", "⚡"),, info = "Continuous full-brightness flash. Best for general lighting.")
+    FlashModeItem(FlashMode.Screen,   "Screen",  "White screen, no flash",      "▢"),, info = "Uses screen as white light source. Adjustable color and brightness.")
+    FlashModeItem(FlashMode.MorseCustom(), "Morse",  "Text to flash",              "—·"),, info = "Type any text — flash transmits it in Morse code on loop.")
+    FlashModeItem(FlashMode.Strobe(), "Strobe",  "1–20 Hz pulse",               "⊙"),, info = "Rapid 1–20 Hz pulse. Use with caution near photosensitive people.")
+    FlashModeItem(FlashMode.Sos,      "SOS",     "Morse · · · — — —",           "◬"),, info = "SOS signal: · · · — — — · · · repeating. International distress.")
+    FlashModeItem(FlashMode.Disco(),  "Disco",   "Beat sync · 60–200 BPM",      "◇"),, info = "Beat-synced flash 60–200 BPM. Great for parties.")
 )
 
 val aiModeItems = listOf(
-    FlashModeItem(FlashMode.SmartBrightness, "Smart",   "Adapts to ambient light",      "◎",
+    FlashModeItem(FlashMode.SmartBrightness, "Smart",   "Adapts to ambient light",      "◎",, info = "Reads light sensor and adjusts pulse speed automatically.")
         accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor"),
-    FlashModeItem(FlashMode.ReadingMode,     "Read",    "Warm pulse, auto-dims",         "☽",
+    FlashModeItem(FlashMode.ReadingMode,     "Read",    "Warm pulse, auto-dims",         "☽",, info = "Steady warm light that dims over 20 min. Ideal for reading.")
         accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve"),
-    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "⬨",
+    FlashModeItem(FlashMode.AmbientSmart,    "Ambient", "Reads scene, picks pattern",   "⬨",, info = "Detects scene brightness and picks the best light pattern.")
         accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit"),
-    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",         "⬡",
+    FlashModeItem(FlashMode.CustomRhythm(),  "Custom",  "Pattern adapts to hour",         "⬡",, info = "Rhythm pattern changes automatically by time of day.")
         accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen"),
-    FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",      "◌",
+    FlashModeItem(FlashMode.SleepTimer,      "Sleep",   "Fades out over 3 minutes",      "◌",, info = "Gradually fades out over 3 minutes, then turns off.")
         accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve"),
-    FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",      "♩",
+    FlashModeItem(FlashMode.Music,           "Music",   "Syncs flash to live beats",      "♩",, info = "Syncs to audio beats via mic. Works with any music.")
         accentColor = Color(0xFF60A5FA), sensorTag = "Microphone"),
-    FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",           "◉",
+    FlashModeItem(FlashMode.Walk,            "Walk",    "Pulse on every step",           "◉",, info = "Pulses on each step from step detector. Hands-free.")
         accentColor = Color(0xFF818CF8), sensorTag = "Step detector"),
-    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◍",
+    FlashModeItem(FlashMode.Voice,           "Voice",   "Reacts to voice and sound",     "◍",, info = "Reacts to voice and sound spikes. Great for signaling.")
         accentColor = Color(0xFFF472B6), sensorTag = "Microphone"),
 )
 
@@ -132,8 +134,9 @@ fun ModePanel(
                         label    = "FREQUENCY",
                         value    = strobeHz,
                         range    = 1f..20f,
+                        steps    = 18,
                         format   = { "${it.toInt()} Hz" },
-                        onSettle = onStrobeHzChange,
+                        onSettle = { onStrobeHzChange(it.toInt().toFloat()) },
                         modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
                     )
                 }
@@ -142,8 +145,9 @@ fun ModePanel(
                         label    = "TEMPO",
                         value    = discoBpm,
                         range    = 60f..200f,
+                        steps    = 27,
                         format   = { "${it.toInt()} BPM" },
-                        onSettle = onDiscoBpmChange,
+                        onSettle = { onDiscoBpmChange(it.toInt().toFloat()) },
                         modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
                     )
                 }
@@ -262,8 +266,19 @@ private fun FlashModeCard(
         spring(Spring.DampingRatioMediumBouncy), label = "fscale",
     )
 
+    var showInfo by remember { mutableStateOf(false) }
+    if (showInfo && item.info.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { showInfo = false },
+            title = { Text(item.name, color = LumiColor.White) },
+            text  = { Text(item.info, color = LumiColor.Gray400, fontSize = 14.sp) },
+            confirmButton = { TextButton(onClick = { showInfo = false }) { Text("OK") } },
+            containerColor = LumiColor.Navy800,
+        )
+    }
     Box(
         modifier = modifier
+            .defaultMinSize(minHeight = 80.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
@@ -282,9 +297,9 @@ private fun FlashModeCard(
         Column {
             Text(
                 text     = item.symbol,
-                fontSize = 18.sp,
-                color    = if (isSelected) LumiColor.Amber400 else LumiColor.Gray600,
-                modifier = Modifier.padding(bottom = 8.dp),
+                fontSize = 20.sp,
+                color    = if (isSelected) LumiColor.Amber400 else LumiColor.Gray500,
+                modifier = Modifier.padding(bottom = 6.dp),
             )
             Text(
                 text       = item.name,
@@ -301,15 +316,32 @@ private fun FlashModeCard(
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
-        // Selection dot
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(LumiColor.Amber400)
-                    .align(Alignment.TopEnd),
-            )
+        // ⓘ info button + selection dot
+        Row(
+            modifier = Modifier.align(Alignment.TopEnd),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (item.info.isNotBlank()) {
+                Text(
+                    "ⓘ",
+                    fontSize = 11.sp,
+                    color = LumiColor.Gray600,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { showInfo = true },
+                    ),
+                )
+            }
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(LumiColor.Amber400),
+                )
+            }
         }
     }
 }
@@ -325,8 +357,19 @@ private fun AiModeCard(
     val interactionSource = remember { MutableInteractionSource() }
     val accent = item.accentColor
 
+    var showInfo by remember { mutableStateOf(false) }
+    if (showInfo && item.info.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { showInfo = false },
+            title = { Text(item.name, color = LumiColor.White) },
+            text  = { Text(item.info, color = LumiColor.Gray400, fontSize = 14.sp) },
+            confirmButton = { TextButton(onClick = { showInfo = false }) { Text("OK") } },
+            containerColor = LumiColor.Navy800,
+        )
+    }
     Box(
         modifier = modifier
+            .defaultMinSize(minHeight = 80.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
@@ -345,9 +388,9 @@ private fun AiModeCard(
         Column {
             Text(
                 text     = item.symbol,
-                fontSize = 18.sp,
-                color    = if (isSelected) accent else accent.copy(.5f),
-                modifier = Modifier.padding(bottom = 8.dp),
+                fontSize = 20.sp,
+                color    = if (isSelected) accent else accent.copy(.6f),
+                modifier = Modifier.padding(bottom = 6.dp),
             )
             Text(
                 text       = item.name,
@@ -384,14 +427,31 @@ private fun AiModeCard(
                 }
             }
         }
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(accent)
-                    .align(Alignment.TopEnd),
-            )
+        Row(
+            modifier = Modifier.align(Alignment.TopEnd),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (item.info.isNotBlank()) {
+                Text(
+                    "ⓘ",
+                    fontSize = 11.sp,
+                    color = accent.copy(.5f),
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { showInfo = true },
+                    ),
+                )
+            }
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(accent),
+                )
+            }
         }
     }
 }
@@ -402,6 +462,7 @@ private fun ContextSlider(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
+    steps: Int = 0,
     format: (Float) -> String,
     onSettle: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -441,6 +502,7 @@ private fun ContextSlider(
             onValueChange     = { dragging = true; local = it },
             onValueChangeFinished = { dragging = false; onSettle(local) },
             valueRange        = range,
+            steps             = steps,
             colors            = SliderDefaults.colors(
                 thumbColor         = LumiColor.Amber400,
                 activeTrackColor   = LumiColor.Amber400,
