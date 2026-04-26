@@ -37,7 +37,8 @@ data class FlashModeItem(
     val desc: String,
     val symbol: String,
     val accentColor: Color = LumiColor.Amber400,
-    val sensorTag: String? = null,  // shown on AI cards
+    val sensorTag: String? = null,
+    val info: String = "",
 )
 
 val flashModeItems = listOf(
