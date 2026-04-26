@@ -55,8 +55,15 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         shakeDetector = ShakeDetector(context = this, onShake = {
-            if (flashViewModel.uiState.value.shakeToToggle) {
-                flashViewModel.toggleFlash()
+            val state = flashViewModel.uiState.value
+            if (state.shakeToToggle) {
+                // Don't toggle steady AI modes (Read, Ambient) on shake —
+                // these are designed to stay ON and accidental shake would kill them
+                val isSteadyAiMode = state.currentMode is FlashMode.ReadingMode ||
+                                     state.currentMode is FlashMode.AmbientSmart
+                if (!isSteadyAiMode) {
+                    flashViewModel.toggleFlash()
+                }
             }
         })
 

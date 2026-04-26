@@ -14,8 +14,8 @@ import kotlin.math.sqrt
 class ShakeDetector(
     context: Context,
     private val onShake: () -> Unit,
-    private val threshold: Float = 12f,       // m/s² above gravity
-    private val cooldownMs: Long = 800L,       // min ms between shakes
+    private val threshold: Float = 18f,       // m/s² above gravity — raised to avoid accidental trigger
+    private val cooldownMs: Long = 1500L,      // min ms between shakes — raised for stability
 ) : SensorEventListener {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
