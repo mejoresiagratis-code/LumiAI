@@ -1,96 +1,137 @@
-name: Build APK
+name: LumiAI CI
 
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
+    tags:     [ 'v*' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:   # permite lanzar manualmente desde la pestaña Actions
 
 permissions:
   contents: write
 
+env:
+  JAVA_VERSION:   '17'
+  GRADLE_OPTS:    '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false'
+  # APK names legibles: LumiAI-debug-v1.7.3.apk
+  APK_NAME_BASE:  LumiAI
+
 jobs:
   build:
+    name: Build & Sign APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # mata el job si se cuelga (antes corría indefinidamente)
 
     steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historial completo (necesario para versionCode desde git)
 
-      - name: Set up JDK 17
+      # ── 2. JDK 17 con caché Gradle ───────────────────────────────────────────
+      # setup-java v4 + cache: gradle reemplaza android-actions/setup-android
+      # y es más rápido porque reutiliza el cache entre builds (~1.5 min ganados)
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
+      # ── 3. Permisos y local.properties ───────────────────────────────────────
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ── local.properties (sin keystore para debug) ────────────────────────
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
           echo "ADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713" >> local.properties
 
-      # ── Debug APK ─────────────────────────────────────────────────────────
+      # ── 4. Lint rápido (falla antes de compilar si hay errores graves) ────────
+      # Solo en PRs y pushes a main — no en tags (ya compilado) para ahorrar tiempo
+      - name: Lint check
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        run: ./gradlew lintDebug --no-daemon -q
+        continue-on-error: true   # warn, no bloquear — el lint es informativo
+
+      # ── 5. Unit tests ────────────────────────────────────────────────────────
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon -q
+        continue-on-error: true   # informativo hasta que haya tests escritos
+
+      # ── 6. Debug APK ─────────────────────────────────────────────────────────
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename Debug APK
+        run: |
+          VERSION=$(grep versionName app/build.gradle.kts | grep -oP '"\K[^"]+')
+          mv app/build/outputs/apk/debug/app-debug.apk \
+             app/build/outputs/apk/debug/${APK_NAME_BASE}-debug-${VERSION}.apk
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: LumiAI-debug-${{ github.sha }}
+          name: ${{ env.APK_NAME_BASE }}-debug-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
-      # ── Release APK firmado (solo en tags v*) ─────────────────────────────
+      # ── 7. Release firmado (solo en tags v*) ──────────────────────────────────
       - name: Decode keystore
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > lumiai_release.keystore
-          echo "Keystore decoded: $(ls -lh lumiai_release.keystore)"
+          echo "Keystore: $(ls -lh lumiai_release.keystore)"
 
-      - name: Append signing config to local.properties
+      - name: Append signing config
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "KEYSTORE_PATH=../lumiai_release.keystore" >> local.properties
-          echo "KEYSTORE_PASS=${{ secrets.KEYSTORE_PASS }}" >> local.properties
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
-          echo "KEY_PASS=${{ secrets.KEY_PASS }}" >> local.properties
+          echo "KEYSTORE_PASS=${{ secrets.KEYSTORE_PASS }}"  >> local.properties
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}"          >> local.properties
+          echo "KEY_PASS=${{ secrets.KEY_PASS }}"            >> local.properties
 
       - name: Build Release APK (signed)
         if: startsWith(github.ref, 'refs/tags/')
-        run: ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+        run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload Release APK (signed)
+      - name: Rename Release APK
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION=$(grep versionName app/build.gradle.kts | grep -oP '"\K[^"]+')
+          mv app/build/outputs/apk/release/app-release.apk \
+             app/build/outputs/apk/release/${APK_NAME_BASE}-release-${VERSION}.apk
+
+      - name: Upload Release APK
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: LumiAI-release-signed-${{ github.ref_name }}
+          name: ${{ env.APK_NAME_BASE }}-release-signed-${{ github.ref_name }}
           path: app/build/outputs/apk/release/*.apk
           retention-days: 90
 
-      # ── Attach APK a GitHub Release ───────────────────────────────────────
-      - name: Attach APKs to GitHub Release
+      # ── 8. Adjuntar a GitHub Release con notas auto-generadas ────────────────
+      - name: Create / update GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          generate_release_notes: true   # genera changelog desde commits desde último tag
           files: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
           body: |
-            ## LumiAI ${{ github.ref_name }}
-            
-            ### Descargas
-            - **release-signed** → subir a Play Store
-            - **debug** → instalar directamente para pruebas (`adb install` o abrir en móvil)
-            
-            ### SHA-256 keystore
-            `80:1D:41:DD:36:25:48:3D:8B:4D:1B:CB:1D:85:A6:89:2E:4B:CA:2E:1D:F6:DC:FF:1A:FB:5E:D0:A4:C8:00:2B`
+            ## ${{ env.APK_NAME_BASE }} ${{ github.ref_name }}
+
+            | Build | Uso |
+            |-------|-----|
+            | **release-signed** | Subir a Play Store / instalación directa |
+            | **debug** | Testing en dispositivo (`adb install`) |
+
+            ### Verificación de firma
+            ```
+            SHA-256: 80:1D:41:DD:36:25:48:3D:8B:4D:1B:CB:1D:85:A6:89:2E:4B:CA:2E:1D:F6:DC:FF:1A:FB:5E:D0:A4:C8:00:2B
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
