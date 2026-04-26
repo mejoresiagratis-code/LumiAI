@@ -85,8 +85,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             // Collect dark theme preference from DataStore
             val settings by settingsRepository.settings
-                .collectAsStateWithLifecycle(
-                    initialValue = com.lumiai.flashlight.core.domain.model.UserSettings()
+                .collectAsState(
+                    initial = com.lumiai.flashlight.core.domain.model.UserSettings()
                 )
 
             LumiAITheme(darkTheme = settings.isDarkTheme) {

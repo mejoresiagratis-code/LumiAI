@@ -70,11 +70,15 @@ class AiModeController @Inject constructor(
             delay(1500)
             while (isActive) {
                 val lux = lightLevel
+                // In very dark environments use dimmed steady light if supported
+                if (lux <= 30f && setStrength != null) {
+                    setStrength(0.25f)
+                    awaitCancellation()
+                }
                 val (onMs, offMs) = when {
                     lux > 1000f -> 200L to 200L
                     lux > 200f  -> 400L to 300L
-                    lux > 30f   -> 800L to 400L
-                    else        -> { setStrength?.invoke(0.25f); awaitCancellation(); 0L to 0L }
+                    else        -> 800L to 400L
                 }
                 setTorch(true);  delay(onMs)
                 setTorch(false); delay(offMs)
