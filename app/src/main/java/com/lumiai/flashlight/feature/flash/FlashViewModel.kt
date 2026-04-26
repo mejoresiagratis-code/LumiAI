@@ -33,7 +33,6 @@ data class FlashUiState(
     val shakeToToggle: Boolean       = true,
     val screenColor: ScreenColor     = ScreenColor.WHITE,
     val autoOffOption: AutoOffOption = AutoOffOption.NONE,
-    val morseText: String          = "",
     val screenBrightness: Float    = 1f,
 )
 
@@ -52,7 +51,7 @@ class FlashViewModel @Inject constructor(
     // Auto-off timer
     private val _morseText = MutableStateFlow("")
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
-    private val _autoOff = MutableStateFlow(AutoOffOption.NONE)
+    private val _autoOff = MutableStateFlow(AutoOffOption.NONE) // synced from DataStore on first settings load
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
     private var autoOffJob: Job? = null
 
@@ -72,14 +71,12 @@ class FlashViewModel @Inject constructor(
             isFlashOn        = isOn,
             currentMode      = mode,
             proStatus        = proStatus,
-            hasHardwareFlash = hasFlash,
             strobeHz         = settings.strobeHz,
             discoBpm         = settings.discoBpm,
             shakeToToggle    = settings.shakeToToggle,
-            morseText        = _morseText.value,
             screenBrightness = settings.screenBrightness,
             screenColor      = _currentScreenColor.value,
-            autoOffOption    = _autoOff.value,
+            autoOffOption    = AutoOffOption.entries.firstOrNull { it.minutes == settings.autoOffMinutes } ?: AutoOffOption.NONE,
         )
     }.stateIn(
         scope         = viewModelScope,

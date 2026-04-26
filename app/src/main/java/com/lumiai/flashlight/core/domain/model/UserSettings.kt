@@ -10,6 +10,7 @@ data class UserSettings(
     val screenBrightness: Float  = 1f,
     val isDarkTheme: Boolean     = true,
     val shakeToToggle: Boolean   = true,
+    val autoOffMinutes: Int      = 0,
     val keepScreenOn: Boolean    = true,
     val hasSeenOnboarding: Boolean = false,
 )

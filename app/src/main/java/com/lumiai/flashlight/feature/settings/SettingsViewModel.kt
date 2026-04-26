@@ -73,6 +73,7 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoOffTimer(option: AutoOffOption) {
         _currentAutoOff.value = option
+        viewModelScope.launch { settingsRepository.setAutoOffMinutes(option.minutes) }
     }
 
     // ── Strobe Hz ──────────────────────────────────────────────────────────
