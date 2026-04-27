@@ -6,33 +6,28 @@ on:
     tags:     [ 'v*' ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:   # permite lanzar manualmente desde la pestaña Actions
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  JAVA_VERSION:   '17'
-  GRADLE_OPTS:    '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false'
-  # APK names legibles: LumiAI-debug-v1.7.3.apk
-  APK_NAME_BASE:  LumiAI
+  JAVA_VERSION:  '17'
+  GRADLE_OPTS:   '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dkotlin.incremental=true'
+  APK_NAME_BASE: LumiAI
 
 jobs:
   build:
     name: Build & Sign APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30   # mata el job si se cuelga (antes corría indefinidamente)
+    timeout-minutes: 20   # reducido de 30 — builds limpios ~8-12m, con caché ~3m
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # historial completo (necesario para versionCode desde git)
+          fetch-depth: 1   # shallow clone — no necesitamos historial completo para el build
 
-      # ── 2. JDK 17 con caché Gradle ───────────────────────────────────────────
-      # setup-java v4 + cache: gradle reemplaza android-actions/setup-android
-      # y es más rápido porque reutiliza el cache entre builds (~1.5 min ganados)
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -40,7 +35,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # ── 3. Permisos y local.properties ───────────────────────────────────────
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -49,19 +43,19 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> local.properties
           echo "ADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713" >> local.properties
 
-      # ── 4. Lint rápido (falla antes de compilar si hay errores graves) ────────
-      # Solo en PRs y pushes a main — no en tags (ya compilado) para ahorrar tiempo
+      # Lint y tests solo en PRs — no en pushes a main ni en tags
+      # En main lo que importa es compilar rápido y tener el APK
       - name: Lint check
-        if: "!startsWith(github.ref, 'refs/tags/')"
+        if: github.event_name == 'pull_request'
         run: ./gradlew lintDebug --no-daemon -q
-        continue-on-error: true   # warn, no bloquear — el lint es informativo
+        continue-on-error: true
 
-      # ── 5. Unit tests ────────────────────────────────────────────────────────
       - name: Unit tests
+        if: github.event_name == 'pull_request'
         run: ./gradlew testDebugUnitTest --no-daemon -q
-        continue-on-error: true   # informativo hasta que haya tests escritos
+        continue-on-error: true
 
-      # ── 6. Debug APK ─────────────────────────────────────────────────────────
+      # Debug APK — siempre
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
 
@@ -76,14 +70,13 @@ jobs:
         with:
           name: ${{ env.APK_NAME_BASE }}-debug-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/*.apk
-          retention-days: 30
+          retention-days: 14   # reducido de 30 — no necesitamos APKs viejos tanto tiempo
 
-      # ── 7. Release firmado (solo en tags v*) ──────────────────────────────────
+      # Release firmado — solo en tags v*
       - name: Decode keystore
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > lumiai_release.keystore
-          echo "Keystore: $(ls -lh lumiai_release.keystore)"
 
       - name: Append signing config
         if: startsWith(github.ref, 'refs/tags/')
@@ -112,26 +105,13 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           retention-days: 90
 
-      # ── 8. Adjuntar a GitHub Release con notas auto-generadas ────────────────
-      - name: Create / update GitHub Release
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true   # genera changelog desde commits desde último tag
+          generate_release_notes: true
           files: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
-          body: |
-            ## ${{ env.APK_NAME_BASE }} ${{ github.ref_name }}
-
-            | Build | Uso |
-            |-------|-----|
-            | **release-signed** | Subir a Play Store / instalación directa |
-            | **debug** | Testing en dispositivo (`adb install`) |
-
-            ### Verificación de firma
-            ```
-            SHA-256: 80:1D:41:DD:36:25:48:3D:8B:4D:1B:CB:1D:85:A6:89:2E:4B:CA:2E:1D:F6:DC:FF:1A:FB:5E:D0:A4:C8:00:2B
-            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
