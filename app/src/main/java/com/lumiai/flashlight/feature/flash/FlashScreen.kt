@@ -57,7 +57,8 @@ fun FlashScreen(
     val mode = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
 
-    val bgColor = if (isScreenMode) uiState.screenColor.color else LumiColor.Navy950
+    val screenColor by viewModel.screenColor.collectAsState()
+    val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
 
     val view = LocalView.current
     if (isScreenMode) {
@@ -96,6 +97,7 @@ fun FlashScreen(
                 onStrobeHz    = { viewModel.updateStrobeHz(it) },
                 onDiscoBpm    = { viewModel.updateDiscoBpm(it) },
                 onMorseText   = { viewModel.updateMorseText(it) },
+                screenColor   = screenColor,
                 onScreenColor = { viewModel.setScreenColor(it) },
                 onDismiss     = { viewModel.closeConfigSheet() },
             )
@@ -182,7 +184,33 @@ fun FlashScreen(
                 )
             }
 
-            if (!isPro && !isScreenMode) {
+            if (isScreenMode) {
+                // Quick color picker strip at bottom when Screen mode is ON
+                Spacer(Modifier.weight(1f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 32.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                ) {
+                    ScreenColor.entries.forEach { sc ->
+                        val sel = sc == screenColor
+                        Box(
+                            modifier = Modifier
+                                .size(if (sel) 40.dp else 32.dp)
+                                .clip(CircleShape)
+                                .background(sc.color.copy(alpha = if (sel) 1f else 0.6f))
+                                .then(if (sel) Modifier.border(3.dp, LumiColor.White, CircleShape) else Modifier)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { viewModel.setScreenColor(sc) },
+                                ),
+                        )
+                    }
+                }
+            } else if (!isPro) {
                 AdBanner(modifier = Modifier.navigationBarsPadding())
             } else {
                 Spacer(Modifier.navigationBarsPadding())
@@ -417,6 +445,7 @@ private fun ModeConfigSheet(
     mode: FlashMode,
     uiState: FlashUiState,
     morseText: String,
+    screenColor: ScreenColor = ScreenColor.WHITE,
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
@@ -540,7 +569,7 @@ private fun ModeConfigSheet(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     ScreenColor.entries.forEach { sc ->
-                        val sel = sc == uiState.screenColor
+                        val sel = sc == screenColor
                         Box(
                             modifier = Modifier
                                 .size(44.dp)

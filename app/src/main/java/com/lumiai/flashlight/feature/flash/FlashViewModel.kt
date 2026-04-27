@@ -56,6 +56,7 @@ class FlashViewModel @Inject constructor(
     fun openConfigSheet()  { _showConfigSheet.value = true  }
     fun closeConfigSheet() { _showConfigSheet.value = false }
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
+    val screenColor: StateFlow<ScreenColor> = _currentScreenColor.asStateFlow()
     private val _autoOff = MutableStateFlow(AutoOffOption.NONE) // synced from DataStore on first settings load
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
     private var autoOffJob: Job? = null
