@@ -95,9 +95,11 @@ class FlashRepositoryImpl constructor(
         when (mode) {
             is FlashMode.Steady -> setTorch(true)
             is FlashMode.Screen -> {
-                // Screen mode: no hardware flash, just signal UI to go white
-                setTorch(false)
+                // Screen mode: no hardware flash — set isFlashOn true FIRST,
+                // then turn off torch. setTorch(false) posts to main thread
+                // so setting the flag first avoids the race condition.
                 _isFlashOn.value = true
+                setTorch(false)
             }
             is FlashMode.Sos        -> strobeController.startSos { setTorch(it) }
             is FlashMode.MorseCustom -> {
@@ -161,7 +163,7 @@ class FlashRepositoryImpl constructor(
         aiController.stop()
         setTorch(false)
         _isFlashOn.value = false
-        _currentMode.value = FlashMode.Steady
+        // NOTE: do NOT reset _currentMode here — user's selection persists after OFF
     }
 
     /** Change the current mode without activating flash (used when flash is OFF) */

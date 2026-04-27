@@ -24,9 +24,6 @@ data class FlashUiState(
     val isFlashOn: Boolean           = false,
     val currentMode: FlashMode       = FlashMode.Steady,
     val proStatus: ProStatus         = ProStatus.Loading,
-    val hasHardwareFlash: Boolean    = false,
-    val errorMessage: String?        = null,
-    val showProPaywall: Boolean      = false,
     // Settings — read from DataStore
     val strobeHz: Float              = 5f,
     val discoBpm: Float              = 120f,
@@ -97,6 +94,17 @@ class FlashViewModel @Inject constructor(
             // Mark ready once billing state resolves (splash screen can dismiss)
             getProStatusUseCase().first { it !is ProStatus.Loading }
             _isReady.value = true
+        }
+        // Sync auto-off timer from DataStore on startup
+        viewModelScope.launch {
+            settingsRepository.settings.collect { settings ->
+                val option = AutoOffOption.entries.firstOrNull {
+                    it.minutes == settings.autoOffMinutes
+                } ?: AutoOffOption.NONE
+                if (_autoOff.value != option) {
+                    _autoOff.value = option
+                }
+            }
         }
     }
 
