@@ -177,6 +177,7 @@ fun ModePanel(
                     items = flashModeItems,
                     currentMode = currentMode,
                     onSelect = onModeSelect,
+                    onConfig = onModeConfig,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             } else {
@@ -196,6 +197,7 @@ private fun FlashModeGrid(
     items: List<FlashModeItem>,
     currentMode: FlashMode,
     onSelect: (FlashMode) -> Unit,
+    onConfig: (FlashMode) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val rows = listOf(
@@ -210,6 +212,7 @@ private fun FlashModeGrid(
                     item = row[0],
                     isSelected = row[0].mode.id == currentMode.id,
                     onClick = { onSelect(row[0].mode) },
+                    onConfig = { onConfig(row[0].mode) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             } else {
@@ -219,6 +222,7 @@ private fun FlashModeGrid(
                             item = item,
                             isSelected = item.mode.id == currentMode.id,
                             onClick = { onSelect(item.mode) },
+                            onConfig = { onConfig(item.mode) },
                             modifier = Modifier.weight(1f),
                         )
                     }
