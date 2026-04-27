@@ -51,6 +51,13 @@ class FlashViewModel @Inject constructor(
     // Auto-off timer
     private val _morseText = MutableStateFlow("")
     val morseText: StateFlow<String> = _morseText.asStateFlow()
+
+    // Config bottom sheet
+    private val _showConfigSheet = MutableStateFlow(false)
+    val showConfigSheet: StateFlow<Boolean> = _showConfigSheet.asStateFlow()
+
+    fun openConfigSheet()  { _showConfigSheet.value = true  }
+    fun closeConfigSheet() { _showConfigSheet.value = false }
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
     private val _autoOff = MutableStateFlow(AutoOffOption.NONE) // synced from DataStore on first settings load
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()

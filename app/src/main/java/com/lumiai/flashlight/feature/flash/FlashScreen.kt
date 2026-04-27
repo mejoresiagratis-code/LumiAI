@@ -13,7 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,6 +43,7 @@ import com.lumiai.flashlight.ui.components.LumiIcons
 import com.lumiai.flashlight.ui.components.ModePanel
 import com.lumiai.flashlight.ui.theme.LumiColor
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlashScreen(
     viewModel: FlashViewModel,
@@ -389,5 +395,156 @@ private fun MorseInputPanel(
             color = LumiColor.Gray600,
             modifier = Modifier.align(Alignment.End),
         )
+    }
+}
+
+// ── Mode Config Bottom Sheet ──────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModeConfigSheet(
+    mode: FlashMode,
+    uiState: FlashUiState,
+    morseText: String,
+    onStrobeHz: (Float) -> Unit,
+    onDiscoBpm: (Float) -> Unit,
+    onMorseText: (String) -> Unit,
+    onScreenColor: (ScreenColor) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp)
+            .padding(top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Handle + title
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(LumiColor.Gray700)
+                .align(Alignment.CenterHorizontally)
+        )
+
+        val title = when (mode) {
+            is FlashMode.Strobe      -> "Strobe — Frequency"
+            is FlashMode.Disco       -> "Disco — Tempo"
+            is FlashMode.MorseCustom -> "Morse — Message"
+            is FlashMode.Screen      -> "Screen — Color"
+            else -> return
+        }
+        Text(
+            title,
+            fontSize   = 16.sp,
+            fontWeight = FontWeight.W600,
+            color      = LumiColor.White,
+        )
+
+        when (mode) {
+            is FlashMode.Strobe -> {
+                var hz by remember { mutableFloatStateOf(uiState.strobeHz) }
+                Text("${hz.toInt()} Hz", fontSize = 28.sp,
+                    fontWeight = FontWeight.W700, color = LumiColor.Amber400)
+                Slider(
+                    value            = hz,
+                    onValueChange    = { hz = it },
+                    onValueChangeFinished = { onStrobeHz(hz.toInt().toFloat()) },
+                    valueRange       = 1f..20f,
+                    steps            = 18,
+                    colors           = SliderDefaults.colors(
+                        thumbColor            = LumiColor.Amber400,
+                        activeTrackColor      = LumiColor.Amber400,
+                        inactiveTrackColor    = LumiColor.Navy600,
+                    ),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                    Text("1 Hz", fontSize = 11.sp, color = LumiColor.Gray600)
+                    Text("20 Hz", fontSize = 11.sp, color = LumiColor.Gray600)
+                }
+            }
+            is FlashMode.Disco -> {
+                var bpm by remember { mutableFloatStateOf(uiState.discoBpm) }
+                Text("${bpm.toInt()} BPM", fontSize = 28.sp,
+                    fontWeight = FontWeight.W700, color = LumiColor.Amber400)
+                Slider(
+                    value            = bpm,
+                    onValueChange    = { bpm = it },
+                    onValueChangeFinished = { onDiscoBpm(bpm.toInt().toFloat()) },
+                    valueRange       = 60f..200f,
+                    steps            = 27,
+                    colors           = SliderDefaults.colors(
+                        thumbColor            = LumiColor.Amber400,
+                        activeTrackColor      = LumiColor.Amber400,
+                        inactiveTrackColor    = LumiColor.Navy600,
+                    ),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                    Text("60 BPM", fontSize = 11.sp, color = LumiColor.Gray600)
+                    Text("200 BPM", fontSize = 11.sp, color = LumiColor.Gray600)
+                }
+            }
+            is FlashMode.MorseCustom -> {
+                val morsePreview = remember(morseText) {
+                    if (morseText.isBlank()) "" else MorseEncoder.toReadable(morseText)
+                }
+                OutlinedTextField(
+                    value         = morseText,
+                    onValueChange = { onMorseText(it.take(60)) },
+                    placeholder   = { Text("Type your message...",
+                        fontSize = 14.sp, color = LumiColor.Gray600) },
+                    singleLine    = false,
+                    maxLines      = 3,
+                    colors        = TextFieldDefaults.colors(
+                        focusedContainerColor      = LumiColor.Navy700,
+                        unfocusedContainerColor    = LumiColor.Navy700,
+                        focusedTextColor           = LumiColor.White,
+                        unfocusedTextColor         = LumiColor.White,
+                        focusedIndicatorColor      = LumiColor.Amber400.copy(.6f),
+                        unfocusedIndicatorColor    = LumiColor.Navy600,
+                        cursorColor                = LumiColor.Amber400,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (morsePreview.isNotBlank()) {
+                    Text(
+                        morsePreview,
+                        fontSize  = 12.sp,
+                        color     = LumiColor.Amber400.copy(.7f),
+                        lineHeight = 18.sp,
+                    )
+                }
+                Text("${morseText.length}/60",
+                    fontSize = 10.sp, color = LumiColor.Gray600,
+                    modifier = Modifier.align(Alignment.End))
+            }
+            is FlashMode.Screen -> {
+                Text("Tap to pick a color",
+                    fontSize = 13.sp, color = LumiColor.Gray500)
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    ScreenColor.entries.forEach { sc ->
+                        val sel = sc == uiState.screenColor
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(sc.color)
+                                .then(if (sel) Modifier.border(3.dp, LumiColor.White, CircleShape) else Modifier)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication        = null,
+                                    onClick           = { onScreenColor(sc); onDismiss() },
+                                ),
+                        )
+                    }
+                }
+            }
+            else -> {}
+        }
     }
 }

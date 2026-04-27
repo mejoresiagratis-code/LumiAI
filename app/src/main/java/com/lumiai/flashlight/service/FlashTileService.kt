@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.service
 
+import com.lumiai.flashlight.core.domain.model.FlashMode
+
 import android.service.quicksettings.Tile
 import android.annotation.SuppressLint
 import android.os.Build

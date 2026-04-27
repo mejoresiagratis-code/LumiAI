@@ -84,6 +84,7 @@ fun ModePanel(
     strobeHz: Float,
     discoBpm: Float,
     onModeSelect: (FlashMode) -> Unit,
+    onModeConfig: (FlashMode) -> Unit = {},   // opens config sheet
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -312,9 +313,23 @@ private fun FlashModeCard(
         }
         Row(
             modifier = Modifier.align(Alignment.TopEnd),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // ⚙ config button for configurable modes
+            val configModes = setOf("strobe","disco","morse_custom","screen")
+            if (item.mode.id in configModes) {
+                Text(
+                    "⚙",
+                    fontSize = 11.sp,
+                    color = LumiColor.Amber400.copy(.6f),
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onConfig,
+                    ),
+                )
+            }
             if (item.info.isNotBlank()) {
                 Text(
                     "ⓘ",
