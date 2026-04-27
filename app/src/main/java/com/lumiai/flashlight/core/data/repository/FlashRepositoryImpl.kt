@@ -95,11 +95,12 @@ class FlashRepositoryImpl constructor(
         when (mode) {
             is FlashMode.Steady -> setTorch(true)
             is FlashMode.Screen -> {
-                // Screen mode: no hardware flash — set isFlashOn true FIRST,
-                // then turn off torch. setTorch(false) posts to main thread
-                // so setting the flag first avoids the race condition.
+                // Screen mode: UI-only flash — torch hardware stays OFF.
+                // Do NOT call setTorch() at all — it overwrites _isFlashOn.
+                // Just set the flag directly; the UI reacts to isFlashOn=true.
                 _isFlashOn.value = true
-                setTorch(false)
+                // Ensure torch is physically off without touching _isFlashOn
+                mainHandler.post { setTorchOnMain(false) }
             }
             is FlashMode.Sos        -> strobeController.startSos { setTorch(it) }
             is FlashMode.MorseCustom -> {
