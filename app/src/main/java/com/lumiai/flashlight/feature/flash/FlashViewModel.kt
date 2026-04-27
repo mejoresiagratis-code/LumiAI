@@ -109,6 +109,11 @@ class FlashViewModel @Inject constructor(
     )
 
     init {
+        // Wire AI config providers to repository
+        flashRepository.smartSpeedProvider     = { _smartSpeed.value }
+        flashRepository.sleepMinutesProvider   = { _sleepMinutes.value }
+        flashRepository.micSensitivityProvider = { _micSensitivity.value }
+
         viewModelScope.launch {
             getProStatusUseCase().first { it !is ProStatus.Loading }
             _isReady.value = true

@@ -461,10 +461,16 @@ private fun ModeConfigSheet(
     uiState: FlashUiState,
     morseText: String,
     screenColor: ScreenColor = ScreenColor.WHITE,
+    smartSpeed: Float = 1.0f,
+    sleepMinutes: Int = 3,
+    micSensitivity: Float = 1.0f,
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
     onScreenColor: (ScreenColor) -> Unit,
+    onSmartSpeed: (Float) -> Unit = {},
+    onSleepMinutes: (Int) -> Unit = {},
+    onMicSensitivity: (Float) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -575,6 +581,88 @@ private fun ModeConfigSheet(
                 Text("${morseText.length}/60",
                     fontSize = 10.sp, color = LumiColor.Gray600,
                     modifier = Modifier.align(Alignment.End))
+            }
+            is FlashMode.SmartBrightness -> {
+                Text("PULSE SPEED", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                val speedLabels = listOf("0.5×" to 0.5f, "1×" to 1.0f, "1.5×" to 1.5f, "2×" to 2.0f)
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    speedLabels.forEach { (label, v) ->
+                        val sel = kotlin.math.abs(smartSpeed - v) < 0.1f
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (sel) LumiColor.Amber400 else LumiColor.Navy700)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onSmartSpeed(v) }
+                                )
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label, fontSize = 13.sp, fontWeight = FontWeight.W600,
+                                color = if (sel) LumiColor.Navy950 else LumiColor.White)
+                        }
+                    }
+                }
+                Text("Faster = more reactive outdoors. Slower = more subtle indoors.",
+                    fontSize = 11.sp, color = LumiColor.Gray600)
+            }
+            is FlashMode.SleepTimer -> {
+                Text("FADE DURATION", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                val durations = listOf("1 min" to 1, "3 min" to 3, "5 min" to 5, "10 min" to 10)
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    durations.forEach { (label, v) ->
+                        val sel = sleepMinutes == v
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (sel) LumiColor.Amber400 else LumiColor.Navy700)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onSleepMinutes(v) }
+                                )
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label, fontSize = 13.sp, fontWeight = FontWeight.W600,
+                                color = if (sel) LumiColor.Navy950 else LumiColor.White)
+                        }
+                    }
+                }
+            }
+            is FlashMode.Music, is FlashMode.Voice -> {
+                val modeLabel = if (mode is FlashMode.Music) "BEAT SENSITIVITY" else "SOUND SENSITIVITY"
+                Text(modeLabel, fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                var sens by remember { mutableFloatStateOf(micSensitivity) }
+                val sensLabel = when {
+                    sens < 0.8f -> "Low — only loud sounds"
+                    sens < 1.3f -> "Medium — normal sounds"
+                    else        -> "High — very sensitive"
+                }
+                Text(sensLabel, fontSize = 14.sp, color = LumiColor.Amber400, fontWeight = FontWeight.W600)
+                Slider(
+                    value = sens,
+                    onValueChange = { sens = it },
+                    onValueChangeFinished = { onMicSensitivity(sens) },
+                    valueRange = 0.5f..2.0f,
+                    steps = 5,
+                    colors = SliderDefaults.colors(
+                        thumbColor = LumiColor.Amber400,
+                        activeTrackColor = LumiColor.Amber400,
+                        inactiveTrackColor = LumiColor.Navy600,
+                    ),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                    Text("Low", fontSize = 11.sp, color = LumiColor.Gray600)
+                    Text("High", fontSize = 11.sp, color = LumiColor.Gray600)
+                }
             }
             is FlashMode.Screen -> {
                 Text("Tap to pick a color",

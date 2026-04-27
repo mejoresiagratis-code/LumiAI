@@ -62,7 +62,7 @@ class AiModeController @Inject constructor(
     // ── ◎ SMART — adapts frequency to ambient light ───────────────────────────
     // Steady for 1.5s warmup, then pulses only when bright (outdoor attention signal).
     // In dark environments: dims using strength levels (no visible blink).
-    fun startSmart(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
+    fun startSmart(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null, speedMult: Float = 1.0f) {
         stop()
         startLightSensor()
         activeJob = scope.launch {
@@ -75,9 +75,9 @@ class AiModeController @Inject constructor(
                     awaitCancellation()
                 }
                 val (onMs, offMs) = when {
-                    lux > 1000f -> 200L to 200L
-                    lux > 200f  -> 400L to 300L
-                    else        -> 800L to 400L
+                    lux > 1000f -> (200L / speedMult).toLong() to (200L / speedMult).toLong()
+                    lux > 200f  -> (400L / speedMult).toLong() to (300L / speedMult).toLong()
+                    else        -> (800L / speedMult).toLong() to (400L / speedMult).toLong()
                 }
                 setTorch(true);  delay(onMs)
                 setTorch(false); delay(offMs)
@@ -180,10 +180,10 @@ class AiModeController @Inject constructor(
     }
 
     // ── ◌ SLEEP — gradual fade, torch strength when available ────────────────
-    fun startSleepTimer(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
+    fun startSleepTimer(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null, durationMinutes: Int = 3) {
         stop()
         activeJob = scope.launch {
-            val totalMs = 3 * 60 * 1000L
+            val totalMs = durationMinutes.toLong() * 60_000L
             val startMs = System.currentTimeMillis()
             setTorch(true)
             while (isActive) {
@@ -206,9 +206,12 @@ class AiModeController @Inject constructor(
     }
 
     // ── ♩ MUSIC — beat detection ──────────────────────────────────────────────
-    fun startMusic(setTorch: (Boolean) -> Unit) {
+    fun startMusic(setTorch: (Boolean) -> Unit, sensitivity: Float = 1.0f) {
         stop()
-        musicDetector = MusicBeatDetector(onBeat = {
+        musicDetector = MusicBeatDetector(
+            threshold     = 1.5f / sensitivity,
+            minIntervalMs = (300L / sensitivity).toLong().coerceAtLeast(100L),
+            onBeat = {
             setTorch(true)
             pulseJob?.cancel()
             pulseJob = scope.launch { delay(80L); setTorch(false) }
@@ -251,7 +254,7 @@ class AiModeController @Inject constructor(
     }
 
     // ── ◍ VOICE — sound-reactive ──────────────────────────────────────────────
-    fun startVoice(setTorch: (Boolean) -> Unit) {
+    fun startVoice(setTorch: (Boolean) -> Unit, sensitivity: Float = 1.0f) {
         stop()
         // Start with torch OFF — voice reactivity means torch fires on sound spikes
         // This is intentional: silence = dark, voice = light
@@ -263,8 +266,8 @@ class AiModeController @Inject constructor(
                 pulseJob?.cancel()
                 pulseJob = scope.launch { delay(150L); setTorch(false) }
             },
-            threshold     = 1.3f,
-            minIntervalMs = 200L,
+            threshold     = 1.3f / sensitivity,
+            minIntervalMs = (200L / sensitivity).toLong().coerceAtLeast(80L),
             minEnergy     = 30f,
         )
         musicDetector?.start()

@@ -185,6 +185,7 @@ fun ModePanel(
                     items = aiModeItems,
                     currentMode = currentMode,
                     onSelect = onModeSelect,
+                    onConfig = onModeConfig,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
@@ -237,6 +238,7 @@ private fun AiModeGrid(
     items: List<FlashModeItem>,
     currentMode: FlashMode,
     onSelect: (FlashMode) -> Unit,
+    onConfig: (FlashMode) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -247,6 +249,7 @@ private fun AiModeGrid(
                         item = item,
                         isSelected = item.mode.id == currentMode.id,
                         onClick = { onSelect(item.mode) },
+                        onConfig = { onConfig(item.mode) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -322,7 +325,7 @@ private fun FlashModeCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // ⚙ config button for configurable modes
-            val configModes = setOf("strobe","disco","morse_custom","screen")
+            val configModes = setOf("strobe","disco","morse_custom","screen","smart_brightness","sleep_timer","music","voice")
             if (item.mode.id in configModes) {
                 Text(
                     "⚙",
@@ -364,6 +367,7 @@ private fun AiModeCard(
     item: FlashModeItem,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -441,9 +445,22 @@ private fun AiModeCard(
         }
         Row(
             modifier = Modifier.align(Alignment.TopEnd),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val aiConfigModes = setOf("smart_brightness","sleep_timer","music","voice")
+            if (item.mode.id in aiConfigModes) {
+                Text(
+                    "⚙",
+                    fontSize = 11.sp,
+                    color = accent.copy(.6f),
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onConfig,
+                    ),
+                )
+            }
             if (item.info.isNotBlank()) {
                 Text(
                     "ⓘ",

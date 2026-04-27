@@ -152,7 +152,10 @@ class FlashRepositoryImpl constructor(
             }
             is FlashMode.Music -> {
                 _isFlashOn.value = true
-                aiController.startMusic { setTorch(it) }
+                aiController.startMusic(
+                    setTorch    = { setTorch(it) },
+                    sensitivity = micSensitivityProvider?.invoke() ?: 1.0f,
+                )
             }
             is FlashMode.Walk -> {
                 _isFlashOn.value = true
@@ -160,7 +163,10 @@ class FlashRepositoryImpl constructor(
             }
             is FlashMode.Voice -> {
                 _isFlashOn.value = true
-                aiController.startVoice { setTorch(it) }
+                aiController.startVoice(
+                    setTorch    = { setTorch(it) },
+                    sensitivity = micSensitivityProvider?.invoke() ?: 1.0f,
+                )
             }
             else -> setTorch(true)
         }
