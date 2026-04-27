@@ -78,6 +78,30 @@ fun FlashScreen(
         }
     }
 
+    // ── Config BottomSheet ────────────────────────────────────────────────────
+    val showSheet by viewModel.showConfigSheet.collectAsState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest  = { viewModel.closeConfigSheet() },
+            sheetState        = sheetState,
+            containerColor    = LumiColor.Navy800,
+            dragHandle        = null,
+        ) {
+            ModeConfigSheet(
+                mode          = mode,
+                uiState       = uiState,
+                morseText     = morseText,
+                onStrobeHz    = { viewModel.updateStrobeHz(it) },
+                onDiscoBpm    = { viewModel.updateDiscoBpm(it) },
+                onMorseText   = { viewModel.updateMorseText(it) },
+                onScreenColor = { viewModel.setScreenColor(it) },
+                onDismiss     = { viewModel.closeConfigSheet() },
+            )
+        }
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -136,31 +160,19 @@ fun FlashScreen(
 
             if (!isScreenMode) {
                 ModePanel(
-                    currentMode = mode,
-                    strobeHz = uiState.strobeHz,
-                    discoBpm = uiState.discoBpm,
-                    onModeSelect = { viewModel.activateMode(it) },
+                    currentMode      = mode,
+                    strobeHz         = uiState.strobeHz,
+                    discoBpm         = uiState.discoBpm,
+                    onModeSelect     = { viewModel.activateMode(it) },
+                    onModeConfig     = {
+                        viewModel.activateMode(it)
+                        viewModel.openConfigSheet()
+                    },
                     onStrobeHzChange = { viewModel.updateStrobeHz(it) },
                     onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier         = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
-            }
-
-            if (mode is FlashMode.Screen) {
-                ScreenColorPicker(
-                    current = uiState.screenColor,
-                    onSelect = { viewModel.setScreenColor(it) },
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
-                )
-            }
-
-            if (mode is FlashMode.MorseCustom) {
-                MorseInputPanel(
-                    text = morseText,
-                    onText = { viewModel.updateMorseText(it) },
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
-                )
             }
 
             if (uiState.autoOffOption != AutoOffOption.NONE && isOn) {
