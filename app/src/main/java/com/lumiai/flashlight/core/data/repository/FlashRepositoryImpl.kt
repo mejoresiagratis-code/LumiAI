@@ -37,6 +37,11 @@ class FlashRepositoryImpl constructor(
     private var cameraXCamera:   androidx.camera.core.Camera? = null
     private var cameraProvider:  ProcessCameraProvider? = null
 
+    // AI config providers — set by FlashViewModel after construction
+    var smartSpeedProvider:    (() -> Float)? = null
+    var sleepMinutesProvider:  (() -> Int)?   = null
+    var micSensitivityProvider:(() -> Float)? = null
+
     // Torch strength support (API 33+)
     val maxTorchStrength: Int get() = if (android.os.Build.VERSION.SDK_INT >= 33) {
         try {
@@ -116,6 +121,7 @@ class FlashRepositoryImpl constructor(
                 aiController.startSmart(
                     setTorch    = { setTorch(it) },
                     setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                    speedMult   = smartSpeedProvider?.invoke() ?: 1.0f,
                 )
             }
             is FlashMode.ReadingMode -> {
@@ -139,8 +145,9 @@ class FlashRepositoryImpl constructor(
             is FlashMode.SleepTimer -> {
                 _isFlashOn.value = true
                 aiController.startSleepTimer(
-                    setTorch    = { setTorch(it) },
-                    setStrength = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                    setTorch      = { setTorch(it) },
+                    setStrength   = if (supportsTorchStrength) { level -> setTorchStrength(level) } else null,
+                    durationMinutes = sleepMinutesProvider?.invoke() ?: 3,
                 )
             }
             is FlashMode.Music -> {

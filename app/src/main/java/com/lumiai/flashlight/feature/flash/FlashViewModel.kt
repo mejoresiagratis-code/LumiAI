@@ -53,6 +53,24 @@ class FlashViewModel @Inject constructor(
     private val _showConfigSheet = MutableStateFlow(false)
     val showConfigSheet: StateFlow<Boolean> = _showConfigSheet.asStateFlow()
 
+
+    // ── AI mode config params ──────────────────────────────────────────────
+    // Smart: pulse speed multiplier (0.5x slow … 2.0x fast)
+    private val _smartSpeed = MutableStateFlow(1.0f)
+    val smartSpeed: StateFlow<Float> = _smartSpeed.asStateFlow()
+
+    // Sleep: fade duration in minutes (1, 3, 5, 10)
+    private val _sleepMinutes = MutableStateFlow(3)
+    val sleepMinutes: StateFlow<Int> = _sleepMinutes.asStateFlow()
+
+    // Music / Voice: sensitivity (0.5 = less sensitive, 2.0 = very sensitive)
+    private val _micSensitivity = MutableStateFlow(1.0f)
+    val micSensitivity: StateFlow<Float> = _micSensitivity.asStateFlow()
+
+    fun setSmartSpeed(v: Float) { _smartSpeed.value = v.coerceIn(0.5f, 2.0f) }
+    fun setSleepMinutes(v: Int)  { _sleepMinutes.value = v }
+    fun setMicSensitivity(v: Float) { _micSensitivity.value = v.coerceIn(0.5f, 2.0f) }
+
     fun openConfigSheet()  { _showConfigSheet.value = true  }
     fun closeConfigSheet() { _showConfigSheet.value = false }
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)

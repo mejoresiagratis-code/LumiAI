@@ -210,10 +210,25 @@ fun FlashScreen(
                         )
                     }
                 }
-            } else if (!isPro) {
-                AdBanner(modifier = Modifier.navigationBarsPadding())
             } else {
                 Spacer(Modifier.navigationBarsPadding())
+            }
+
+            // Bottom padding so content scrolls above the ad banner
+            if (!isPro && !isScreenMode) Spacer(Modifier.height(60.dp))
+        }
+
+        // ── AdBanner overlay ────────────────────────────────────────────────
+        // Always visible for Free users, overlays the scroll content at bottom
+        if (!isPro && !isScreenMode) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(LumiColor.Navy950.copy(alpha = 0.97f))
+                    .navigationBarsPadding(),
+            ) {
+                AdBanner()
             }
         }
     }
