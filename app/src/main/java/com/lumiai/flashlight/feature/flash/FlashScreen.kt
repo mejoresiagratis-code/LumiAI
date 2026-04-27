@@ -215,7 +215,7 @@ fun FlashScreen(
             }
 
             // Bottom padding so content scrolls above the ad banner
-            if (!isPro && !isScreenMode) Spacer(Modifier.height(60.dp))
+            if (!isPro && !isScreenMode) Spacer(Modifier.height(90.dp))
         }
 
         // ── AdBanner overlay ────────────────────────────────────────────────
@@ -581,6 +581,60 @@ private fun ModeConfigSheet(
                 Text("${morseText.length}/60",
                     fontSize = 10.sp, color = LumiColor.Gray600,
                     modifier = Modifier.align(Alignment.End))
+            }
+            is FlashMode.AmbientSmart -> {
+                Text("AMBIENT SENSITIVITY", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Spacer(Modifier.height(4.dp))
+                Text("Mode reads lux once at activation and stays steady.",
+                    fontSize = 12.sp, color = LumiColor.Gray500, lineHeight = 17.sp)
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(LumiColor.Navy700)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                // Re-activate to re-read lux
+                                onDismiss()
+                            }
+                        )
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("Re-read ambient light now", fontSize = 14.sp,
+                        color = LumiColor.Amber400, fontWeight = FontWeight.W600)
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("Tap to re-sample the current light level and adjust.",
+                    fontSize = 11.sp, color = LumiColor.Gray600)
+            }
+            is FlashMode.CustomRhythm -> {
+                Text("CUSTOM RHYTHM", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Spacer(Modifier.height(4.dp))
+                Text("Pattern changes automatically based on time of day:",
+                    fontSize = 12.sp, color = LumiColor.Gray500)
+                Spacer(Modifier.height(10.dp))
+                val patterns = listOf(
+                    "6–9h" to "Fast triple · active morning",
+                    "10–14h" to "Steady double · work hours",
+                    "15–19h" to "Slow pulse · afternoon",
+                    "20–22h" to "Very slow · evening wind-down",
+                    "23–5h" to "Ultra slow · night",
+                )
+                patterns.forEach { (time, desc) ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(time, fontSize = 12.sp, fontWeight = FontWeight.W600, color = LumiColor.Amber400)
+                        Text(desc, fontSize = 12.sp, color = LumiColor.Gray500)
+                    }
+                }
             }
             is FlashMode.SmartBrightness -> {
                 Text("PULSE SPEED", fontSize = 10.sp, color = LumiColor.Gray600,

@@ -448,7 +448,7 @@ private fun AiModeCard(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val aiConfigModes = setOf("smart_brightness","sleep_timer","music","voice")
+            val aiConfigModes = setOf("smart_brightness","sleep_timer","music","voice","ambient_smart","custom_rhythm")
             if (item.mode.id in aiConfigModes) {
                 Text(
                     "⚙",
