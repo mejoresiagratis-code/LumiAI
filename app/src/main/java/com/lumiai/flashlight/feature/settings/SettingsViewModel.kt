@@ -62,10 +62,26 @@ class SettingsViewModel @Inject constructor(
     val notifFlashMessages: StateFlow<Boolean> = _notifFlashMessages.asStateFlow()
     val notifFlashOther:    StateFlow<Boolean> = _notifFlashOther.asStateFlow()
 
-    fun setNotifFlashEnabled(v: Boolean)  { _notifFlashEnabled.value  = v; notificationFlashController.isEnabled  = v }
-    fun setNotifFlashCalls(v: Boolean)    { _notifFlashCalls.value    = v; notificationFlashController.enabledForCalls    = v }
-    fun setNotifFlashMessages(v: Boolean) { _notifFlashMessages.value = v; notificationFlashController.enabledForMessages = v }
-    fun setNotifFlashOther(v: Boolean)    { _notifFlashOther.value    = v; notificationFlashController.enabledForOther    = v }
+    fun setNotifFlashEnabled(v: Boolean) {
+        _notifFlashEnabled.value = v
+        notificationFlashController.isEnabled = v
+        viewModelScope.launch { settingsRepository.setNotifFlashEnabled(v) }
+    }
+    fun setNotifFlashCalls(v: Boolean) {
+        _notifFlashCalls.value = v
+        notificationFlashController.enabledForCalls = v
+        viewModelScope.launch { settingsRepository.setNotifFlashCalls(v) }
+    }
+    fun setNotifFlashMessages(v: Boolean) {
+        _notifFlashMessages.value = v
+        notificationFlashController.enabledForMessages = v
+        viewModelScope.launch { settingsRepository.setNotifFlashMessages(v) }
+    }
+    fun setNotifFlashOther(v: Boolean) {
+        _notifFlashOther.value = v
+        notificationFlashController.enabledForOther = v
+        viewModelScope.launch { settingsRepository.setNotifFlashOther(v) }
+    }
 
     // ── Auto-off timer ────────────────────────────────────────────────────
     private val _currentAutoOff = MutableStateFlow(AutoOffOption.NONE)
@@ -74,6 +90,22 @@ class SettingsViewModel @Inject constructor(
     fun setAutoOffTimer(option: AutoOffOption) {
         _currentAutoOff.value = option
         viewModelScope.launch { settingsRepository.setAutoOffMinutes(option.minutes) }
+    }
+
+    init {
+        // Restore notification flash settings from DataStore
+        viewModelScope.launch {
+            settingsRepository.settings.collect { s ->
+                _notifFlashEnabled.value  = s.notifFlashEnabled
+                _notifFlashCalls.value    = s.notifFlashCalls
+                _notifFlashMessages.value = s.notifFlashMessages
+                _notifFlashOther.value    = s.notifFlashOther
+                notificationFlashController.isEnabled          = s.notifFlashEnabled
+                notificationFlashController.enabledForCalls    = s.notifFlashCalls
+                notificationFlashController.enabledForMessages = s.notifFlashMessages
+                notificationFlashController.enabledForOther    = s.notifFlashOther
+            }
+        }
     }
 
     // ── Strobe Hz ──────────────────────────────────────────────────────────

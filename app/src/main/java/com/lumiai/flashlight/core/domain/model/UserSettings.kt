@@ -13,4 +13,8 @@ data class UserSettings(
     val autoOffMinutes: Int      = 0,
     val keepScreenOn: Boolean    = true,
     val hasSeenOnboarding: Boolean = false,
+    val notifFlashEnabled: Boolean  = false,
+    val notifFlashCalls: Boolean    = true,
+    val notifFlashMessages: Boolean = true,
+    val notifFlashOther: Boolean    = false,
 )

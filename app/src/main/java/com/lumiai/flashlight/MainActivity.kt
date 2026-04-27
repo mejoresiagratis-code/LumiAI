@@ -17,6 +17,7 @@ import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.di.AdManager
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.util.ShakeDetector
+import com.lumiai.flashlight.widget.FlashWidgetReceiver
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
 import androidx.compose.runtime.collectAsState
@@ -111,6 +112,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         shakeDetector.register()
+        // Sync widget with actual torch state
+        FlashWidgetReceiver.syncState(this, flashViewModel.uiState.value.isFlashOn)
         if (!flashRepository.isCameraReady.value &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {

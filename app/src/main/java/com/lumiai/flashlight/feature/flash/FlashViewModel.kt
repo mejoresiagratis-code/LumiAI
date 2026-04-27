@@ -91,9 +91,16 @@ class FlashViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Mark ready once billing state resolves (splash screen can dismiss)
             getProStatusUseCase().first { it !is ProStatus.Loading }
             _isReady.value = true
+        }
+        // Restore last used mode from DataStore on startup
+        viewModelScope.launch {
+            val settings = settingsRepository.settings.first()
+            val lastMode = FlashMode.all().firstOrNull { it.id == settings.lastMode }
+            if (lastMode != null && lastMode !is FlashMode.Steady) {
+                flashRepository.setCurrentMode(lastMode)
+            }
         }
         // Sync auto-off timer from DataStore on startup
         viewModelScope.launch {

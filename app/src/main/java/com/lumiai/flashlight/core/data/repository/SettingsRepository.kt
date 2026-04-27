@@ -26,7 +26,11 @@ class SettingsRepository @Inject constructor(
         val DARK_THEME     = booleanPreferencesKey("dark_theme")
         val SHAKE_TOGGLE   = booleanPreferencesKey("shake_toggle")
         val KEEP_SCREEN    = booleanPreferencesKey("keep_screen_on")
-        val SEEN_ONBOARDING = booleanPreferencesKey("seen_onboarding")
+        val SEEN_ONBOARDING  = booleanPreferencesKey("seen_onboarding")
+        val NOTIF_ENABLED    = booleanPreferencesKey("notif_flash_enabled")
+        val NOTIF_CALLS      = booleanPreferencesKey("notif_flash_calls")
+        val NOTIF_MESSAGES   = booleanPreferencesKey("notif_flash_messages")
+        val NOTIF_OTHER      = booleanPreferencesKey("notif_flash_other")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->
@@ -39,7 +43,11 @@ class SettingsRepository @Inject constructor(
             isDarkTheme       = prefs[Keys.DARK_THEME]    ?: true,
             shakeToToggle     = prefs[Keys.SHAKE_TOGGLE]  ?: true,
             keepScreenOn      = prefs[Keys.KEEP_SCREEN]   ?: true,
-            hasSeenOnboarding = prefs[Keys.SEEN_ONBOARDING] ?: false,
+            hasSeenOnboarding   = prefs[Keys.SEEN_ONBOARDING]  ?: false,
+            notifFlashEnabled   = prefs[Keys.NOTIF_ENABLED]   ?: false,
+            notifFlashCalls     = prefs[Keys.NOTIF_CALLS]     ?: true,
+            notifFlashMessages  = prefs[Keys.NOTIF_MESSAGES]  ?: true,
+            notifFlashOther     = prefs[Keys.NOTIF_OTHER]     ?: false,
         )
     }
 
@@ -68,6 +76,11 @@ class SettingsRepository @Inject constructor(
     suspend fun setKeepScreenOn(enabled: Boolean) {
         dataStore.edit { it[Keys.KEEP_SCREEN] = enabled }
     }
+    suspend fun setNotifFlashEnabled(v: Boolean)  { dataStore.edit { it[Keys.NOTIF_ENABLED]  = v } }
+    suspend fun setNotifFlashCalls(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_CALLS]    = v } }
+    suspend fun setNotifFlashMessages(v: Boolean) { dataStore.edit { it[Keys.NOTIF_MESSAGES] = v } }
+    suspend fun setNotifFlashOther(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_OTHER]    = v } }
+
     suspend fun markOnboardingSeen() {
         dataStore.edit { it[Keys.SEEN_ONBOARDING] = true }
     }
