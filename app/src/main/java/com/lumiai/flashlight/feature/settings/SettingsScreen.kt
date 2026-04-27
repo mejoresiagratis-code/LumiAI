@@ -88,7 +88,7 @@ fun SettingsScreen(
                     value        = settings.strobeHz,
                     range        = 0.5f..20f,
                     displayValue = { "${it.toInt()} Hz" },
-                    onChange     = { viewModel.updateStrobeHz(it) },
+                    onChange     = { viewModel.setStrobeHz(it) },
                 )
                 SettingsDivider()
                 SettingsSliderRow(
@@ -96,7 +96,7 @@ fun SettingsScreen(
                     value        = settings.discoBpm,
                     range        = 60f..200f,
                     displayValue = { "${it.toInt()} BPM" },
-                    onChange     = { viewModel.updateDiscoBpm(it) },
+                    onChange     = { viewModel.setDiscoBpm(it) },
                 )
                 SettingsDivider()
                 SettingsSliderRow(
