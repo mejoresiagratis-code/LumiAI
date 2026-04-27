@@ -257,6 +257,7 @@ private fun FlashModeCard(
     item: FlashModeItem,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
