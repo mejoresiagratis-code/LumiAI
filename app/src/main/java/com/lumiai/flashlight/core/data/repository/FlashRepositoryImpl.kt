@@ -78,16 +78,18 @@ class FlashRepositoryImpl constructor(
     suspend fun bindCamera(lifecycleOwner: LifecycleOwner) {
         try {
             val provider = getCameraProvider()
-            val imageCapture = ImageCapture.Builder().build()
-            provider.unbindAll()
-            cameraXCamera = provider.bindToLifecycle(
-                lifecycleOwner,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                imageCapture,
-            )
+            // Only rebind if not already bound — unbindAll kills the torch
+            if (cameraXCamera == null) {
+                val imageCapture = ImageCapture.Builder().build()
+                provider.unbindAll()
+                cameraXCamera = provider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    imageCapture,
+                )
+            }
             _isCameraReady.value = true
         } catch (e: Exception) {
-            // CameraX failed — camera2 fallback still available
             _isCameraReady.value = false
         }
     }
@@ -200,6 +202,26 @@ class FlashRepositoryImpl constructor(
             }
         } else {
             setTorch(clamped > 0.5f)
+        }
+    }
+
+    /**
+     * Re-applies the torch ON/OFF state after a camera lifecycle interruption.
+     * Called from MainActivity.onResume to restore steady modes (Ambient, Read, Smart)
+     * that were killed by bindCamera/unbindAll during a pause cycle.
+     */
+    fun restoreTorchIfNeeded() {
+        if (_isFlashOn.value) {
+            val mode = _currentMode.value
+            when (mode) {
+                is FlashMode.Screen -> { /* screen mode — no torch needed */ }
+                else -> {
+                    // For all torch modes: re-enable hardware torch
+                    // The AiModeController job is still running (awaitCancellation),
+                    // we just need to re-enable the hardware torch.
+                    mainHandler.post { setTorchOnMain(true) }
+                }
+            }
         }
     }
 

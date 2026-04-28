@@ -112,12 +112,19 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         shakeDetector.register()
-        // Sync widget with actual torch state
         FlashWidgetReceiver.syncState(this, flashViewModel.uiState.value.isFlashOn)
         if (!flashRepository.isCameraReady.value &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             bindCameraIfPermitted()
+        }
+        // Restore torch state after any pause/resume cycle that may have killed it
+        // Steady AI modes (Ambient, Read, Smart) stay ON — torch must be re-enabled
+        val state = flashViewModel.uiState.value
+        if (state.isFlashOn) {
+            lifecycleScope.launch {
+                flashRepository.restoreTorchIfNeeded()
+            }
         }
     }
 
