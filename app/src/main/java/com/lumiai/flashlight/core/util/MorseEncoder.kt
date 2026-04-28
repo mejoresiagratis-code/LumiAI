@@ -39,7 +39,11 @@ object MorseEncoder {
      * Encode text to a list of (onMs, offMs) pairs for the flash controller.
      * Unrecognized characters are skipped.
      */
-    fun encode(text: String): List<Pair<Long, Long>> {
+    /**
+     * Encodes text to Morse timing pairs.
+     * @param speed  WPM multiplier — 1.0 = standard ITU, 2.0 = double speed, 0.5 = half speed
+     */
+    fun encode(text: String, speed: Float = 1.0f): List<Pair<Long, Long>> {
         val result = mutableListOf<Pair<Long, Long>>()
         val words  = text.uppercase().trim().split(" ")
 

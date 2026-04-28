@@ -33,6 +33,7 @@ class SettingsRepository @Inject constructor(
         val NOTIF_MESSAGES   = booleanPreferencesKey("notif_flash_messages")
         val NOTIF_OTHER      = booleanPreferencesKey("notif_flash_other")
         val APP_LANGUAGE     = stringPreferencesKey("app_language")
+        val TORCH_INTENSITY  = floatPreferencesKey("torch_intensity")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->
@@ -51,6 +52,7 @@ class SettingsRepository @Inject constructor(
             notifFlashMessages  = prefs[Keys.NOTIF_MESSAGES]  ?: true,
             notifFlashOther     = prefs[Keys.NOTIF_OTHER]     ?: false,
             appLanguage         = prefs[Keys.APP_LANGUAGE]   ?: "system",
+            torchIntensity      = prefs[Keys.TORCH_INTENSITY] ?: 1.0f,
         )
     }
 
@@ -84,6 +86,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setNotifFlashMessages(v: Boolean) { dataStore.edit { it[Keys.NOTIF_MESSAGES] = v } }
     suspend fun setNotifFlashOther(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_OTHER]    = v } }
     suspend fun setAppLanguage(lang: String)      { dataStore.edit { it[Keys.APP_LANGUAGE]   = lang } }
+    suspend fun setTorchIntensity(v: Float)        { dataStore.edit { it[Keys.TORCH_INTENSITY] = v } }
 
     suspend fun markOnboardingSeen() {
         dataStore.edit { it[Keys.SEEN_ONBOARDING] = true }

@@ -46,13 +46,12 @@ class StrobeController constructor() {
     }
 
     /** SOS pattern: · · ·  — — —  · · · (Morse) */
-    fun startSos(setTorch: (Boolean) -> Unit) {
+    fun startSos(setTorch: (Boolean) -> Unit, speed: Float = 1.0f) {
         stop(); active = true
-        // dit=200ms, dah=600ms, gap=200ms, word gap=1400ms
-        val dit = 200L
-        val dah = 600L
-        val gap = 200L
-        val wordGap = 1400L
+        val dit     = (200L / speed).toLong().coerceAtLeast(50L)
+        val dah     = (600L / speed).toLong().coerceAtLeast(150L)
+        val gap     = (200L / speed).toLong().coerceAtLeast(50L)
+        val wordGap = (1400L / speed).toLong().coerceAtLeast(300L)
         val pattern = buildList {
             repeat(3) { add(dit); add(gap) }    // S ...
             add(gap)
@@ -90,10 +89,10 @@ class StrobeController constructor() {
 
 
     /** Custom Morse: encodes arbitrary text and flashes it in a loop */
-    fun startMorse(text: String, setTorch: (Boolean) -> Unit) {
+    fun startMorse(text: String, setTorch: (Boolean) -> Unit, speed: Float = 1.0f) {
         stop(); active = true
         if (text.isBlank()) return
-        val pattern = MorseEncoder.encode(text)
+        val pattern = MorseEncoder.encode(text, speed)
         if (pattern.isEmpty()) return
         activeJob = scope.launch {
             while (isActive) {

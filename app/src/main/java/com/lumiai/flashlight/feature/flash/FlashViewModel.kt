@@ -58,10 +58,21 @@ class FlashViewModel @Inject constructor(
     private val _torchIntensity = MutableStateFlow(1.0f)   // 0.1f (dim) .. 1.0f (full)
     val torchIntensity: StateFlow<Float> = _torchIntensity.asStateFlow()
 
-    fun setTorchIntensity(v: Float) { _torchIntensity.value = v.coerceIn(0.1f, 1.0f) }
+    fun setTorchIntensity(v: Float) {
+        val clamped = v.coerceIn(0.1f, 1.0f)
+        _torchIntensity.value = clamped
+        viewModelScope.launch { settingsRepository.setTorchIntensity(clamped) }
+    }
 
     fun setScreenBrightness(brightness: Float) {
         viewModelScope.launch { settingsRepository.updateScreenBrightness(brightness) }
+    }
+
+    // ── Morse speed (WPM multiplier) ────────────────────────────────────────
+    private val _morseSpeed = MutableStateFlow(1.0f)  // 0.5× slow .. 4.0× fast
+    val morseSpeed: StateFlow<Float> = _morseSpeed.asStateFlow()
+    fun setMorseSpeed(v: Float) {
+        _morseSpeed.value = v.coerceIn(0.5f, 4.0f)
     }
 
     // ── AI mode config params ──────────────────────────────────────────────
@@ -119,6 +130,7 @@ class FlashViewModel @Inject constructor(
     init {
         // Wire AI config providers to repository
         flashRepository.torchIntensityProvider = { _torchIntensity.value }
+        flashRepository.morseSpeedProvider     = { _morseSpeed.value }
         flashRepository.smartSpeedProvider     = { _smartSpeed.value }
         flashRepository.sleepMinutesProvider   = { _sleepMinutes.value }
         flashRepository.micSensitivityProvider = { _micSensitivity.value }
@@ -127,15 +139,20 @@ class FlashViewModel @Inject constructor(
             getProStatusUseCase().first { it !is ProStatus.Loading }
             _isReady.value = true
         }
-        // Restore last used mode from DataStore on startup
+        // Restore last used mode from DataStore on startup (with saved config values)
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
-            val lastMode = FlashMode.all().firstOrNull { it.id == settings.lastMode }
+            val lastMode: FlashMode? = when (settings.lastMode) {
+                "strobe"       -> FlashMode.Strobe(settings.strobeHz)
+                "disco"        -> FlashMode.Disco(settings.discoBpm)
+                "morse_custom" -> FlashMode.MorseCustom()  // text is in morseText StateFlow
+                else           -> FlashMode.all().firstOrNull { it.id == settings.lastMode }
+            }
             if (lastMode != null && lastMode !is FlashMode.Steady) {
                 flashRepository.setCurrentMode(lastMode)
             }
         }
-        // Sync auto-off timer from DataStore on startup
+        // Sync auto-off timer + intensity from DataStore on startup
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
                 val option = AutoOffOption.entries.firstOrNull {
@@ -143,6 +160,10 @@ class FlashViewModel @Inject constructor(
                 } ?: AutoOffOption.NONE
                 if (_autoOff.value != option) {
                     _autoOff.value = option
+                }
+                // Restore persisted intensity (don't trigger re-save)
+                if (_torchIntensity.value != settings.torchIntensity) {
+                    _torchIntensity.value = settings.torchIntensity
                 }
             }
         }

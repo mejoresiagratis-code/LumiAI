@@ -39,6 +39,7 @@ class FlashRepositoryImpl constructor(
 
     // AI config providers — set by FlashViewModel after construction
     var torchIntensityProvider: (() -> Float)? = null
+    var morseSpeedProvider:    (() -> Float)? = null
     var smartSpeedProvider:    (() -> Float)? = null
     var sleepMinutesProvider:  (() -> Int)?   = null
     var micSensitivityProvider:(() -> Float)? = null

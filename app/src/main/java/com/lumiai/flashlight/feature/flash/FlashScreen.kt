@@ -61,6 +61,7 @@ fun FlashScreen(
 
     val screenColor   by viewModel.screenColor.collectAsState()
     val torchIntensity by viewModel.torchIntensity.collectAsState()
+    val morseSpeed     by viewModel.morseSpeed.collectAsState()
     val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
 
     val view = LocalView.current
@@ -466,11 +467,13 @@ private fun ModeConfigSheet(
     morseText: String,
     screenColor: ScreenColor = ScreenColor.WHITE,
     torchIntensity: Float = 1.0f,
+    morseSpeed: Float = 1.0f,
     smartSpeed: Float = 1.0f,
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
     onTorchIntensity: (Float) -> Unit = {},
     onScreenBrightness: (Float) -> Unit = {},
+    onMorseSpeed: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
@@ -588,6 +591,43 @@ private fun ModeConfigSheet(
                     Text("60 BPM", fontSize = 11.sp, color = LumiColor.Gray600)
                     Text("200 BPM", fontSize = 11.sp, color = LumiColor.Gray600)
                 }
+                Spacer(Modifier.height(12.dp))
+                // ── Tap-to-tempo ─────────────────────────────────────────────
+                var tapTimes by remember { mutableStateOf(listOf<Long>()) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(LumiColor.Navy700)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            val now = System.currentTimeMillis()
+                            val recent = tapTimes.filter { now - it < 3000L }
+                            val newTaps = (recent + now).takeLast(8)
+                            tapTimes = newTaps
+                            if (newTaps.size >= 2) {
+                                val intervals = newTaps.zipWithNext { a, b -> b - a }
+                                val avgMs = intervals.average()
+                                val detectedBpm = (60_000.0 / avgMs)
+                                    .coerceIn(60.0, 200.0).toFloat()
+                                bpm = detectedBpm
+                                onDiscoBpm(detectedBpm.toInt().toFloat())
+                            }
+                        }
+                        .padding(vertical = 18.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (tapTimes.size < 2) "TAP BEAT  👆" else "TAP BEAT  ${bpm.toInt()} BPM",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.W600,
+                        color = LumiColor.Amber400,
+                    )
+                }
+                Text("Tap 3+ times to set tempo by feel",
+                    fontSize = 10.sp, color = LumiColor.Gray600)
             }
             is FlashMode.MorseCustom -> {
                 val morsePreview = remember(morseText) {

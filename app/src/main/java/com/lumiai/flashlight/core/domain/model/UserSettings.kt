@@ -17,5 +17,6 @@ data class UserSettings(
     val notifFlashCalls: Boolean    = true,
     val notifFlashMessages: Boolean = true,
     val notifFlashOther: Boolean    = false,
-    val appLanguage: String         = "system",  // "system" | "en" | "es"
+    val appLanguage: String         = "system",
+    val torchIntensity: Float        = 1.0f,  // "system" | "en" | "es"
 )
