@@ -176,7 +176,14 @@ fun ModePanel(
         ) { tab ->
             if (tab == 0) {
                 FlashModeGrid(
-                    items = buildFlashModeItems(),
+                    items = listOf(
+                        FlashModeItem(FlashMode.Steady, stringResource(R.string.mode_steady), stringResource(R.string.mode_steady_desc), "⚡", info = stringResource(R.string.mode_steady_info)),
+                        FlashModeItem(FlashMode.Screen, stringResource(R.string.mode_screen), stringResource(R.string.mode_screen_desc), "▢", info = stringResource(R.string.mode_screen_info)),
+                        FlashModeItem(FlashMode.MorseCustom(), stringResource(R.string.mode_morse), stringResource(R.string.mode_morse_desc), "—·", info = stringResource(R.string.mode_morse_info)),
+                        FlashModeItem(FlashMode.Strobe(), stringResource(R.string.mode_strobe), stringResource(R.string.mode_strobe_desc), "⊙", info = stringResource(R.string.mode_strobe_info)),
+                        FlashModeItem(FlashMode.Sos, stringResource(R.string.mode_sos), stringResource(R.string.mode_sos_desc), "◬", info = stringResource(R.string.mode_sos_info)),
+                        FlashModeItem(FlashMode.Disco(), stringResource(R.string.mode_disco), stringResource(R.string.mode_disco_desc), "◇", info = stringResource(R.string.mode_disco_info)),
+                    ),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,
@@ -184,7 +191,16 @@ fun ModePanel(
                 )
             } else {
                 AiModeGrid(
-                    items = buildAiModeItems(),
+                    items = listOf(
+                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "◎", accentColor = Color(0xFFFFD84A), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
+                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "☽", accentColor = Color(0xFFFF9A6C), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
+                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "⬨", accentColor = Color(0xFF34D399), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
+                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "⬡", accentColor = Color(0xFFA78BFA), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
+                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "◌", accentColor = Color(0xFF4ADE80), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
+                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "♩", accentColor = Color(0xFF60A5FA), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
+                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "◉", accentColor = Color(0xFF818CF8), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
+                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "◍", accentColor = Color(0xFFF472B6), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
+                    ),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,

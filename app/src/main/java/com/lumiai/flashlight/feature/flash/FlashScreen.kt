@@ -324,6 +324,7 @@ private fun TopBar(
     }
 }
 
+@Composable
 private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): String = when {
     !isOn -> stringResource(R.string.status_tap_to_turn_on)
     mode is FlashMode.Screen -> stringResource(R.string.status_screen_mode)
