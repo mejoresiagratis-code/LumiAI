@@ -72,7 +72,9 @@ class FlashViewModel @Inject constructor(
     private val _morseSpeed = MutableStateFlow(1.0f)  // 0.5× slow .. 4.0× fast
     val morseSpeed: StateFlow<Float> = _morseSpeed.asStateFlow()
     fun setMorseSpeed(v: Float) {
-        _morseSpeed.value = v.coerceIn(0.5f, 4.0f)
+        val clamped = v.coerceIn(0.5f, 4.0f)
+        _morseSpeed.value = clamped
+        viewModelScope.launch { settingsRepository.setMorseSpeed(clamped) }
     }
 
     // ── AI mode config params ──────────────────────────────────────────────
@@ -89,8 +91,15 @@ class FlashViewModel @Inject constructor(
     val micSensitivity: StateFlow<Float> = _micSensitivity.asStateFlow()
 
     fun setSmartSpeed(v: Float) { _smartSpeed.value = v.coerceIn(0.5f, 2.0f) }
-    fun setSleepMinutes(v: Int)  { _sleepMinutes.value = v }
-    fun setMicSensitivity(v: Float) { _micSensitivity.value = v.coerceIn(0.5f, 2.0f) }
+    fun setSleepMinutes(v: Int) {
+        _sleepMinutes.value = v
+        viewModelScope.launch { settingsRepository.setSleepMinutes(v) }
+    }
+    fun setMicSensitivity(v: Float) {
+        val clamped = v.coerceIn(0.5f, 2.0f)
+        _micSensitivity.value = clamped
+        viewModelScope.launch { settingsRepository.setMicSensitivity(clamped) }
+    }
 
     fun openConfigSheet()  { _showConfigSheet.value = true  }
     fun closeConfigSheet() { _showConfigSheet.value = false }
@@ -145,7 +154,7 @@ class FlashViewModel @Inject constructor(
             val lastMode: FlashMode? = when (settings.lastMode) {
                 "strobe"       -> FlashMode.Strobe(settings.strobeHz)
                 "disco"        -> FlashMode.Disco(settings.discoBpm)
-                "morse_custom" -> FlashMode.MorseCustom()  // text is in morseText StateFlow
+                "morse_custom" -> FlashMode.MorseCustom(settings.morseText)  // restore with saved text
                 else           -> FlashMode.all().firstOrNull { it.id == settings.lastMode }
             }
             if (lastMode != null && lastMode !is FlashMode.Steady) {
@@ -161,10 +170,23 @@ class FlashViewModel @Inject constructor(
                 if (_autoOff.value != option) {
                     _autoOff.value = option
                 }
-                // Restore persisted intensity (don't trigger re-save)
-                if (_torchIntensity.value != settings.torchIntensity) {
+                // Restore all persisted config values (don't trigger re-save)
+                if (_torchIntensity.value != settings.torchIntensity)
                     _torchIntensity.value = settings.torchIntensity
-                }
+                if (_morseText.value != settings.morseText)
+                    _morseText.value = settings.morseText
+                if (_morseSpeed.value != settings.morseSpeed)
+                    _morseSpeed.value = settings.morseSpeed
+                if (_sleepMinutes.value != settings.sleepMinutes)
+                    _sleepMinutes.value = settings.sleepMinutes
+                if (_micSensitivity.value != settings.micSensitivity)
+                    _micSensitivity.value = settings.micSensitivity
+                // Restore screen color by ID
+                val restoredColor = ScreenColor.entries.firstOrNull {
+                    it.name.lowercase() == settings.screenColorId
+                } ?: ScreenColor.WHITE
+                if (_currentScreenColor.value != restoredColor)
+                    _currentScreenColor.value = restoredColor
             }
         }
     }
@@ -259,6 +281,7 @@ class FlashViewModel @Inject constructor(
 
     fun updateMorseText(text: String) {
         _morseText.value = text
+        viewModelScope.launch { settingsRepository.setMorseText(text) }
         // Re-activate if Morse mode is currently on
         val state = uiState.value
         if (state.currentMode is com.lumiai.flashlight.core.domain.model.FlashMode.MorseCustom
@@ -272,8 +295,8 @@ class FlashViewModel @Inject constructor(
     }
 
     fun setScreenColor(color: ScreenColor) {
-        // Stored in memory only — no DataStore needed for session preference
         _currentScreenColor.value = color
+        viewModelScope.launch { settingsRepository.setScreenColorId(color.name.lowercase()) }
     }
 
     fun setAutoOffFromSettings(option: AutoOffOption) {

@@ -18,5 +18,10 @@ data class UserSettings(
     val notifFlashMessages: Boolean = true,
     val notifFlashOther: Boolean    = false,
     val appLanguage: String         = "system",
-    val torchIntensity: Float        = 1.0f,  // "system" | "en" | "es"
+    val torchIntensity: Float        = 1.0f,
+    val morseText: String           = "",
+    val morseSpeed: Float           = 1.0f,
+    val sleepMinutes: Int           = 3,
+    val micSensitivity: Float       = 1.0f,
+    val screenColorId: String       = "white",  // "system" | "en" | "es"
 )

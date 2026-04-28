@@ -18,10 +18,11 @@ class StrobeController constructor() {
     @Volatile private var active = false   // guards against post-cancel setTorch calls
 
     fun stop(setTorch: ((Boolean) -> Unit)? = null) {
+        val wasActive = active     // capture before clearing — only emit OFF if was running
         active = false             // FIRST: prevent any new setTorch calls from the loop
         activeJob?.cancel()
         activeJob = null
-        setTorch?.invoke(false)    // guarantee torch OFF on mode exit
+        if (wasActive) setTorch?.invoke(false)    // only emit OFF if something was actually running
     }
 
     /** Wraps setTorch to be a no-op after stop() is called */

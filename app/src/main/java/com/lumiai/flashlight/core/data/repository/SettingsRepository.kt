@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -34,6 +33,11 @@ class SettingsRepository @Inject constructor(
         val NOTIF_OTHER      = booleanPreferencesKey("notif_flash_other")
         val APP_LANGUAGE     = stringPreferencesKey("app_language")
         val TORCH_INTENSITY  = floatPreferencesKey("torch_intensity")
+        val MORSE_TEXT       = stringPreferencesKey("morse_text")
+        val MORSE_SPEED      = floatPreferencesKey("morse_speed")
+        val SLEEP_MINUTES    = intPreferencesKey("sleep_minutes")
+        val MIC_SENSITIVITY  = floatPreferencesKey("mic_sensitivity")
+        val SCREEN_COLOR_ID  = stringPreferencesKey("screen_color_id")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->
@@ -53,6 +57,11 @@ class SettingsRepository @Inject constructor(
             notifFlashOther     = prefs[Keys.NOTIF_OTHER]     ?: false,
             appLanguage         = prefs[Keys.APP_LANGUAGE]   ?: "system",
             torchIntensity      = prefs[Keys.TORCH_INTENSITY] ?: 1.0f,
+            morseText           = prefs[Keys.MORSE_TEXT]       ?: "",
+            morseSpeed          = prefs[Keys.MORSE_SPEED]      ?: 1.0f,
+            sleepMinutes        = prefs[Keys.SLEEP_MINUTES]    ?: 3,
+            micSensitivity      = prefs[Keys.MIC_SENSITIVITY]  ?: 1.0f,
+            screenColorId       = prefs[Keys.SCREEN_COLOR_ID]  ?: "white",
         )
     }
 
@@ -87,6 +96,11 @@ class SettingsRepository @Inject constructor(
     suspend fun setNotifFlashOther(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_OTHER]    = v } }
     suspend fun setAppLanguage(lang: String)      { dataStore.edit { it[Keys.APP_LANGUAGE]   = lang } }
     suspend fun setTorchIntensity(v: Float)        { dataStore.edit { it[Keys.TORCH_INTENSITY] = v } }
+    suspend fun setMorseText(v: String)            { dataStore.edit { it[Keys.MORSE_TEXT]       = v } }
+    suspend fun setMorseSpeed(v: Float)            { dataStore.edit { it[Keys.MORSE_SPEED]      = v } }
+    suspend fun setSleepMinutes(v: Int)            { dataStore.edit { it[Keys.SLEEP_MINUTES]    = v } }
+    suspend fun setMicSensitivity(v: Float)        { dataStore.edit { it[Keys.MIC_SENSITIVITY]  = v } }
+    suspend fun setScreenColorId(v: String)        { dataStore.edit { it[Keys.SCREEN_COLOR_ID]  = v } }
 
     suspend fun markOnboardingSeen() {
         dataStore.edit { it[Keys.SEEN_ONBOARDING] = true }

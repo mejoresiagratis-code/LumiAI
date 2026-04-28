@@ -53,13 +53,14 @@ class AiModeController @Inject constructor(
     )
 
     fun stop(setTorch: ((Boolean) -> Unit)? = null) {
+        val wasActive = active     // capture before clearing — only emit OFF if was running
         active = false             // FIRST: block any new setTorch calls from active loops
         activeJob?.cancel(); activeJob = null
         pulseJob?.cancel();  pulseJob  = null
         musicDetector?.stop(); musicDetector = null
         registeredListeners.forEach { sensorManager.unregisterListener(it) }
         registeredListeners.clear()
-        setTorch?.invoke(false)   // guarantee torch OFF on every mode exit
+        if (wasActive) setTorch?.invoke(false)   // only emit OFF if something was actually running
     }
 
     /** Wraps setTorch to be a no-op after stop() is called */
