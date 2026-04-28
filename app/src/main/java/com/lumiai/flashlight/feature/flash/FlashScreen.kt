@@ -470,6 +470,7 @@ private fun ModeConfigSheet(
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
     onTorchIntensity: (Float) -> Unit = {},
+    onScreenBrightness: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
@@ -769,7 +770,7 @@ private fun ModeConfigSheet(
                     value = brightness,
                     onValueChange = { brightness = it },
                     onValueChangeFinished = {
-                        viewModel.setScreenBrightness(brightness)
+                        onScreenBrightness(brightness)
                     },
                     valueRange = 0.05f..1.0f,
                     steps = 18,
