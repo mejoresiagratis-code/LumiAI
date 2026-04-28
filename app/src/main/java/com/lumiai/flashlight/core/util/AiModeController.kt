@@ -81,6 +81,9 @@ class AiModeController @Inject constructor(
             while (isActive) {
                 val lux = lightLevel
                 if (lux <= 30f && setStrength != null) {
+                    // Torch must be ON before setTorchStrength — ensure it
+                    setTorch(true)
+                    delay(50L)
                     setStrength(0.25f)
                     awaitCancellation()
                 }

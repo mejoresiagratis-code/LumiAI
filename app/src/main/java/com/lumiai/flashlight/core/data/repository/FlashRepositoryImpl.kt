@@ -105,11 +105,11 @@ class FlashRepositoryImpl constructor(
         when (mode) {
             is FlashMode.Steady -> {
                 val intensity = torchIntensityProvider?.invoke() ?: 1.0f
-                if (intensity >= 0.99f || !supportsTorchStrength) {
-                    setTorch(true)
-                } else {
-                    _isFlashOn.value = true
-                    mainHandler.post { setTorchStrength(intensity) }
+                // Always turn torch ON first — turnOnTorchWithStrengthLevel requires torch enabled
+                setTorch(true)
+                if (intensity < 0.99f && supportsTorchStrength) {
+                    // Adjust level after torch is on (post ensures ordering)
+                    mainHandler.postDelayed({ setTorchStrength(intensity) }, 50L)
                 }
             }
             is FlashMode.Screen -> {
@@ -120,10 +120,10 @@ class FlashRepositoryImpl constructor(
                 // Ensure torch is physically off without touching _isFlashOn
                 mainHandler.post { setTorchOnMain(false) }
             }
-            is FlashMode.Sos        -> strobeController.startSos { setTorch(it) }
+            is FlashMode.Sos        -> strobeController.startSos({ setTorch(it) }, morseSpeedProvider?.invoke() ?: 1.0f)
             is FlashMode.MorseCustom -> {
                 if (mode.text.isNotBlank())
-                    strobeController.startMorse(mode.text) { setTorch(it) }
+                    strobeController.startMorse(mode.text, { setTorch(it) }, morseSpeedProvider?.invoke() ?: 1.0f)
                 else
                     setTorch(true) // no text yet — steady until user types
             }
@@ -212,11 +212,15 @@ class FlashRepositoryImpl constructor(
             try {
                 backCameraId?.let { id ->
                     val strength = (clamped * maxTorchStrength).toInt().coerceAtLeast(1)
+                    // turnOnTorchWithStrengthLevel requires torch already enabled.
+                    // Ensure it is before setting strength level.
+                    cameraManager.setTorchMode(id, true)
                     cameraManager.turnOnTorchWithStrengthLevel(id, strength)
                     _isFlashOn.value = clamped > 0f
                 }
             } catch (e: Exception) {
-                setTorch(clamped > 0.5f) // fallback
+                // Fallback: enable at full brightness via CameraX
+                mainHandler.post { setTorchOnMain(clamped > 0f) }
             }
         } else {
             setTorch(clamped > 0.5f)
