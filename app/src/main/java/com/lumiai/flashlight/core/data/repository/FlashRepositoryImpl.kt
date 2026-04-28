@@ -96,8 +96,8 @@ class FlashRepositoryImpl constructor(
 
     override suspend fun activateMode(mode: FlashMode): Result<Unit> {
         val result = runCatching {
-        strobeController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) } }
-        aiController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) } }
+        strobeController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) }; Unit }
+        aiController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) }; Unit }
         _currentMode.value = mode
 
         when (mode) {
@@ -173,6 +173,7 @@ class FlashRepositoryImpl constructor(
             }
             else -> setTorch(true)
         }
+        Unit   // explicit Unit return — ensures Result<Unit> not Result<Any>
         }   // end runCatching
         if (result.isFailure) {
             // Controller threw — guarantee clean state so UI isn't stuck ON
