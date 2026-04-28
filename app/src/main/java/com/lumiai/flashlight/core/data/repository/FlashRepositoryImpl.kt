@@ -38,6 +38,7 @@ class FlashRepositoryImpl constructor(
     private var cameraProvider:  ProcessCameraProvider? = null
 
     // AI config providers — set by FlashViewModel after construction
+    var torchIntensityProvider: (() -> Float)? = null
     var smartSpeedProvider:    (() -> Float)? = null
     var sleepMinutesProvider:  (() -> Int)?   = null
     var micSensitivityProvider:(() -> Float)? = null
@@ -101,7 +102,15 @@ class FlashRepositoryImpl constructor(
         _currentMode.value = mode
 
         when (mode) {
-            is FlashMode.Steady -> setTorch(true)
+            is FlashMode.Steady -> {
+                val intensity = torchIntensityProvider?.invoke() ?: 1.0f
+                if (intensity >= 0.99f || !supportsTorchStrength) {
+                    setTorch(true)
+                } else {
+                    _isFlashOn.value = true
+                    mainHandler.post { setTorchStrength(intensity) }
+                }
+            }
             is FlashMode.Screen -> {
                 // Screen mode: UI-only flash — torch hardware stays OFF.
                 // Do NOT call setTorch() at all — it overwrites _isFlashOn.
@@ -117,8 +126,8 @@ class FlashRepositoryImpl constructor(
                 else
                     setTorch(true) // no text yet — steady until user types
             }
-            is FlashMode.Strobe -> strobeController.startStrobe(mode.hz) { setTorch(it) }
-            is FlashMode.Disco  -> strobeController.startDisco(mode.bpm) { setTorch(it) }
+            is FlashMode.Strobe -> strobeController.startStrobe(mode.hz, { setTorch(it) }, torchIntensityProvider?.invoke() ?: 1.0f)
+            is FlashMode.Disco  -> strobeController.startDisco(mode.bpm, { setTorch(it) }, torchIntensityProvider?.invoke() ?: 1.0f)
             is FlashMode.SmartBrightness -> {
                 _isFlashOn.value = true
                 aiController.startSmart(
@@ -262,11 +271,21 @@ class FlashRepositoryImpl constructor(
     private fun setTorchOnMain(on: Boolean) {
         val cameraX = cameraXCamera
         if (cameraX != null) {
-            // CameraX path — preferred
+            // CameraX path — use exclusively when session is open
+            // camera2.setTorchMode conflicts with open CameraX session on Samsung
             cameraX.cameraControl.enableTorch(on)
         } else {
-            // camera2 fallback — works even without CameraX binding
-            setTorchCamera2(on)
+            // CameraX not bound yet (first launch race condition) — retry after bind
+            // Only fall back to camera2 if CameraX never binds
+            mainHandler.postDelayed({
+                val cameraX2 = cameraXCamera
+                if (cameraX2 != null) {
+                    cameraX2.cameraControl.enableTorch(on)
+                } else {
+                    // True fallback: CameraX unavailable, use camera2 directly
+                    setTorchCamera2(on)
+                }
+            }, 300L)
         }
     }
 

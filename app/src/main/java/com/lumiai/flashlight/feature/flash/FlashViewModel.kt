@@ -54,6 +54,16 @@ class FlashViewModel @Inject constructor(
     val showConfigSheet: StateFlow<Boolean> = _showConfigSheet.asStateFlow()
 
 
+    // ── Torch intensity (all modes) ────────────────────────────────────────────
+    private val _torchIntensity = MutableStateFlow(1.0f)   // 0.1f (dim) .. 1.0f (full)
+    val torchIntensity: StateFlow<Float> = _torchIntensity.asStateFlow()
+
+    fun setTorchIntensity(v: Float) { _torchIntensity.value = v.coerceIn(0.1f, 1.0f) }
+
+    fun setScreenBrightness(brightness: Float) {
+        viewModelScope.launch { settingsRepository.updateScreenBrightness(brightness) }
+    }
+
     // ── AI mode config params ──────────────────────────────────────────────
     // Smart: pulse speed multiplier (0.5x slow … 2.0x fast)
     private val _smartSpeed = MutableStateFlow(1.0f)
@@ -108,6 +118,7 @@ class FlashViewModel @Inject constructor(
 
     init {
         // Wire AI config providers to repository
+        flashRepository.torchIntensityProvider = { _torchIntensity.value }
         flashRepository.smartSpeedProvider     = { _smartSpeed.value }
         flashRepository.sleepMinutesProvider   = { _sleepMinutes.value }
         flashRepository.micSensitivityProvider = { _micSensitivity.value }

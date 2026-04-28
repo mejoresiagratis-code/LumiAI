@@ -59,7 +59,8 @@ fun FlashScreen(
     val mode = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
 
-    val screenColor by viewModel.screenColor.collectAsState()
+    val screenColor   by viewModel.screenColor.collectAsState()
+    val torchIntensity by viewModel.torchIntensity.collectAsState()
     val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
 
     val view = LocalView.current
@@ -464,9 +465,11 @@ private fun ModeConfigSheet(
     uiState: FlashUiState,
     morseText: String,
     screenColor: ScreenColor = ScreenColor.WHITE,
+    torchIntensity: Float = 1.0f,
     smartSpeed: Float = 1.0f,
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
+    onTorchIntensity: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
@@ -495,10 +498,12 @@ private fun ModeConfigSheet(
         )
 
         val title = when (mode) {
+            is FlashMode.Steady      -> "Steady — Intensity"
             is FlashMode.Strobe      -> stringResource(R.string.config_strobe_title)
             is FlashMode.Disco       -> stringResource(R.string.config_disco_title)
             is FlashMode.MorseCustom -> stringResource(R.string.config_morse_title)
             is FlashMode.Screen      -> stringResource(R.string.config_screen_title)
+            is FlashMode.Sos         -> "SOS — Intensity"
             else -> return
         }
         Text(
@@ -507,6 +512,38 @@ private fun ModeConfigSheet(
             fontWeight = FontWeight.W600,
             color      = LumiColor.White,
         )
+
+        // ── Intensity slider for torch modes ─────────────────────────────────
+        val hasTorchIntensity = mode is FlashMode.Steady || mode is FlashMode.Strobe ||
+                                mode is FlashMode.Disco  || mode is FlashMode.Sos    ||
+                                mode is FlashMode.MorseCustom
+        if (hasTorchIntensity) {
+            var intensity by remember { mutableFloatStateOf(torchIntensity) }
+            val intensityPct = (intensity * 100).toInt()
+            Text("FLASH INTENSITY", fontSize = 10.sp, color = LumiColor.Gray600,
+                fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+            Text("$intensityPct%", fontSize = 24.sp,
+                fontWeight = FontWeight.W700, color = LumiColor.Amber400)
+            Slider(
+                value = intensity,
+                onValueChange = { intensity = it },
+                onValueChangeFinished = { onTorchIntensity(intensity) },
+                valueRange = 0.1f..1.0f,
+                steps = 17,
+                colors = SliderDefaults.colors(
+                    thumbColor = LumiColor.Amber400,
+                    activeTrackColor = LumiColor.Amber400,
+                    inactiveTrackColor = LumiColor.Navy600,
+                ),
+            )
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text("10%", fontSize = 11.sp, color = LumiColor.Gray600)
+                Text("100%", fontSize = 11.sp, color = LumiColor.Gray600)
+            }
+            if (mode is FlashMode.Steady || mode is FlashMode.Sos) {
+                return  // Steady/SOS only have intensity — no other config
+            }
+        }
 
         when (mode) {
             is FlashMode.Strobe -> {
@@ -722,6 +759,27 @@ private fun ModeConfigSheet(
                 }
             }
             is FlashMode.Screen -> {
+                // Screen brightness slider
+                var brightness by remember { mutableFloatStateOf(uiState.screenBrightness) }
+                Text("SCREEN BRIGHTNESS", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Text("${(brightness * 100).toInt()}%", fontSize = 24.sp,
+                    fontWeight = FontWeight.W700, color = LumiColor.Amber400)
+                Slider(
+                    value = brightness,
+                    onValueChange = { brightness = it },
+                    onValueChangeFinished = {
+                        viewModel.setScreenBrightness(brightness)
+                    },
+                    valueRange = 0.05f..1.0f,
+                    steps = 18,
+                    colors = SliderDefaults.colors(
+                        thumbColor = LumiColor.Amber400,
+                        activeTrackColor = LumiColor.Amber400,
+                        inactiveTrackColor = LumiColor.Navy600,
+                    ),
+                )
+                Spacer(Modifier.height(8.dp))
                 Text("Tap to pick a color",
                     fontSize = 13.sp, color = LumiColor.Gray500)
                 Row(

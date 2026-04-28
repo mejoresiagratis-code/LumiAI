@@ -30,16 +30,17 @@ class StrobeController constructor() {
     }
 
     /** Simple on/off strobe at [hz] cycles per second (max 20 Hz) */
-    fun startStrobe(hz: Float, setTorch: (Boolean) -> Unit) {
+    fun startStrobe(hz: Float, setTorch: (Boolean) -> Unit, intensity: Float = 1.0f) {
         stop(); active = true
         val clampedHz = hz.coerceIn(0.5f, 20f)
-        val halfPeriodMs = (1000f / (clampedHz * 2)).roundToLong()
+        val periodMs = (1000f / clampedHz).roundToLong()
+        // Intensity scales duty cycle: 1.0 = 50/50, 0.1 = 10% on / 90% off
         activeJob = scope.launch {
-            var on = true
             while (isActive) {
-                guarded(on, setTorch)
-                on = !on
-                delay(halfPeriodMs)
+                val onMs  = (periodMs * intensity.coerceIn(0.1f, 0.9f)).toLong()
+                val offMs = periodMs - onMs
+                guarded(true,  setTorch); delay(onMs)
+                guarded(false, setTorch); delay(offMs)
             }
         }
     }
@@ -71,12 +72,14 @@ class StrobeController constructor() {
     }
 
     /** Disco mode: random on/off within BPM tempo */
-    fun startDisco(bpm: Float, setTorch: (Boolean) -> Unit) {
+    fun startDisco(bpm: Float, setTorch: (Boolean) -> Unit, intensity: Float = 1.0f) {
         stop(); active = true
         val beatMs = (60_000f / bpm).toLong()
         activeJob = scope.launch {
             while (isActive) {
-                val onMs = (beatMs * (0.2f + Math.random().toFloat() * 0.5f)).toLong()
+                // intensity scales the max on-time fraction
+                val maxFraction = (0.2f + intensity * 0.5f).coerceIn(0.1f, 0.7f)
+                val onMs = (beatMs * (0.1f + Math.random().toFloat() * maxFraction)).toLong()
                 guarded(true, setTorch)
                 delay(onMs)
                 guarded(false, setTorch)
