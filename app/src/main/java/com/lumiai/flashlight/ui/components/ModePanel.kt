@@ -80,6 +80,9 @@ val aiModeItems = listOf(
         info = "Reacts to voice and sound spikes. Great for signaling."),
 )
 
+
+
+
 @Composable
 fun ModePanel(
     currentMode: FlashMode,
