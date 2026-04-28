@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -18,8 +17,6 @@ import com.lumiai.flashlight.BuildConfig
  */
 @Composable
 fun AdBanner(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier.fillMaxWidth(),

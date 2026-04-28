@@ -26,6 +26,7 @@ class AiModeController @Inject constructor(
     private var activeJob: Job? = null
     private var pulseJob: Job?  = null
     private var musicDetector: MusicBeatDetector? = null
+    @Volatile private var active = false   // guards against post-cancel setTorch calls
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private var lightLevel = 200f
@@ -52,6 +53,7 @@ class AiModeController @Inject constructor(
     )
 
     fun stop(setTorch: ((Boolean) -> Unit)? = null) {
+        active = false             // FIRST: block any new setTorch calls from active loops
         activeJob?.cancel(); activeJob = null
         pulseJob?.cancel();  pulseJob  = null
         musicDetector?.stop(); musicDetector = null
@@ -60,11 +62,17 @@ class AiModeController @Inject constructor(
         setTorch?.invoke(false)   // guarantee torch OFF on every mode exit
     }
 
+    /** Wraps setTorch to be a no-op after stop() is called */
+    private fun guarded(on: Boolean, setTorch: (Boolean) -> Unit) {
+        if (active) setTorch(on)
+    }
+
     // ── ◎ SMART — adapts frequency to ambient light ───────────────────────────
     // Steady for 1.5s warmup, then pulses only when bright (outdoor attention signal).
     // In dark environments: dims using strength levels (no visible blink).
     fun startSmart(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null, speedMult: Float = 1.0f) {
         stop()
+        active = true
         lightLevel = 200f   // reset stale reading from previous mode
         startLightSensor()
         activeJob = scope.launch {
@@ -81,8 +89,8 @@ class AiModeController @Inject constructor(
                     lux > 200f  -> (400L / speedMult).toLong() to (300L / speedMult).toLong()
                     else        -> (800L / speedMult).toLong() to (400L / speedMult).toLong()
                 }
-                setTorch(true);  delay(onMs)
-                setTorch(false); delay(offMs)
+                guarded(true,  setTorch); delay(onMs)
+                guarded(false, setTorch); delay(offMs)
             }
         }
     }
@@ -93,6 +101,7 @@ class AiModeController @Inject constructor(
     // the UI label change, not via hardware blink.
     fun startReading(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
         stop()
+        active = true
         activeJob = scope.launch {
             setTorch(true)
             if (setStrength != null) {
@@ -118,6 +127,7 @@ class AiModeController @Inject constructor(
     // Uses torch strength if available; otherwise just stays ON at full brightness.
     fun startAmbient(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null) {
         stop()
+        active = true
         lightLevel = 200f  // reset to safe indoor default before sensor kicks in
         startLightSensor()
         activeJob = scope.launch {
@@ -148,7 +158,7 @@ class AiModeController @Inject constructor(
                                      600L,200L,600L,200L,600L,600L,
                                      200L,200L,200L,200L,200L,1400L)
                     while (isActive) {
-                        sos.forEachIndexed { i, ms -> setTorch(i % 2 == 0); delay(ms) }
+                        sos.forEachIndexed { i, ms -> guarded(i % 2 == 0, setTorch); delay(ms) }
                     }
                 } else {
                     awaitCancellation() // stay ON steady regardless of lux
@@ -161,6 +171,7 @@ class AiModeController @Inject constructor(
     // Intentional pulsing — this IS the mode's behavior.
     fun startCustomRhythm(setTorch: (Boolean) -> Unit) {
         stop()
+        active = true
         activeJob = scope.launch {
             setTorch(true)
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
@@ -174,8 +185,8 @@ class AiModeController @Inject constructor(
             var idx = 0
             while (isActive) {
                 val (onMs, offMs) = pattern[idx % pattern.size]
-                setTorch(true);  delay(onMs)
-                setTorch(false); delay(offMs)
+                guarded(true,  setTorch); delay(onMs)
+                guarded(false, setTorch); delay(offMs)
                 idx++
             }
         }
@@ -184,6 +195,7 @@ class AiModeController @Inject constructor(
     // ── ◌ SLEEP — gradual fade, torch strength when available ────────────────
     fun startSleepTimer(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null, durationMinutes: Int = 3) {
         stop()
+        active = true
         activeJob = scope.launch {
             val totalMs = durationMinutes.toLong() * 60_000L
             val startMs = System.currentTimeMillis()
@@ -198,14 +210,14 @@ class AiModeController @Inject constructor(
                         setStrength(duty.coerceAtLeast(0.05f))
                         delay(500L)
                     } else {
-                        setTorch(false)   // physically off when duty reaches 0
+                        guarded(false, setTorch)   // physically off when duty reaches 0
                         break
                     }
                 } else {
                     val onMs  = (500L * duty).toLong().coerceAtLeast(0L)
                     val offMs = 500L - onMs
-                    if (onMs  > 0) { setTorch(true);  delay(onMs)  }
-                    if (offMs > 0) { setTorch(false); delay(offMs) }
+                    if (onMs  > 0) { guarded(true,  setTorch); delay(onMs)  }
+                    if (offMs > 0) { guarded(false, setTorch); delay(offMs) }
                 }
             }
             setTorch(false)
@@ -215,13 +227,14 @@ class AiModeController @Inject constructor(
     // ── ♩ MUSIC — beat detection ──────────────────────────────────────────────
     fun startMusic(setTorch: (Boolean) -> Unit, sensitivity: Float = 1.0f) {
         stop()
+        active = true
         musicDetector = MusicBeatDetector(
             threshold     = 1.5f / sensitivity,
             minIntervalMs = (300L / sensitivity).toLong().coerceAtLeast(100L),
             onBeat = {
-                setTorch(true)
+                guarded(true, setTorch)
                 pulseJob?.cancel()
-                pulseJob = scope.launch { delay(80L); setTorch(false) }
+                pulseJob = scope.launch { delay(80L); guarded(false, setTorch) }
             },
         )
         musicDetector?.start()
@@ -231,6 +244,7 @@ class AiModeController @Inject constructor(
     // ── ◉ WALK — pulse per step ───────────────────────────────────────────────
     fun startWalk(setTorch: (Boolean) -> Unit) {
         stop()
+        active = true
         val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
         if (stepSensor != null) {
             val stepListener = object : SensorEventListener {
@@ -238,10 +252,10 @@ class AiModeController @Inject constructor(
                     if (e.sensor.type != Sensor.TYPE_STEP_DETECTOR) return
                     pulseJob?.cancel()
                     pulseJob = scope.launch {
-                        setTorch(false); delay(60L)
-                        setTorch(true);  delay(80L)
-                        setTorch(false); delay(60L)
-                        setTorch(true)
+                        guarded(false, setTorch); delay(60L)
+                        guarded(true,  setTorch); delay(80L)
+                        guarded(false, setTorch); delay(60L)
+                        guarded(true,  setTorch)
                     }
                 }
                 override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
@@ -254,8 +268,8 @@ class AiModeController @Inject constructor(
         } else {
             activeJob = scope.launch {
                 while (isActive) {
-                    setTorch(true);  delay(120L)
-                    setTorch(false); delay(440L)
+                    guarded(true,  setTorch); delay(120L)
+                    guarded(false, setTorch); delay(440L)
                 }
             }
         }
@@ -264,12 +278,13 @@ class AiModeController @Inject constructor(
     // ── ◍ VOICE — sound-reactive ──────────────────────────────────────────────
     fun startVoice(setTorch: (Boolean) -> Unit, sensitivity: Float = 1.0f) {
         stop()
+        active = true
         setTorch(true)
         musicDetector = MusicBeatDetector(
             onBeat        = {
-                setTorch(true)
+                guarded(true, setTorch)
                 pulseJob?.cancel()
-                pulseJob = scope.launch { delay(150L); setTorch(false) }
+                pulseJob = scope.launch { delay(150L); guarded(false, setTorch) }
             },
             threshold     = 1.3f / sensitivity,
             minIntervalMs = (200L / sensitivity).toLong().coerceAtLeast(80L),

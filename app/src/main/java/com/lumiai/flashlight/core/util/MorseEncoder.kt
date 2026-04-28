@@ -43,9 +43,9 @@ object MorseEncoder {
         val result = mutableListOf<Pair<Long, Long>>()
         val words  = text.uppercase().trim().split(" ")
 
-        words.forEachIndexed { wi, word ->
-            word.forEachIndexed { li, char ->
-                val code = CODE[char] ?: return@forEachIndexed
+        words.forEachIndexed word@{ wi, word ->
+            word.forEachIndexed char@{ li, char ->
+                val code = CODE[char] ?: return@char
                 code.forEachIndexed { ei, symbol ->
                     val onMs = if (symbol == '.') DIT else DAH
                     val offMs = if (ei < code.length - 1) ELEM_GAP else 0L

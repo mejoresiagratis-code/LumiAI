@@ -171,7 +171,6 @@ class FlashRepositoryImpl constructor(
                     sensitivity = micSensitivityProvider?.invoke() ?: 1.0f,
                 )
             }
-            else -> setTorch(true)
         }
         Unit   // explicit Unit return — ensures Result<Unit> not Result<Any>
         }   // end runCatching

@@ -78,7 +78,7 @@ fun FlashButton(
         targetValue = if (isOn) 1f else 0.45f, tween(250), label = "icon_alpha"
     )
     val bgAlpha by animateFloatAsState(
-        targetValue = if (isOn) 1f else 0f, tween(300), label = "bg_alpha"
+        targetValue = if (isOn) 0.18f else 0f, tween(300), label = "bg_alpha"
     )
     val ringAlpha by animateFloatAsState(
         targetValue = if (isOn) 0.6f else 0.2f, tween(300), label = "ring_alpha"
@@ -167,7 +167,10 @@ fun FlashButton(
                         )
                     else
                         Brush.radialGradient(
-                            colors = listOf(LumiColor.Navy600, LumiColor.Navy800),
+                            colors = listOf(
+                                LumiColor.Navy600.copy(alpha = 1f),
+                                LumiColor.Navy800.copy(alpha = 1f - bgAlpha),
+                            ),
                             radius = size.value * 2f,
                         )
                 )

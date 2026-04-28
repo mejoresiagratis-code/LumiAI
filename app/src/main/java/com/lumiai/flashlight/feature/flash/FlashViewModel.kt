@@ -83,14 +83,12 @@ class FlashViewModel @Inject constructor(
         flashRepository.isFlashOn,
         flashRepository.currentMode,
         getProStatusUseCase(),
-        flashRepository.hasHardwareFlash,
         settingsRepository.settings,
     ) { args ->
         val isOn      = args[0] as Boolean
         val mode      = args[1] as FlashMode
         val proStatus = args[2] as ProStatus
-        val hasFlash  = args[3] as Boolean
-        val settings  = args[4] as com.lumiai.flashlight.core.domain.model.UserSettings
+        val settings  = args[3] as com.lumiai.flashlight.core.domain.model.UserSettings
         FlashUiState(
             isFlashOn        = isOn,
             currentMode      = mode,
