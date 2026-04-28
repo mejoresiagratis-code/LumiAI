@@ -16,13 +16,15 @@ class StrobeController constructor() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var activeJob: Job? = null
 
-    fun stop() {
+    fun stop(setTorch: ((Boolean) -> Unit)? = null) {
         activeJob?.cancel()
         activeJob = null
+        setTorch?.invoke(false)   // guarantee torch OFF on mode exit
     }
 
     /** Simple on/off strobe at [hz] cycles per second (max 20 Hz) */
     fun startStrobe(hz: Float, setTorch: (Boolean) -> Unit) {
+        stop()
         val clampedHz = hz.coerceIn(0.5f, 20f)
         val halfPeriodMs = (1000f / (clampedHz * 2)).roundToLong()
         activeJob = scope.launch {
@@ -37,6 +39,7 @@ class StrobeController constructor() {
 
     /** SOS pattern: · · ·  — — —  · · · (Morse) */
     fun startSos(setTorch: (Boolean) -> Unit) {
+        stop()
         // dit=200ms, dah=600ms, gap=200ms, word gap=1400ms
         val dit = 200L
         val dah = 600L
@@ -62,6 +65,7 @@ class StrobeController constructor() {
 
     /** Disco mode: random on/off within BPM tempo */
     fun startDisco(bpm: Float, setTorch: (Boolean) -> Unit) {
+        stop()
         val beatMs = (60_000f / bpm).toLong()
         activeJob = scope.launch {
             while (isActive) {
@@ -77,6 +81,7 @@ class StrobeController constructor() {
 
     /** Custom Morse: encodes arbitrary text and flashes it in a loop */
     fun startMorse(text: String, setTorch: (Boolean) -> Unit) {
+        stop()
         if (text.isBlank()) return
         val pattern = MorseEncoder.encode(text)
         if (pattern.isEmpty()) return
@@ -92,6 +97,7 @@ class StrobeController constructor() {
 
     /** Custom pattern: array of [on_ms, off_ms, on_ms, off_ms, ...] */
     fun startCustom(pattern: LongArray, setTorch: (Boolean) -> Unit) {
+        stop()
         activeJob = scope.launch {
             while (isActive) {
                 pattern.forEachIndexed { i, duration ->

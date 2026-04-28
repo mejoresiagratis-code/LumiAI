@@ -94,9 +94,10 @@ class FlashRepositoryImpl constructor(
         }
     }
 
-    override suspend fun activateMode(mode: FlashMode): Result<Unit> = runCatching {
-        strobeController.stop()
-        aiController.stop()
+    override suspend fun activateMode(mode: FlashMode): Result<Unit> {
+        val result = runCatching {
+        strobeController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) } }
+        aiController.stop { on -> if (on) setTorch(true) else mainHandler.post { setTorchOnMain(false) } }
         _currentMode.value = mode
 
         when (mode) {
@@ -172,14 +173,21 @@ class FlashRepositoryImpl constructor(
             }
             else -> setTorch(true)
         }
+        }   // end runCatching
+        if (result.isFailure) {
+            // Controller threw — guarantee clean state so UI isn't stuck ON
+            _isFlashOn.value = false
+            mainHandler.post { setTorchOnMain(false) }
+        }
+        return result
     }
 
     override suspend fun turnOff(): Result<Unit> = runCatching {
-        strobeController.stop()
-        aiController.stop()
+        strobeController.stop()   // no setTorch here — setTorch(false) follows immediately
+        aiController.stop()       // same — avoids double hardware write
         setTorch(false)
         _isFlashOn.value = false
-        // NOTE: do NOT reset _currentMode here — user's selection persists after OFF
+        // NOTE: do NOT reset _currentMode — user's selection persists after OFF
     }
 
     /** Change the current mode without activating flash (used when flash is OFF) */
