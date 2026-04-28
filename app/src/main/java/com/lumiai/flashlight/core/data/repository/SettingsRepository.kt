@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,6 +32,7 @@ class SettingsRepository @Inject constructor(
         val NOTIF_CALLS      = booleanPreferencesKey("notif_flash_calls")
         val NOTIF_MESSAGES   = booleanPreferencesKey("notif_flash_messages")
         val NOTIF_OTHER      = booleanPreferencesKey("notif_flash_other")
+        val APP_LANGUAGE     = stringPreferencesKey("app_language")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->
@@ -48,6 +50,7 @@ class SettingsRepository @Inject constructor(
             notifFlashCalls     = prefs[Keys.NOTIF_CALLS]     ?: true,
             notifFlashMessages  = prefs[Keys.NOTIF_MESSAGES]  ?: true,
             notifFlashOther     = prefs[Keys.NOTIF_OTHER]     ?: false,
+            appLanguage         = prefs[Keys.APP_LANGUAGE]   ?: "system",
         )
     }
 
@@ -80,6 +83,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setNotifFlashCalls(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_CALLS]    = v } }
     suspend fun setNotifFlashMessages(v: Boolean) { dataStore.edit { it[Keys.NOTIF_MESSAGES] = v } }
     suspend fun setNotifFlashOther(v: Boolean)    { dataStore.edit { it[Keys.NOTIF_OTHER]    = v } }
+    suspend fun setAppLanguage(lang: String)      { dataStore.edit { it[Keys.APP_LANGUAGE]   = lang } }
 
     suspend fun markOnboardingSeen() {
         dataStore.edit { it[Keys.SEEN_ONBOARDING] = true }

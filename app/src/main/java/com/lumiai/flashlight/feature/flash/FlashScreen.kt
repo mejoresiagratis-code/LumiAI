@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.feature.flash
 
+import com.lumiai.flashlight.R
+import androidx.compose.ui.res.stringResource
 import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.background
@@ -323,8 +325,8 @@ private fun TopBar(
 }
 
 private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): String = when {
-    !isOn -> "TAP TO TURN ON"
-    mode is FlashMode.Screen -> "SCREEN MODE"
+    !isOn -> stringResource(R.string.status_tap_to_turn_on)
+    mode is FlashMode.Screen -> stringResource(R.string.status_screen_mode)
     mode is FlashMode.Sos -> "SOS · · · — — —"
     mode is FlashMode.Strobe -> "STROBE · ${uiState.strobeHz.toInt()} HZ"
     mode is FlashMode.Disco -> "DISCO · ${uiState.discoBpm.toInt()} BPM"
@@ -333,7 +335,7 @@ private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): 
     mode is FlashMode.AmbientSmart -> "◈ AMBIENT MODE"
     mode is FlashMode.CustomRhythm -> "⬡ CUSTOM RHYTHM"
     mode is FlashMode.SleepTimer -> "◌ SLEEP TIMER"
-    else -> "FLASHLIGHT ON"
+    else -> stringResource(R.string.status_flashlight_on)
 }
 
 @Composable
@@ -492,10 +494,10 @@ private fun ModeConfigSheet(
         )
 
         val title = when (mode) {
-            is FlashMode.Strobe      -> "Strobe — Frequency"
-            is FlashMode.Disco       -> "Disco — Tempo"
-            is FlashMode.MorseCustom -> "Morse — Message"
-            is FlashMode.Screen      -> "Screen — Color"
+            is FlashMode.Strobe      -> stringResource(R.string.config_strobe_title)
+            is FlashMode.Disco       -> stringResource(R.string.config_disco_title)
+            is FlashMode.MorseCustom -> stringResource(R.string.config_morse_title)
+            is FlashMode.Screen      -> stringResource(R.string.config_screen_title)
             else -> return
         }
         Text(

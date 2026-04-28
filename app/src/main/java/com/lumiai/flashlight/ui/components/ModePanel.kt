@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.ui.components
 
+import com.lumiai.flashlight.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -101,7 +103,7 @@ fun ModePanel(
                 .background(LumiColor.Navy800),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            listOf("Flash", "AI Modes").forEachIndexed { idx, label ->
+            listOf(stringResource(R.string.tab_flash), stringResource(R.string.tab_ai_modes)).forEachIndexed { idx, label ->
                 val active = selectedTab == idx
                 Box(
                     contentAlignment = Alignment.Center,
@@ -136,7 +138,7 @@ fun ModePanel(
             when (currentMode) {
                 is FlashMode.Strobe -> key("strobe_slider") {
                     ContextSlider(
-                        label = "FREQUENCY",
+                        label = stringResource(R.string.config_frequency_label),
                         value = strobeHz,
                         range = 1f..20f,
                         steps = 18,
@@ -147,7 +149,7 @@ fun ModePanel(
                 }
                 is FlashMode.Disco -> key("disco_slider") {
                     ContextSlider(
-                        label = "TEMPO",
+                        label = stringResource(R.string.config_tempo_label),
                         value = discoBpm,
                         range = 60f..200f,
                         steps = 27,
@@ -174,7 +176,7 @@ fun ModePanel(
         ) { tab ->
             if (tab == 0) {
                 FlashModeGrid(
-                    items = flashModeItems,
+                    items = buildFlashModeItems(),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,
@@ -182,7 +184,7 @@ fun ModePanel(
                 )
             } else {
                 AiModeGrid(
-                    items = aiModeItems,
+                    items = buildAiModeItems(),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,

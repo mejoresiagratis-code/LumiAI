@@ -18,6 +18,7 @@ import com.lumiai.flashlight.core.di.AdManager
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.util.ShakeDetector
 import com.lumiai.flashlight.widget.FlashWidgetReceiver
+import com.lumiai.flashlight.core.util.LanguageManager
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
 import androidx.compose.runtime.collectAsState
@@ -30,6 +31,14 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // Apply saved language before the Activity inflates any views
+        val prefs = newBase.getSharedPreferences("lumi_lang", android.content.Context.MODE_PRIVATE)
+        val lang = prefs.getString("app_language_override", "system") ?: "system"
+        super.attachBaseContext(LanguageManager.wrap(newBase, lang))
+    }
+
 
     private val flashViewModel: FlashViewModel by viewModels()
 

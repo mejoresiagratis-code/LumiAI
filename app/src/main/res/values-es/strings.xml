@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">LumiAI Linterna</string>
+    <string name="app_title">LUMI·AI</string>
+    <string name="pro_badge">PRO</string>
+
+    <!-- Flash button status -->
+    <string name="status_tap_to_turn_on">TOCA PARA ENCENDER</string>
+    <string name="status_screen_mode">MODO PANTALLA</string>
+    <string name="status_flashlight_on">LINTERNA ENCENDIDA</string>
+
+    <!-- Tab labels -->
+    <string name="tab_flash">Flash</string>
+    <string name="tab_ai_modes">Modos IA</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_flash_label">Flash</string>
+
+    <!-- Buttons -->
+    <string name="btn_turn_on">Encender</string>
+    <string name="btn_turn_off">Apagar</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_skip">Omitir</string>
+    <string name="btn_next">Siguiente</string>
+    <string name="btn_get_started">Comenzar</string>
+
+    <!-- Auto-off chip -->
+    <string name="auto_off_chip">⏱ Auto-apagado: %s</string>
+
+    <!-- Mode names -->
+    <string name="mode_steady">Continuo</string>
+    <string name="mode_screen">Pantalla</string>
+    <string name="mode_sos">SOS</string>
+    <string name="mode_morse">Morse</string>
+    <string name="mode_strobe">Estroboscopio</string>
+    <string name="mode_disco">Disco</string>
+    <string name="mode_smart">Inteligente</string>
+    <string name="mode_read">Lectura</string>
+    <string name="mode_ambient">Ambiental</string>
+    <string name="mode_custom">Personalizado</string>
+    <string name="mode_sleep">Sueño</string>
+    <string name="mode_music">Música</string>
+    <string name="mode_walk">Caminar</string>
+    <string name="mode_voice">Voz</string>
+
+    <!-- Mode descriptions -->
+    <string name="mode_steady_desc">Brillo máximo, continuo</string>
+    <string name="mode_screen_desc">Pantalla blanca, sin flash</string>
+    <string name="mode_morse_desc">Texto a flash</string>
+    <string name="mode_strobe_desc">Pulso de 1–20 Hz</string>
+    <string name="mode_sos_desc">Morse · · · — — —</string>
+    <string name="mode_disco_desc">Sincronizado · 60–200 BPM</string>
+    <string name="mode_smart_desc">Se adapta a la luz ambiental</string>
+    <string name="mode_read_desc">Luz cálida, se atenúa sola</string>
+    <string name="mode_ambient_desc">Lee la escena, elige patrón</string>
+    <string name="mode_custom_desc">Patrón adaptado a la hora</string>
+    <string name="mode_sleep_desc">Se apaga gradualmente en 3 min</string>
+    <string name="mode_music_desc">Sincroniza el flash con la música</string>
+    <string name="mode_walk_desc">Pulso en cada paso</string>
+    <string name="mode_voice_desc">Reacciona a la voz y sonidos</string>
+
+    <!-- Mode info tooltips -->
+    <string name="mode_steady_info">Flash continuo a máximo brillo. Ideal para iluminación general.</string>
+    <string name="mode_screen_info">Usa la pantalla como fuente de luz blanca. Color y brillo ajustables.</string>
+    <string name="mode_morse_info">Escribe cualquier texto — el flash lo transmite en código Morse en bucle.</string>
+    <string name="mode_strobe_info">Pulso rápido de 1–20 Hz. Precaución cerca de personas fotosensibles.</string>
+    <string name="mode_sos_info">Señal SOS: · · · — — — · · · en bucle. Señal internacional de socorro.</string>
+    <string name="mode_disco_info">Flash sincronizado a 60–200 BPM. Perfecto para fiestas.</string>
+    <string name="mode_smart_info">Lee el sensor de luz y ajusta la frecuencia de pulso automáticamente.</string>
+    <string name="mode_read_info">Luz cálida continua que se atenúa en 20 min. Ideal para leer.</string>
+    <string name="mode_ambient_info">Detecta el brillo de la escena y elige el mejor patrón de luz.</string>
+    <string name="mode_custom_info">El ritmo cambia automáticamente según la hora del día.</string>
+    <string name="mode_sleep_info">Se atenúa gradualmente hasta apagarse. Ideal para dormir.</string>
+    <string name="mode_music_info">Se sincroniza con los beats del audio via micrófono. Funciona con cualquier música.</string>
+    <string name="mode_walk_info">Pulso en cada paso gracias al detector de pasos. Sin manos.</string>
+    <string name="mode_voice_info">Reacciona a picos de voz y sonido. Ideal para señalización.</string>
+
+    <!-- Sensor tags -->
+    <string name="sensor_light">Sensor de luz</string>
+    <string name="sensor_timer">Curva de tiempo</string>
+    <string name="sensor_lux_ml">Lux + ML Kit</string>
+    <string name="sensor_clock">Reloj + gen</string>
+    <string name="sensor_duty">Ciclo de trabajo</string>
+    <string name="sensor_mic">Micrófono</string>
+    <string name="sensor_step">Detector de pasos</string>
+
+    <!-- Config sheet titles -->
+    <string name="config_strobe_title">Estroboscopio — Frecuencia</string>
+    <string name="config_disco_title">Disco — Tempo</string>
+    <string name="config_morse_title">Morse — Mensaje</string>
+    <string name="config_screen_title">Pantalla — Color</string>
+    <string name="config_smart_title">VELOCIDAD DE PULSO</string>
+    <string name="config_sleep_title">DURACIÓN DEL FADE</string>
+    <string name="config_music_title">SENSIBILIDAD AL RITMO</string>
+    <string name="config_voice_title">SENSIBILIDAD AL SONIDO</string>
+    <string name="config_ambient_title">SENSIBILIDAD AMBIENTAL</string>
+    <string name="config_custom_title">RITMO PERSONALIZADO</string>
+
+    <!-- Config sheet labels -->
+    <string name="config_frequency_label">FRECUENCIA</string>
+    <string name="config_tempo_label">TEMPO</string>
+    <string name="config_hz_min">1 Hz</string>
+    <string name="config_hz_max">20 Hz</string>
+    <string name="config_bpm_min">60 BPM</string>
+    <string name="config_bpm_max">200 BPM</string>
+    <string name="config_sensitivity_low">Baja</string>
+    <string name="config_sensitivity_mid">Media</string>
+    <string name="config_sensitivity_high">Alta</string>
+    <string name="config_sensitivity_low_desc">Baja — solo sonidos fuertes</string>
+    <string name="config_sensitivity_mid_desc">Media — sonidos normales</string>
+    <string name="config_sensitivity_high_desc">Alta — muy sensible</string>
+    <string name="config_smart_hint">Más rápido = más reactivo al exterior. Más lento = más sutil en interior.</string>
+    <string name="config_ambient_desc">El modo lee el lux una vez al activarse y se mantiene estable.</string>
+    <string name="config_ambient_reread">Releer la luz ambiental ahora</string>
+    <string name="config_ambient_reread_hint">Toca para volver a medir el nivel de luz actual.</string>
+    <string name="config_custom_desc">El patrón cambia automáticamente según la hora del día:</string>
+    <string name="config_screen_hint">Toca para elegir un color</string>
+    <string name="config_morse_placeholder">Escribe tu mensaje…</string>
+    <string name="config_morse_hint">SOS, HOLA, tu nombre…</string>
+    <string name="config_morse_header">MORSE — ESCRIBE TU MENSAJE</string>
+
+    <!-- Custom rhythm hours -->
+    <string name="rhythm_morning">Triple rápido · mañana activa</string>
+    <string name="rhythm_work">Doble continuo · horas de trabajo</string>
+    <string name="rhythm_afternoon">Pulso lento · tarde</string>
+    <string name="rhythm_evening">Muy lento · noche relajada</string>
+    <string name="rhythm_night">Ultra lento · noche profunda</string>
+
+    <!-- Auto-off options -->
+    <string name="autooff_off">Desactivado</string>
+    <string name="autooff_5min">5 min</string>
+    <string name="autooff_10min">10 min</string>
+    <string name="autooff_30min">30 min</string>
+    <string name="autooff_1h">1 hora</string>
+
+    <!-- Screen colors -->
+    <string name="color_white">Blanco</string>
+    <string name="color_red">Rojo</string>
+    <string name="color_green">Verde</string>
+    <string name="color_blue">Azul</string>
+    <string name="color_yellow">Amarillo</string>
+    <string name="color_orange">Naranja</string>
+    <string name="color_purple">Morado</string>
+    <string name="color_warm">Cálido</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_back">Atrás</string>
+    <string name="settings_section_flash">FLASH</string>
+    <string name="settings_section_behaviour">COMPORTAMIENTO</string>
+    <string name="settings_section_autooff">TEMPORIZADOR</string>
+    <string name="settings_section_notifications">ALERTAS CON FLASH</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_about">ACERCA DE</string>
+    <string name="settings_section_language">IDIOMA</string>
+    <string name="settings_strobe_freq">Frecuencia del estroboscopio</string>
+    <string name="settings_disco_tempo">Tempo del Disco</string>
+    <string name="settings_screen_brightness">Brillo de pantalla</string>
+    <string name="settings_shake_toggle">Agitar para activar</string>
+    <string name="settings_shake_toggle_sub">Agita el móvil para encender/apagar el flash</string>
+    <string name="settings_keep_screen">Mantener pantalla encendida</string>
+    <string name="settings_keep_screen_sub">Evitar que se apague mientras la app está abierta</string>
+    <string name="settings_dark_theme">Tema oscuro</string>
+    <string name="settings_dark_theme_sub">Forzar UI oscura independientemente del sistema</string>
+    <string name="settings_notif_enable">Activar alertas con flash</string>
+    <string name="settings_notif_enable_sub">Flash en llamadas, mensajes y apps</string>
+    <string name="settings_notif_grant">Conceder acceso a notificaciones</string>
+    <string name="settings_notif_grant_sub">Necesario para el flash en notificaciones</string>
+    <string name="settings_notif_calls">Llamadas</string>
+    <string name="settings_notif_calls_sub">3 pulsos rápidos en llamadas entrantes</string>
+    <string name="settings_notif_messages">Mensajes</string>
+    <string name="settings_notif_messages_sub">WhatsApp, SMS, Telegram, email</string>
+    <string name="settings_notif_other">Otras apps</string>
+    <string name="settings_pro_unlock">Desbloquear Pro</string>
+    <string name="settings_pro_active">Todas las funciones IA desbloqueadas</string>
+    <string name="settings_pro_upsell">Funciones IA · Sin anuncios · Pago único</string>
+    <string name="settings_pro_restore">Restaurar compra</string>
+    <string name="settings_pro_restore_sub">Volver a vincular la compra a este dispositivo</string>
+    <string name="settings_about_version">Versión</string>
+    <string name="settings_about_rate">Valorar en Play Store</string>
+    <string name="settings_about_rate_sub">Ayúdanos a crecer con una reseña ⭐</string>
+    <string name="settings_about_privacy">Política de privacidad</string>
+    <string name="settings_about_privacy_btn">Ver</string>
+    <string name="settings_language_system">Idioma del sistema</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Español</string>
+
+    <!-- Pro paywall -->
+    <string name="pro_title">LumiAI Pro</string>
+    <string name="pro_tagline">Paga una vez.\nDesbloquea para siempre.</string>
+    <string name="pro_unlock_btn">Desbloquear Pro — 2,99€</string>
+    <string name="pro_restore_btn">Restaurar compra</string>
+    <string name="pro_active_badge">✓  Pro activo</string>
+    <string name="pro_no_ads">Sin anuncios, nunca</string>
+    <string name="pro_no_sub">Sin suscripción. Sin caducidad. Pago único.</string>
+    <string name="pro_feature_smart">Brillo inteligente</string>
+    <string name="pro_feature_read">Modo lectura</string>
+    <string name="pro_feature_ambient">Detección ambiental</string>
+    <string name="pro_feature_custom">Ritmos IA personalizados</string>
+    <string name="pro_feature_sleep">Temporizador de sueño</string>
+</resources>

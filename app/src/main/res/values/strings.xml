@@ -1,17 +1,202 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
     <string name="app_name">LumiAI Flashlight</string>
+    <string name="app_title">LUMI·AI</string>
+    <string name="pro_badge">PRO</string>
+
+    <!-- Flash button status -->
+    <string name="status_tap_to_turn_on">TAP TO TURN ON</string>
+    <string name="status_screen_mode">SCREEN MODE</string>
+    <string name="status_flashlight_on">FLASHLIGHT ON</string>
+
+    <!-- Tab labels -->
+    <string name="tab_flash">Flash</string>
+    <string name="tab_ai_modes">AI Modes</string>
+
+    <!-- Quick Settings tile -->
     <string name="tile_flash_label">Flash</string>
+
+    <!-- Buttons -->
     <string name="btn_turn_on">Turn on</string>
     <string name="btn_turn_off">Turn off</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_skip">Skip</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_get_started">Get started</string>
+
+    <!-- Auto-off chip -->
+    <string name="auto_off_chip">⏱ Auto-off: %s</string>
+
+    <!-- Mode names -->
     <string name="mode_steady">Steady</string>
     <string name="mode_screen">Screen</string>
     <string name="mode_sos">SOS</string>
+    <string name="mode_morse">Morse</string>
     <string name="mode_strobe">Strobe</string>
     <string name="mode_disco">Disco</string>
-    <string name="pro_smart">Smart</string>
-    <string name="pro_reading">Reading</string>
-    <string name="pro_ambient">Ambient</string>
-    <string name="pro_custom">Custom</string>
-    <string name="pro_sleep">Sleep</string>
+    <string name="mode_smart">Smart</string>
+    <string name="mode_read">Read</string>
+    <string name="mode_ambient">Ambient</string>
+    <string name="mode_custom">Custom</string>
+    <string name="mode_sleep">Sleep</string>
+    <string name="mode_music">Music</string>
+    <string name="mode_walk">Walk</string>
+    <string name="mode_voice">Voice</string>
+
+    <!-- Mode descriptions -->
+    <string name="mode_steady_desc">Full brightness, continuous</string>
+    <string name="mode_screen_desc">White screen, no flash</string>
+    <string name="mode_morse_desc">Text to flash</string>
+    <string name="mode_strobe_desc">1–20 Hz pulse</string>
+    <string name="mode_sos_desc">Morse · · · — — —</string>
+    <string name="mode_disco_desc">Beat sync · 60–200 BPM</string>
+    <string name="mode_smart_desc">Adapts to ambient light</string>
+    <string name="mode_read_desc">Warm pulse, auto-dims</string>
+    <string name="mode_ambient_desc">Reads scene, picks pattern</string>
+    <string name="mode_custom_desc">Pattern adapts to hour</string>
+    <string name="mode_sleep_desc">Fades out over 3 minutes</string>
+    <string name="mode_music_desc">Syncs flash to live beats</string>
+    <string name="mode_walk_desc">Pulse on every step</string>
+    <string name="mode_voice_desc">Reacts to voice and sound</string>
+
+    <!-- Mode info tooltips -->
+    <string name="mode_steady_info">Continuous full-brightness flash. Best for general lighting.</string>
+    <string name="mode_screen_info">Uses screen as white light source. Adjustable color and brightness.</string>
+    <string name="mode_morse_info">Type any text — flash transmits it in Morse code on loop.</string>
+    <string name="mode_strobe_info">Rapid 1–20 Hz pulse. Use with caution near photosensitive people.</string>
+    <string name="mode_sos_info">SOS signal: · · · — — — · · · repeating. International distress.</string>
+    <string name="mode_disco_info">Beat-synced flash 60–200 BPM. Great for parties.</string>
+    <string name="mode_smart_info">Reads light sensor and adjusts pulse speed automatically.</string>
+    <string name="mode_read_info">Steady warm light that dims over 20 min. Ideal for reading.</string>
+    <string name="mode_ambient_info">Detects scene brightness and picks the best light pattern.</string>
+    <string name="mode_custom_info">Rhythm pattern changes automatically by time of day.</string>
+    <string name="mode_sleep_info">Gradually fades out over 3 minutes, then turns off.</string>
+    <string name="mode_music_info">Syncs to audio beats via mic. Works with any music.</string>
+    <string name="mode_walk_info">Pulses on each step from step detector. Hands-free.</string>
+    <string name="mode_voice_info">Reacts to voice and sound spikes. Great for signaling.</string>
+
+    <!-- Sensor tags -->
+    <string name="sensor_light">Light sensor</string>
+    <string name="sensor_timer">Timer curve</string>
+    <string name="sensor_lux_ml">Lux + ML Kit</string>
+    <string name="sensor_clock">Clock + gen</string>
+    <string name="sensor_duty">Duty curve</string>
+    <string name="sensor_mic">Microphone</string>
+    <string name="sensor_step">Step detector</string>
+
+    <!-- Config sheet titles -->
+    <string name="config_strobe_title">Strobe — Frequency</string>
+    <string name="config_disco_title">Disco — Tempo</string>
+    <string name="config_morse_title">Morse — Message</string>
+    <string name="config_screen_title">Screen — Color</string>
+    <string name="config_smart_title">PULSE SPEED</string>
+    <string name="config_sleep_title">FADE DURATION</string>
+    <string name="config_music_title">BEAT SENSITIVITY</string>
+    <string name="config_voice_title">SOUND SENSITIVITY</string>
+    <string name="config_ambient_title">AMBIENT SENSITIVITY</string>
+    <string name="config_custom_title">CUSTOM RHYTHM</string>
+
+    <!-- Config sheet labels -->
+    <string name="config_frequency_label">FREQUENCY</string>
+    <string name="config_tempo_label">TEMPO</string>
+    <string name="config_hz_min">1 Hz</string>
+    <string name="config_hz_max">20 Hz</string>
+    <string name="config_bpm_min">60 BPM</string>
+    <string name="config_bpm_max">200 BPM</string>
+    <string name="config_sensitivity_low">Low</string>
+    <string name="config_sensitivity_mid">Medium</string>
+    <string name="config_sensitivity_high">High</string>
+    <string name="config_sensitivity_low_desc">Low — only loud sounds</string>
+    <string name="config_sensitivity_mid_desc">Medium — normal sounds</string>
+    <string name="config_sensitivity_high_desc">High — very sensitive</string>
+    <string name="config_smart_hint">Faster = more reactive outdoors. Slower = more subtle indoors.</string>
+    <string name="config_ambient_desc">Mode reads lux once at activation and stays steady.</string>
+    <string name="config_ambient_reread">Re-read ambient light now</string>
+    <string name="config_ambient_reread_hint">Tap to re-sample the current light level and adjust.</string>
+    <string name="config_custom_desc">Pattern changes automatically based on time of day:</string>
+    <string name="config_screen_hint">Tap to pick a color</string>
+    <string name="config_morse_placeholder">Type your message…</string>
+    <string name="config_morse_hint">SOS, HELLO, your name…</string>
+    <string name="config_morse_header">MORSE — TYPE YOUR MESSAGE</string>
+
+    <!-- Custom rhythm hours -->
+    <string name="rhythm_morning">Fast triple · active morning</string>
+    <string name="rhythm_work">Steady double · work hours</string>
+    <string name="rhythm_afternoon">Slow pulse · afternoon</string>
+    <string name="rhythm_evening">Very slow · evening wind-down</string>
+    <string name="rhythm_night">Ultra slow · night</string>
+
+    <!-- Auto-off options -->
+    <string name="autooff_off">Off</string>
+    <string name="autooff_5min">5 min</string>
+    <string name="autooff_10min">10 min</string>
+    <string name="autooff_30min">30 min</string>
+    <string name="autooff_1h">1 hour</string>
+
+    <!-- Screen colors -->
+    <string name="color_white">White</string>
+    <string name="color_red">Red</string>
+    <string name="color_green">Green</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_warm">Warm</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_section_flash">FLASH</string>
+    <string name="settings_section_behaviour">BEHAVIOUR</string>
+    <string name="settings_section_autooff">AUTO-OFF TIMER</string>
+    <string name="settings_section_notifications">FLASH NOTIFICATIONS</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_about">ABOUT</string>
+    <string name="settings_section_language">LANGUAGE</string>
+    <string name="settings_strobe_freq">Strobe frequency</string>
+    <string name="settings_disco_tempo">Disco tempo</string>
+    <string name="settings_screen_brightness">Screen brightness</string>
+    <string name="settings_shake_toggle">Shake to toggle</string>
+    <string name="settings_shake_toggle_sub">Shake phone to turn flash on/off</string>
+    <string name="settings_keep_screen">Keep screen on</string>
+    <string name="settings_keep_screen_sub">Prevent sleep while app is open</string>
+    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_dark_theme_sub">Force dark UI regardless of system</string>
+    <string name="settings_notif_enable">Enable flash alerts</string>
+    <string name="settings_notif_enable_sub">Flash on calls, messages and apps</string>
+    <string name="settings_notif_grant">Grant notification access</string>
+    <string name="settings_notif_grant_sub">Required to flash on notifications</string>
+    <string name="settings_notif_calls">Calls</string>
+    <string name="settings_notif_calls_sub">3 fast pulses on incoming calls</string>
+    <string name="settings_notif_messages">Messages</string>
+    <string name="settings_notif_messages_sub">WhatsApp, SMS, Telegram, email</string>
+    <string name="settings_notif_other">Other apps</string>
+    <string name="settings_pro_unlock">Unlock Pro</string>
+    <string name="settings_pro_active">All AI features unlocked</string>
+    <string name="settings_pro_upsell">AI features · No ads · One-time payment</string>
+    <string name="settings_pro_restore">Restore purchase</string>
+    <string name="settings_pro_restore_sub">Re-link existing purchase to this device</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_rate">Rate on Play Store</string>
+    <string name="settings_about_rate_sub">Help us grow with a review ⭐</string>
+    <string name="settings_about_privacy">Privacy Policy</string>
+    <string name="settings_about_privacy_btn">View</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_es">Español</string>
+
+    <!-- Pro paywall -->
+    <string name="pro_title">LumiAI Pro</string>
+    <string name="pro_tagline">Upgrade once.\nUnlock forever.</string>
+    <string name="pro_unlock_btn">Unlock Pro — €2.99</string>
+    <string name="pro_restore_btn">Restore purchase</string>
+    <string name="pro_active_badge">✓  Pro is active</string>
+    <string name="pro_no_ads">No ads, ever</string>
+    <string name="pro_no_sub">No subscription. No expiry. Pay once.</string>
+    <string name="pro_feature_smart">Smart brightness</string>
+    <string name="pro_feature_read">Reading mode</string>
+    <string name="pro_feature_ambient">Ambient detection</string>
+    <string name="pro_feature_custom">Custom AI rhythms</string>
+    <string name="pro_feature_sleep">Sleep timer</string>
 </resources>

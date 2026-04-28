@@ -77,6 +77,16 @@ class SettingsViewModel @Inject constructor(
         notificationFlashController.enabledForMessages = v
         viewModelScope.launch { settingsRepository.setNotifFlashMessages(v) }
     }
+    fun setLanguage(lang: String, activity: android.app.Activity) {
+        // Mirror to SharedPreferences for attachBaseContext (DataStore not available there)
+        activity.getSharedPreferences("lumi_lang", android.content.Context.MODE_PRIVATE)
+            .edit().putString("app_language_override", lang).apply()
+        // Persist to DataStore
+        viewModelScope.launch { settingsRepository.setAppLanguage(lang) }
+        // Recreate Activity to apply new locale immediately
+        com.lumiai.flashlight.core.util.LanguageManager.applyAndRecreate(activity, lang)
+    }
+
     fun setNotifFlashOther(v: Boolean) {
         _notifFlashOther.value = v
         notificationFlashController.enabledForOther = v

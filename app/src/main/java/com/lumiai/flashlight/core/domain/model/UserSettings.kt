@@ -17,4 +17,5 @@ data class UserSettings(
     val notifFlashCalls: Boolean    = true,
     val notifFlashMessages: Boolean = true,
     val notifFlashOther: Boolean    = false,
+    val appLanguage: String         = "system",  // "system" | "en" | "es"
 )

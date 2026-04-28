@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.feature.settings
 
+import androidx.compose.ui.res.stringResource
+import com.lumiai.flashlight.R
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -53,7 +55,7 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Settings", fontWeight = FontWeight.W600,
+                    Text(stringResource(R.string.settings_title), fontWeight = FontWeight.W600,
                         fontSize = 18.sp, color = LumiColor.White)
                 },
                 navigationIcon = {
@@ -65,7 +67,7 @@ fun SettingsScreen(
                             .background(LumiColor.Navy700)
                             .clickable(onClick = onBack),
                     ) {
-                        Icon(backArrowIcon(), contentDescription = "Atrás",
+                        Icon(backArrowIcon(), contentDescription = stringResource(R.string.settings_back),
                             tint = LumiColor.White, modifier = Modifier.size(18.dp))
                     }
                 },
@@ -82,7 +84,7 @@ fun SettingsScreen(
         ) {
 
             // ── FLASH ──────────────────────────────────────────────────────
-            SettingsSection("FLASH") {
+            SettingsSection(stringResource(R.string.settings_section_flash)) {
                 SettingsSliderRow(
                     label        = "Strobe frequency",
                     value        = settings.strobeHz,
@@ -109,24 +111,24 @@ fun SettingsScreen(
             }
 
             // ── BEHAVIOUR ─────────────────────────────────────────────────
-            SettingsSection("BEHAVIOUR") {
+            SettingsSection(stringResource(R.string.settings_section_behaviour)) {
                 SettingsToggleRow(
-                    label    = "Shake to toggle",
-                    sublabel = "Shake phone to turn flash on/off",
+                    label    = stringResource(R.string.settings_shake_toggle),
+                    sublabel = stringResource(R.string.settings_shake_toggle_sub),
                     checked  = settings.shakeToToggle,
                     onChange = { viewModel.setShakeToToggle(it) },
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    label    = "Keep screen on",
-                    sublabel = "Prevent sleep while app is open",
+                    label    = stringResource(R.string.settings_keep_screen),
+                    sublabel = stringResource(R.string.settings_keep_screen_sub),
                     checked  = settings.keepScreenOn,
                     onChange = { viewModel.setKeepScreenOn(activity, it) },
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    label    = "Dark theme",
-                    sublabel = "Force dark UI regardless of system",
+                    label    = stringResource(R.string.settings_dark_theme),
+                    sublabel = stringResource(R.string.settings_dark_theme_sub),
                     checked  = settings.isDarkTheme,
                     onChange = { viewModel.setDarkTheme(it) },
                 )
@@ -134,7 +136,7 @@ fun SettingsScreen(
 
 
             // ── TIMER ─────────────────────────────────────────────────────────
-            SettingsSection("AUTO-OFF TIMER") {
+            SettingsSection(stringResource(R.string.settings_section_autooff)) {
                 AutoOffOption.entries.forEachIndexed { i, option ->
                     if (i > 0) SettingsDivider()
                     Row(
@@ -160,40 +162,40 @@ fun SettingsScreen(
             }
 
             // ── FLASH NOTIFICATIONS ────────────────────────────────────────────
-            SettingsSection("FLASH NOTIFICATIONS") {
+            SettingsSection(stringResource(R.string.settings_section_notifications)) {
                 val hasPermission = FlashNotificationService.isPermissionGranted(context)
                 if (hasPermission) {
                     SettingsToggleRow(
-                        label    = "Enable flash alerts",
-                        sublabel = "Flash on calls, messages and apps",
+                        label    = stringResource(R.string.settings_notif_enable),
+                        sublabel = stringResource(R.string.settings_notif_enable_sub),
                         checked  = viewModel.notifFlashEnabled.value,
                         onChange = { viewModel.setNotifFlashEnabled(it) },
                     )
                     SettingsDivider()
                     SettingsToggleRow(
-                        label    = "Calls",
-                        sublabel = "3 fast pulses on incoming calls",
+                        label    = stringResource(R.string.settings_notif_calls),
+                        sublabel = stringResource(R.string.settings_notif_calls_sub),
                         checked  = viewModel.notifFlashCalls.value,
                         onChange = { viewModel.setNotifFlashCalls(it) },
                     )
                     SettingsDivider()
                     SettingsToggleRow(
-                        label    = "Messages",
-                        sublabel = "WhatsApp, SMS, Telegram, email",
+                        label    = stringResource(R.string.settings_notif_messages),
+                        sublabel = stringResource(R.string.settings_notif_messages_sub),
                         checked  = viewModel.notifFlashMessages.value,
                         onChange = { viewModel.setNotifFlashMessages(it) },
                     )
                     SettingsDivider()
                     SettingsToggleRow(
-                        label    = "Other apps",
+                        label    = stringResource(R.string.settings_notif_other),
                         sublabel = "All other notifications",
                         checked  = viewModel.notifFlashOther.value,
                         onChange = { viewModel.setNotifFlashOther(it) },
                     )
                 } else {
                     SettingsActionRow(
-                        label    = "Grant notification access",
-                        sublabel = "Required to flash on notifications",
+                        label    = stringResource(R.string.settings_notif_grant),
+                        sublabel = stringResource(R.string.settings_notif_grant_sub),
                         onClick  = {
                             context.startActivity(
                                 Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
@@ -204,18 +206,18 @@ fun SettingsScreen(
             }
 
             // ── PRO ───────────────────────────────────────────────────────
-            SettingsSection("PRO") {
+            SettingsSection(stringResource(R.string.settings_section_pro)) {
                 if (isPro) {
                     SettingsInfoRow(
                         label      = "LumiAI Pro",
-                        sublabel   = "All AI features unlocked",
+                        sublabel   = stringResource(R.string.settings_pro_active),
                         badge      = "ACTIVE",
                         badgeColor = LumiColor.Success,
                     )
                     SettingsDivider()
                     SettingsActionRow(
-                        label    = "Restore purchase",
-                        sublabel = "Re-link existing purchase to this device",
+                        label    = stringResource(R.string.settings_pro_restore),
+                        sublabel = stringResource(R.string.settings_pro_restore_sub),
                         onClick  = { viewModel.restorePurchases() },
                     )
                 } else {
@@ -224,16 +226,44 @@ fun SettingsScreen(
             }
 
             // ── ABOUT ─────────────────────────────────────────────────────
-            SettingsSection("ABOUT") {
+            SettingsSection(stringResource(R.string.settings_section_language)) {
+                val activity = LocalContext.current as? android.app.Activity
+                val currentLang = uiState.settings.appLanguage
+                com.lumiai.flashlight.core.util.LanguageManager.SUPPORTED_LOCALES
+                    .entries.forEachIndexed { i, (code, displayName) ->
+                    if (i > 0) SettingsDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (code != currentLang && activity != null) {
+                                    viewModel.setLanguage(code, activity)
+                                }
+                            }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(displayName, fontSize = 14.sp,
+                            fontWeight = FontWeight.W500, color = LumiColor.White)
+                        if (code == currentLang) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape)
+                                .background(LumiColor.Amber400))
+                        }
+                    }
+                }
+            }
+
+            SettingsSection(stringResource(R.string.settings_section_about)) {
                 SettingsInfoRow(
-                    label      = "Version",
+                    label      = stringResource(R.string.settings_about_version),
                     sublabel   = "LumiAI Flashlight",
                     badge      = uiState.appVersion,
                     badgeColor = LumiColor.Gray500,
                 )
                 SettingsDivider()
                 SettingsActionRow(
-                    label   = "Privacy Policy",
+                    label   = stringResource(R.string.settings_about_privacy),
                     sublabel = "How we handle your data",
                     onClick = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
@@ -243,8 +273,8 @@ fun SettingsScreen(
                 )
                 SettingsDivider()
                 SettingsActionRow(
-                    label   = "Rate on Play Store",
-                    sublabel = "Help us grow with a review ⭐",
+                    label   = stringResource(R.string.settings_about_rate),
+                    sublabel = stringResource(R.string.settings_about_rate_sub),
                     onClick = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                             android.net.Uri.parse("market://details?id=com.lumiai.flashlight"))
@@ -364,13 +394,13 @@ private fun SettingsProBanner(onOpenPro: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenPro).padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Unlock Pro", fontSize = 14.sp, fontWeight = FontWeight.W600, color = LumiColor.Purple300)
-            Text("AI features · No ads · One-time payment", fontSize = 12.sp,
+            Text(stringResource(R.string.settings_pro_unlock), fontSize = 14.sp, fontWeight = FontWeight.W600, color = LumiColor.Purple300)
+            Text(stringResource(R.string.settings_pro_upsell), fontSize = 12.sp,
                 color = LumiColor.Gray500, modifier = Modifier.padding(top = 2.dp))
         }
         Box(modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(LumiColor.Purple500)
             .padding(horizontal = 12.dp, vertical = 6.dp)) {
-            Text("View", fontSize = 12.sp, fontWeight = FontWeight.W600, color = LumiColor.White)
+            Text(stringResource(R.string.settings_about_privacy_btn), fontSize = 12.sp, fontWeight = FontWeight.W600, color = LumiColor.White)
         }
     }
 }
