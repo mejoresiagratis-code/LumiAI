@@ -100,16 +100,32 @@ fun FlashScreen(
             containerColor    = LumiColor.Navy800,
             dragHandle        = null,
         ) {
-            ModeConfigSheet(
-                mode          = mode,
-                uiState       = uiState,
-                morseText     = morseText,
-                onStrobeHz    = { viewModel.updateStrobeHz(it) },
-                onDiscoBpm    = { viewModel.updateDiscoBpm(it) },
-                onMorseText   = { viewModel.updateMorseText(it) },
-                screenColor   = screenColor,
-                onScreenColor = { viewModel.setScreenColor(it) },
-                onDismiss     = { viewModel.closeConfigSheet() },
+            val smartSpeed     by viewModel.smartSpeed.collectAsState()
+                val sleepMinutes   by viewModel.sleepMinutes.collectAsState()
+                val micSensitivity by viewModel.micSensitivity.collectAsState()
+                ModeConfigSheet(
+                mode             = mode,
+                uiState          = uiState,
+                morseText        = morseText,
+                screenColor      = screenColor,
+                torchIntensity   = torchIntensity,
+                morseSpeed       = morseSpeed,
+                strobePattern    = strobePattern,
+                smartSpeed       = smartSpeed,
+                sleepMinutes     = sleepMinutes,
+                micSensitivity   = micSensitivity,
+                onStrobeHz       = { viewModel.updateStrobeHz(it) },
+                onDiscoBpm       = { viewModel.updateDiscoBpm(it) },
+                onMorseText      = { viewModel.updateMorseText(it) },
+                onScreenColor    = { viewModel.setScreenColor(it) },
+                onScreenBrightness = { viewModel.setScreenBrightness(it) },
+                onTorchIntensity = { viewModel.setTorchIntensity(it) },
+                onMorseSpeed     = { viewModel.setMorseSpeed(it) },
+                onStrobePattern  = { viewModel.setStrobePattern(it) },
+                onSmartSpeed     = { viewModel.setSmartSpeed(it) },
+                onSleepMinutes   = { viewModel.setSleepMinutes(it) },
+                onMicSensitivity = { viewModel.setMicSensitivity(it) },
+                onDismiss        = { viewModel.closeConfigSheet() },
             )
         }
     }
@@ -517,13 +533,19 @@ private fun ModeConfigSheet(
         )
 
         val title = when (mode) {
-            is FlashMode.Steady      -> "Steady — Intensity"
-            is FlashMode.Strobe      -> stringResource(R.string.config_strobe_title)
-            is FlashMode.Disco       -> stringResource(R.string.config_disco_title)
-            is FlashMode.MorseCustom -> stringResource(R.string.config_morse_title)
-            is FlashMode.Screen      -> stringResource(R.string.config_screen_title)
-            is FlashMode.Sos         -> "SOS — Intensity"
-            else -> return
+            is FlashMode.Steady            -> "Steady — Intensity"
+            is FlashMode.Strobe            -> stringResource(R.string.config_strobe_title)
+            is FlashMode.Disco             -> stringResource(R.string.config_disco_title)
+            is FlashMode.MorseCustom       -> stringResource(R.string.config_morse_title)
+            is FlashMode.Screen            -> stringResource(R.string.config_screen_title)
+            is FlashMode.Sos               -> "SOS — Intensity"
+            is FlashMode.SmartBrightness   -> stringResource(R.string.config_smart_title)
+            is FlashMode.SleepTimer        -> stringResource(R.string.config_sleep_title)
+            is FlashMode.Music             -> stringResource(R.string.config_music_title)
+            is FlashMode.Voice             -> stringResource(R.string.config_voice_title)
+            is FlashMode.AmbientSmart      -> stringResource(R.string.config_ambient_title)
+            is FlashMode.CustomRhythm      -> stringResource(R.string.config_custom_title)
+            else -> return  // ReadingMode, Walk — no config
         }
         Text(
             title,
@@ -728,6 +750,33 @@ private fun ModeConfigSheet(
                 Text("${morseText.length}/60",
                     fontSize = 10.sp, color = LumiColor.Gray600,
                     modifier = Modifier.align(Alignment.End))
+                Spacer(Modifier.height(4.dp))
+                Text("TRANSMISSION SPEED", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                val speedOptions = listOf("½×" to 0.5f, "1×" to 1.0f, "2×" to 2.0f, "4×" to 4.0f)
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    speedOptions.forEach { (label, v) ->
+                        val sel = kotlin.math.abs(morseSpeed - v) < 0.1f
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (sel) LumiColor.Amber400 else LumiColor.Navy700)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onMorseSpeed(v) }
+                                )
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label, fontSize = 13.sp, fontWeight = FontWeight.W600,
+                                color = if (sel) LumiColor.Navy950 else LumiColor.White)
+                        }
+                    }
+                }
+                Text("½× = slow · 1× = standard ITU · 4× = fast burst",
+                    fontSize = 10.sp, color = LumiColor.Gray600)
             }
             is FlashMode.AmbientSmart -> {
                 Text("AMBIENT SENSITIVITY", fontSize = 10.sp, color = LumiColor.Gray600,
