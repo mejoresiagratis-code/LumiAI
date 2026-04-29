@@ -290,6 +290,12 @@ class FlashViewModel @Inject constructor(
         _showPaywallEvent.tryEmit(Unit)
     }
 
+    fun restorePurchases() {
+        viewModelScope.launch {
+            getProStatusUseCase()  // re-check purchase status from billing
+        }
+    }
+
     fun purchasePro(activity: Activity) {
         viewModelScope.launch {
             purchaseProUseCase(activity)

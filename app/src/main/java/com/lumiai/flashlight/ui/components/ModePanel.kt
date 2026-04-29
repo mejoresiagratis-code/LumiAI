@@ -64,28 +64,28 @@ val flashModeItems = listOf(
 
 val aiModeItems = listOf(
     FlashModeItem(FlashMode.SmartBrightness, "Smart", "Adapts to ambient light", "smart",
-        accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor",
+        accentColor = Color(0xFFFFD84AL), sensorTag = "Light sensor",
         info = "Reads light sensor and adjusts pulse speed automatically."),
     FlashModeItem(FlashMode.ReadingMode, "Read", "Warm pulse, auto-dims", "read",
-        accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve",
+        accentColor = Color(0xFFFF9A6CL), sensorTag = "Timer curve",
         info = "Steady warm light that dims over 20 min. Ideal for reading."),
     FlashModeItem(FlashMode.AmbientSmart, "Ambient", "Reads scene, picks pattern", "ambient",
-        accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit",
+        accentColor = Color(0xFF34D399L), sensorTag = "Lux + ML Kit",
         info = "Detects scene brightness and picks the best light pattern."),
     FlashModeItem(FlashMode.CustomRhythm(), "Custom", "Pattern adapts to hour", "custom",
-        accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen",
+        accentColor = Color(0xFFA78BFAL), sensorTag = "Clock + gen",
         info = "Rhythm pattern changes automatically by time of day."),
     FlashModeItem(FlashMode.SleepTimer, "Sleep", "Fades out over 3 minutes", "sleep",
-        accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve",
+        accentColor = Color(0xFF4ADE80L), sensorTag = "Duty curve",
         info = "Gradually fades out over 3 minutes, then turns off."),
     FlashModeItem(FlashMode.Music, "Music", "Syncs flash to live beats", "music",
-        accentColor = Color(0xFF60A5FA), sensorTag = "Microphone",
+        accentColor = Color(0xFF60A5FAL), sensorTag = "Microphone",
         info = "Syncs to audio beats via mic. Works with any music."),
     FlashModeItem(FlashMode.Walk, "Walk", "Pulse on every step", "walk",
-        accentColor = Color(0xFF818CF8), sensorTag = "Step detector",
+        accentColor = Color(0xFF818CF8L), sensorTag = "Step detector",
         info = "Pulses on each step from step detector. Hands-free."),
     FlashModeItem(FlashMode.Voice, "Voice", "Reacts to voice and sound", "voice",
-        accentColor = Color(0xFFF472B6), sensorTag = "Microphone",
+        accentColor = Color(0xFFF472B6L), sensorTag = "Microphone",
         info = "Reacts to voice and sound spikes. Great for signaling."),
 )
 
@@ -373,16 +373,17 @@ fun ModePanel(
             } else {
                 AiModeGrid(
                     items = listOf(
-                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84A), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
-                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6C), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
-                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "ambient", accentColor = Color(0xFF34D399), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
-                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "custom", accentColor = Color(0xFFA78BFA), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
-                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "sleep", accentColor = Color(0xFF4ADE80), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
-                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FA), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
-                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
-                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
+                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84AL), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
+                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6CL), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
+                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "ambient", accentColor = Color(0xFF34D399L), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
+                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "custom", accentColor = Color(0xFFA78BFAL), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
+                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "sleep", accentColor = Color(0xFF4ADE80L), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
+                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FAL), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
+                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8L), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
+                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6L), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
                     ),
                     currentMode = currentMode,
+                    isPro = isPro,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,
                     onPaywall = onPaywall,
@@ -399,6 +400,7 @@ private fun FlashModeGrid(
     currentMode: FlashMode,
     onSelect: (FlashMode) -> Unit,
     onConfig: (FlashMode) -> Unit = {},
+    onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val rows = listOf(
@@ -437,8 +439,10 @@ private fun FlashModeGrid(
 private fun AiModeGrid(
     items: List<FlashModeItem>,
     currentMode: FlashMode,
+    isPro: Boolean = false,
     onSelect: (FlashMode) -> Unit,
     onConfig: (FlashMode) -> Unit = {},
+    onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -448,8 +452,10 @@ private fun AiModeGrid(
                     AiModeCard(
                         item = item,
                         isSelected = item.mode.id == currentMode.id,
+                        isPro = isPro,
                         onClick = { onSelect(item.mode) },
                         onConfig = { onConfig(item.mode) },
+                        onPaywall = onPaywall,
                         modifier = Modifier.weight(1f),
                     )
                 }
