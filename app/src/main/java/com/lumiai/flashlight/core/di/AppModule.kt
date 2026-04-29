@@ -1,5 +1,7 @@
 package com.lumiai.flashlight.core.di
 
+import com.lumiai.flashlight.core.data.repository.BillingRepositoryImpl
+import com.lumiai.flashlight.core.data.repository.BillingRepository
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

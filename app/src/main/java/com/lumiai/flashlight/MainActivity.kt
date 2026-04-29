@@ -18,6 +18,7 @@ import com.lumiai.flashlight.core.di.AdManager
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.util.ShakeDetector
 import com.lumiai.flashlight.widget.FlashWidgetReceiver
+import com.lumiai.flashlight.core.util.FirebaseManager
 import com.lumiai.flashlight.core.util.LanguageManager
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.navigation.LumiNavHost
