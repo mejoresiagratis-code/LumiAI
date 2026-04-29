@@ -16,7 +16,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.lumiai.flashlight.feature.flash.ScreenEffect
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.pointer.awaitPointerEvent
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
