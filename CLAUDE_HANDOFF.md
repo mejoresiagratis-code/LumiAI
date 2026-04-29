@@ -31,9 +31,10 @@ El código está en `/home/claude/LumiAI` cuando trabajas en sesión con herrami
 
 ---
 
-## Estado actual — v2.3.5 (versionCode 75)
+## Estado actual — v2.3.6 (versionCode 76)
 
 ### Versiones recientes
+- `v2.3.6` — 4 fixes: restorePurchases, onPaywall en grids, isPro propagado, Color L suffix Canvas
 - `v2.3.5` — Iconos Canvas unificados, Pro UX completo, AdMob IDs reales, paywall sin scroll
 - `v2.3.4` — Deep scan: 5 issues corregidos, reglas de auditor mejoradas
 - `v2.3.3` — FirebaseManager sin Hilt (reflexión), import correcto en MainActivity
@@ -106,12 +107,13 @@ FirebaseRemoteConfig.getInstance()
 FirebasePerformance.getInstance()
 ```
 
-### Color en Canvas — usar sufijo L
+### Color en Canvas — usar sufijo L (en TODO archivo con Canvas)
 ```kotlin
 // ❌ Ambiguo: Int (android) vs Long (compose)
 Color(0xFFFF3B30)
 // ✅ Unambiguamente Compose Color
 Color(0xFFFF3B30L)
+// ⚠️  Aplica a FlashScreen.kt, ModePanel.kt y cualquier archivo con Canvas
 ```
 
 ### Tipos geometry en Canvas — usar nombre importado
@@ -199,6 +201,8 @@ git push origin vX.X.X
 **Pro restriction**: activa. Un usuario Free que toque un modo Pro → paywall directo.
 **Badge PRO**: centrado en borde derecho de la tarjeta, fondo ámbar.
 **Todos los taps en tarjeta Pro** (cuerpo + ⚙ + ⓘ) → `viewModel.showPaywall()`.
+**Cadena de params**: `ModePanel(onPaywall)` → `AiModeGrid(isPro, onPaywall)` → `AiModeCard(isPro, onPaywall)`.
+`FlashViewModel.restorePurchases()` disponible para "Restaurar compra" en paywall.
 
 ---
 
@@ -264,4 +268,4 @@ SCREEN_TEXT (pendiente), SCREEN_TAB (pendiente)
 
 ---
 
-*Generado automáticamente desde el estado del proyecto el 30/04/2026 — v2.3.5*
+*Generado automáticamente desde el estado del proyecto el 30/04/2026 — v2.3.6*
