@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>interstitial_every_n_modes</key>
+        <value>5</value>
+    </entry>
+    <entry>
+        <key>sleep_max_minutes</key>
+        <value>10</value>
+    </entry>
+    <entry>
+        <key>fx_police_enabled</key>
+        <value>true</value>
+    </entry>
+    <entry>
+        <key>pro_price_label</key>
+        <value>2.99</value>
+    </entry>
+    <entry>
+        <key>candela_min_interval_ms</key>
+        <value>80</value>
+    </entry>
+</defaultsMap>

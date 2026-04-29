@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.firebase.perf)
 }
 
 // Load local.properties for signing & API keys (never commit this file)
@@ -23,8 +24,8 @@ android {
         applicationId         = "com.lumiai.flashlight"
         minSdk                = 23          // 97% coverage
         targetSdk             = 35
-        versionCode           = 70
-        versionName           = "2.3.0"
+        versionCode           = 71
+        versionName           = "2.3.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // AdMob App ID (replace with real one before release)
@@ -135,6 +136,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.performance)
+    implementation(libs.firebase.config)
+    implementation(libs.firebase.messaging)
 
     // Tests
     testImplementation(libs.junit)
