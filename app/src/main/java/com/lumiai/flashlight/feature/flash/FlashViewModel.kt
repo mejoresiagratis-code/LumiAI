@@ -78,7 +78,12 @@ class FlashViewModel @Inject constructor(
     }
 
     fun setScreenBrightness(brightness: Float) {
-        viewModelScope.launch { settingsRepository.updateScreenBrightness(brightness) }
+        viewModelScope.launch {
+            settingsRepository.updateScreenBrightness(brightness)
+            // Live-apply: update window brightness immediately if Screen mode is ON
+            // The actual WindowManager update happens reactively via uiState.screenBrightness
+            // which FlashScreen observes — no explicit hardware call needed here
+        }
     }
 
     // ── Morse speed (WPM multiplier) ────────────────────────────────────────

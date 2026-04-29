@@ -190,8 +190,10 @@ fun FlashScreen(
                 ModePanel(
                     currentMode      = mode,
                     isConfigSheetOpen = showSheet,
-                    torchIntensity   = torchIntensity,
-                    onTorchIntensityChange = { viewModel.setTorchIntensity(it) },
+                    torchIntensity         = torchIntensity,
+                    onTorchIntensityChange  = { viewModel.setTorchIntensity(it) },
+                    screenBrightness       = uiState.screenBrightness,
+                    onScreenBrightnessChange = { viewModel.setScreenBrightness(it) },
                     strobeHz         = uiState.strobeHz,
                     discoBpm         = uiState.discoBpm,
                     onModeSelect     = { viewModel.activateMode(it) },
@@ -538,7 +540,6 @@ private fun ModeConfigSheet(
             is FlashMode.Strobe            -> stringResource(R.string.config_strobe_title)
             is FlashMode.Disco             -> stringResource(R.string.config_disco_title)
             is FlashMode.MorseCustom       -> stringResource(R.string.config_morse_title)
-            is FlashMode.Screen            -> stringResource(R.string.config_screen_title)
             is FlashMode.SmartBrightness   -> stringResource(R.string.config_smart_title)
             is FlashMode.SleepTimer        -> stringResource(R.string.config_sleep_title)
             is FlashMode.Music             -> stringResource(R.string.config_music_title)
@@ -912,55 +913,7 @@ private fun ModeConfigSheet(
                     Text("High", fontSize = 11.sp, color = LumiColor.Gray600)
                 }
             }
-            is FlashMode.Screen -> {
-                // Screen brightness slider
-                var brightness by remember { mutableFloatStateOf(uiState.screenBrightness) }
-                Text("SCREEN BRIGHTNESS", fontSize = 10.sp, color = LumiColor.Gray600,
-                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
-                Text("${(brightness * 100).toInt()}%", fontSize = 24.sp,
-                    fontWeight = FontWeight.W700, color = LumiColor.Amber400)
-                Slider(
-                    value = brightness,
-                    onValueChange = { brightness = it },
-                    onValueChangeFinished = {
-                        onScreenBrightness(brightness)
-                    },
-                    valueRange = 0.05f..1.0f,
-                    steps = 18,
-                    colors = SliderDefaults.colors(
-                        thumbColor = LumiColor.Amber400,
-                        activeTrackColor = LumiColor.Amber400,
-                        inactiveTrackColor = LumiColor.Navy600,
-                    ),
-                )
-                Spacer(Modifier.height(8.dp))
-                Text("Tap to pick a color",
-                    fontSize = 13.sp, color = LumiColor.Gray500)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    ScreenColor.entries.forEach { sc ->
-                        val sel = sc == screenColor
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(sc.color)
-                                .then(if (!sel && sc == ScreenColor.WHITE) Modifier.border(1.dp, LumiColor.Navy600, CircleShape) else Modifier)
-                                .then(if (sel) {
-                                    val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.YELLOW
-                                    Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape)
-                                } else Modifier)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication        = null,
-                                    onClick           = { onScreenColor(sc); onDismiss() },
-                                ),
-                        )
-                    }
-                }
-            }
+
             else -> {}
         }
     }

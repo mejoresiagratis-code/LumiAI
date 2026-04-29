@@ -93,6 +93,8 @@ fun ModePanel(
     isConfigSheetOpen: Boolean = false,
     torchIntensity: Float = 1.0f,
     onTorchIntensityChange: (Float) -> Unit = {},
+    screenBrightness: Float = 1.0f,
+    onScreenBrightnessChange: (Float) -> Unit = {},
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -140,7 +142,8 @@ fun ModePanel(
         }
 
         val showSlider = selectedTab == 0 && !isConfigSheetOpen &&
-            (currentMode is FlashMode.Steady || currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
+            (currentMode is FlashMode.Steady || currentMode is FlashMode.Screen ||
+             currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
         if (showSlider) {
             when (currentMode) {
                 is FlashMode.Steady -> key("steady_slider") {
@@ -151,6 +154,17 @@ fun ModePanel(
                         steps  = 17,
                         format = { "${(it * 100).toInt()}%" },
                         onSettle = { onTorchIntensityChange(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                    )
+                }
+                is FlashMode.Screen -> key("screen_slider") {
+                    ContextSlider(
+                        label  = "SCREEN BRIGHTNESS",
+                        value  = screenBrightness,
+                        range  = 0.05f..1.0f,
+                        steps  = 18,
+                        format = { "${(it * 100).toInt()}%" },
+                        onSettle = { onScreenBrightnessChange(it) },
                         modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
                     )
                 }
@@ -361,7 +375,7 @@ private fun FlashModeCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // ⚙ config button for configurable modes
-            val configModes = setOf("strobe","disco","morse_custom","screen","smart_brightness","sleep_timer","music","voice")
+            val configModes = setOf("strobe","disco","morse_custom","smart_brightness","sleep_timer","music","voice")
             if (item.mode.id in configModes) {
                 Text(
                     "⚙",
