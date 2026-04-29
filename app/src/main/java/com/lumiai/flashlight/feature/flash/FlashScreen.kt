@@ -14,7 +14,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import com.lumiai.flashlight.feature.flash.ScreenEffect
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -657,11 +659,21 @@ private fun ScreenControlPanel(
                         })
                         .background(androidx.compose.ui.graphics.Color.White)
                     )
-                    androidx.compose.foundation.gestures.detectTapGestures
                     Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            val hue = (offset.x / size.width.toFloat() * 360f).coerceIn(0f, 360f)
-                            onHueChange(hue)
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            onHueChange((down.position.x / size.width.toFloat() * 360f).coerceIn(0f, 360f))
+                            var stillDown = true
+                            while (stillDown) {
+                                val event = awaitPointerEvent()
+                                stillDown = event.changes.any { it.pressed }
+                                event.changes.forEach { change ->
+                                    if (change.pressed) {
+                                        onHueChange((change.position.x / size.width.toFloat() * 360f).coerceIn(0f, 360f))
+                                        change.consume()
+                                    }
+                                }
+                            }
                         }
                     })
                 }

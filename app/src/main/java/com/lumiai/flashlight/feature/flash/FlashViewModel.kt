@@ -372,8 +372,8 @@ class FlashViewModel @Inject constructor(
         _screenEffect.value = null
         // Convert HSV to Color and update screenColor for persistence
         val color = android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f))
-        _currentScreenColor.value = ScreenColor.entries.firstOrNull { it.color.value == color.toLong() }
-            ?: _currentScreenColor.value  // keep current if no exact match
+        // Hue is a free-form color — no ScreenColor enum entry matches it.
+        // We don't update _currentScreenColor for hue; effectBgColor in FlashScreen drives the bg.
     }
 
     fun setScreenTemp(temp: Float) {
