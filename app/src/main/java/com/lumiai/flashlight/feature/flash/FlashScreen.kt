@@ -1,12 +1,5 @@
 package com.lumiai.flashlight.feature.flash
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.offset
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -75,7 +68,6 @@ fun FlashScreen(
     val torchIntensity by viewModel.torchIntensity.collectAsState()
     val morseSpeed     by viewModel.morseSpeed.collectAsState()
     val strobePattern  by viewModel.strobePattern.collectAsState()
-    val screenText     by viewModel.screenText.collectAsState()
     val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
 
     val view = LocalView.current
@@ -181,6 +173,7 @@ fun FlashScreen(
             if (!isScreenMode) {
                 ModePanel(
                     currentMode      = mode,
+                    isConfigSheetOpen = showSheet,
                     strobeHz         = uiState.strobeHz,
                     discoBpm         = uiState.discoBpm,
                     onModeSelect     = { viewModel.activateMode(it) },
@@ -219,7 +212,11 @@ fun FlashScreen(
                                 .size(if (sel) 40.dp else 32.dp)
                                 .clip(CircleShape)
                                 .background(sc.color.copy(alpha = if (sel) 1f else 0.6f))
-                                .then(if (sel) Modifier.border(3.dp, LumiColor.White, CircleShape) else Modifier)
+                                .then(if (!sel && (sc == ScreenColor.WHITE)) Modifier.border(1.dp, LumiColor.Navy600, CircleShape) else Modifier)
+                                .then(if (sel) {
+                                    val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.YELLOW
+                                    Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape)
+                                } else Modifier)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
@@ -356,39 +353,6 @@ private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): 
 }
 
 
-@Composable
-private fun LedTextScroller(
-    text: String,
-    textColor: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
-) {
-    val speedMs = (text.length * 120).coerceIn(2000, 8000)
-    val transition = rememberInfiniteTransition(label = "scroll")
-    val offsetX by transition.animateFloat(
-        initialValue   = 1f,
-        targetValue    = -1f,
-        animationSpec  = infiniteRepeatable(
-            animation = tween(durationMillis = speedMs, easing = LinearEasing),
-        ),
-        label = "offsetX",
-    )
-    BoxWithConstraints(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        val maxWidthPx = constraints.maxWidth.toFloat()
-        Text(
-            text     = text.uppercase(),
-            fontSize = 56.sp,
-            fontWeight = FontWeight.W700,
-            color    = textColor,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier
-                .graphicsLayer { translationX = offsetX * maxWidthPx }
-                .wrapContentWidth(unbounded = true),
-        )
-    }
-}
 
 @Composable
 private fun ScreenColorPicker(
@@ -523,9 +487,7 @@ private fun ModeConfigSheet(
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
     onTorchIntensity: (Float) -> Unit = {},
-    screenText: String = "",
     onScreenBrightness: (Float) -> Unit = {},
-    onScreenText: (String) -> Unit = {},
     onMorseSpeed: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
@@ -924,35 +886,6 @@ private fun ModeConfigSheet(
                         inactiveTrackColor = LumiColor.Navy600,
                     ),
                 )
-                Spacer(Modifier.height(12.dp))
-                // ── LED text scroller ─────────────────────────────────────
-                Text("SCROLLING TEXT", fontSize = 10.sp, color = LumiColor.Gray600,
-                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
-                var textInput by remember { mutableStateOf(screenText) }
-                androidx.compose.material3.OutlinedTextField(
-                    value         = textInput,
-                    onValueChange = {
-                        if (it.length <= 40) {
-                            textInput = it
-                            onScreenText(it)
-                        }
-                    },
-                    placeholder   = { Text("TAXI · HELP · your name…",
-                        fontSize = 13.sp, color = LumiColor.Gray600) },
-                    singleLine    = true,
-                    colors        = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor   = LumiColor.Amber400,
-                        unfocusedBorderColor = LumiColor.Navy600,
-                        focusedTextColor     = LumiColor.White,
-                        unfocusedTextColor   = LumiColor.White,
-                        cursorColor          = LumiColor.Amber400,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                    Text("Leave empty to hide text", fontSize = 10.sp, color = LumiColor.Gray600)
-                    Text("${textInput.length}/40", fontSize = 10.sp, color = LumiColor.Gray600)
-                }
                 Spacer(Modifier.height(8.dp))
                 Text("Tap to pick a color",
                     fontSize = 13.sp, color = LumiColor.Gray500)
@@ -967,7 +900,11 @@ private fun ModeConfigSheet(
                                 .size(44.dp)
                                 .clip(CircleShape)
                                 .background(sc.color)
-                                .then(if (sel) Modifier.border(3.dp, LumiColor.White, CircleShape) else Modifier)
+                                .then(if (!sel && sc == ScreenColor.WHITE) Modifier.border(1.dp, LumiColor.Navy600, CircleShape) else Modifier)
+                                .then(if (sel) {
+                                    val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.YELLOW
+                                    Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape)
+                                } else Modifier)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication        = null,

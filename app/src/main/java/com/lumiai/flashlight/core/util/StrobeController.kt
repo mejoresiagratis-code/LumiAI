@@ -1,13 +1,12 @@
 package com.lumiai.flashlight.core.util
 
 import com.lumiai.flashlight.core.util.MorseEncoder
-
-/** Flash pattern per strobe cycle */
-enum class StrobePattern { SINGLE, DOUBLE, TRIPLE }
-
 import kotlinx.coroutines.*
 import javax.inject.Singleton
 import kotlin.math.roundToLong
+
+/** Flash pattern per strobe cycle */
+enum class StrobePattern { SINGLE, DOUBLE, TRIPLE }
 
 /**
  * Coroutine-based controller for timed flash patterns.

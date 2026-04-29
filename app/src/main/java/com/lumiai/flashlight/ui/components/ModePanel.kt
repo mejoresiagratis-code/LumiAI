@@ -90,6 +90,7 @@ fun ModePanel(
     discoBpm: Float,
     onModeSelect: (FlashMode) -> Unit,
     onModeConfig: (FlashMode) -> Unit = {},   // opens config sheet
+    isConfigSheetOpen: Boolean = false,
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -136,7 +137,8 @@ fun ModePanel(
             }
         }
 
-        val showSlider = selectedTab == 0 && (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
+        val showSlider = selectedTab == 0 && !isConfigSheetOpen &&
+            (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
         if (showSlider) {
             when (currentMode) {
                 is FlashMode.Strobe -> key("strobe_slider") {
