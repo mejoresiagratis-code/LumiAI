@@ -3,9 +3,6 @@ package com.lumiai.flashlight.feature.flash
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -45,8 +42,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -872,6 +867,25 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         drawPath(innerPath, androidx.compose.ui.graphics.Color(0xFFFFDD00L).copy(alpha = 0.85f))
     }
     } // Column
+}
+
+@Composable
+private fun AutoOffChip(
+    option: AutoOffOption,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(LumiColor.Navy700)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    ) {
+        Text(
+            "⏱ Auto-off: ${option.label}",
+            fontSize = 11.sp,
+            color = LumiColor.Gray400,
+        )
+    }
 }
 
 // ── Mode Config Bottom Sheet ──────────────────────────────────────────────────
