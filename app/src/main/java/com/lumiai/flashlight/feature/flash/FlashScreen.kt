@@ -1,5 +1,6 @@
 package com.lumiai.flashlight.feature.flash
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.AnimatedVisibility
@@ -488,10 +489,10 @@ fun ScreenEffectEngine(
     // Pre-compute first frame per effect so it's applied before cancelling prev
     val firstFrameColor: androidx.compose.ui.graphics.Color? = remember(effect) {
         when (effect) {
-            ScreenEffect.POLICE  -> androidx.compose.ui.graphics.Color(0xFFFF3B30)
+            ScreenEffect.POLICE  -> androidx.compose.ui.graphics.Color(0xFFFF3B30L)
             ScreenEffect.STROBE  -> androidx.compose.ui.graphics.Color.White
-            ScreenEffect.CANDELA -> androidx.compose.ui.graphics.Color(0xFFFF9500)
-            ScreenEffect.RAINBOW -> androidx.compose.ui.graphics.Color(0xFF34C759)
+            ScreenEffect.CANDELA -> androidx.compose.ui.graphics.Color(0xFFFF9500L)
+            ScreenEffect.RAINBOW -> androidx.compose.ui.graphics.Color(0xFF34C759L)
             null                 -> null
         }
     }
@@ -517,8 +518,8 @@ fun ScreenEffectEngine(
             ScreenEffect.POLICE -> {
                 var red = true
                 while (true) {
-                    onColorChange(if (red) androidx.compose.ui.graphics.Color(0xFFFF3B30)
-                                  else     androidx.compose.ui.graphics.Color(0xFF007AFF))
+                    onColorChange(if (red) androidx.compose.ui.graphics.Color(0xFFFF3B30L)
+                                  else     androidx.compose.ui.graphics.Color(0xFF007AFFL))
                     red = !red
                     delay(280L)
                 }
@@ -717,8 +718,8 @@ private fun ScreenControlPanel(
                     valueRange = 0f..1f,
                     colors = SliderDefaults.colors(
                         thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.5f),
-                        activeTrackColor = androidx.compose.ui.graphics.Color(0xFFFF8C00),
-                        inactiveTrackColor = androidx.compose.ui.graphics.Color(0xFFB8D4FF),
+                        activeTrackColor = androidx.compose.ui.graphics.Color(0xFFFF8C00L),
+                        inactiveTrackColor = androidx.compose.ui.graphics.Color(0xFFB8D4FFL),
                     ),
                     modifier = Modifier.fillMaxWidth().height(32.dp),
                 )
@@ -811,7 +812,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
 
         // Glow halo
         drawCircle(
-            color = androidx.compose.ui.graphics.Color(0xFFFF9500).copy(alpha = glowA),
+            color = androidx.compose.ui.graphics.Color(0xFFFF9500L).copy(alpha = glowA),
             radius = 36f * flameH,
             center = Offset(cx + swayX * 0.3f, cy - 8f),
         )
@@ -820,7 +821,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         val bodyW = 18f; val bodyH = 30f
         val bodyTop = cy + 4f
         drawRoundRect(
-            color = androidx.compose.ui.graphics.Color(0xFFF5E6C8),
+            color = androidx.compose.ui.graphics.Color(0xFFF5E6C8L),
             topLeft = Offset(cx - bodyW / 2f, bodyTop),
             size = Size(bodyW, bodyH),
             cornerRadius = CornerRadius(4f),
@@ -828,7 +829,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         // Wax drip lines
         repeat(3) { i ->
             drawLine(
-                color = androidx.compose.ui.graphics.Color(0xFFE8D5B0),
+                color = androidx.compose.ui.graphics.Color(0xFFE8D5B0L),
                 start = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 4f),
                 end   = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 8f + i * 3f),
                 strokeWidth = 2f,
@@ -836,7 +837,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         }
         // Wick
         drawLine(
-            color = androidx.compose.ui.graphics.Color(0xFF4A3728),
+            color = androidx.compose.ui.graphics.Color(0xFF4A3728L),
             start = Offset(cx + swayX * 0.2f, bodyTop - 6f),
             end   = Offset(cx, bodyTop),
             strokeWidth = 2f,
@@ -850,7 +851,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
             cubicTo(cx - 12f, ftop + 20f, fx - 10f + swayX, ftop + 8f, fx, ftop)
             close()
         }
-        drawPath(flamePath, androidx.compose.ui.graphics.Color(0xFFFF7700).copy(alpha = 0.9f))
+        drawPath(flamePath, androidx.compose.ui.graphics.Color(0xFFFF7700L).copy(alpha = 0.9f))
 
         // Flame — inner (yellow core)
         val innerPath = Path().apply {
@@ -860,7 +861,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
             cubicTo(cx - 6f, ftop + 12f, fx - 5f, ftop + 5f, fx, ftop)
             close()
         }
-        drawPath(innerPath, androidx.compose.ui.graphics.Color(0xFFFFDD00).copy(alpha = 0.85f))
+        drawPath(innerPath, androidx.compose.ui.graphics.Color(0xFFFFDD00L).copy(alpha = 0.85f))
     }
     } // Column
 }
