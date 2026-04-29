@@ -50,13 +50,11 @@ object AppModule {
     @Provides @Singleton
     fun provideBillingRepository(
         @ApplicationContext context: Context,
-    ): BillingRepository = BillingRepositoryImpl(context)
-
-    /** Expose BillingRepositoryImpl directly for any direct injection */
-    @Provides @Singleton
-    fun provideBillingRepositoryImpl(
-        @ApplicationContext context: Context,
-    ): BillingRepositoryImpl = BillingRepositoryImpl(context)
+    ): BillingRepository {
+        // Single instance shared as both BillingRepository (interface) and impl.
+        // BillingRepositoryImpl is NOT provided separately to avoid a second Singleton.
+        return BillingRepositoryImpl(context)
+    }
 
     @Provides @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =

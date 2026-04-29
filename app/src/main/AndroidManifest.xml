@@ -5,10 +5,16 @@
     <!-- ═══ Permisos requeridos ═══════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FLASHLIGHT" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- WAKE_LOCK removed: screen kept on via WindowManager.FLAG_KEEP_SCREEN_ON in MainActivity -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Android 13+ (API 33): required to post any notification (flash alerts feature) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Android 10+ (API 29): required for TYPE_STEP_DETECTOR sensor (Walk mode) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 
     <!-- AdMob advertising ID -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />

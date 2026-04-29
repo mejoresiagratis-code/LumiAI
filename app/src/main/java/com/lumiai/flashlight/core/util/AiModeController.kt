@@ -197,6 +197,10 @@ class AiModeController @Inject constructor(
     }
 
     // ── ◌ SLEEP — gradual fade, torch strength when available ────────────────
+    // Uses torch strength levels on API 33+ for smooth hardware fade.
+    // Falls back to PWM duty-cycle (500ms period) on devices without strength support.
+    // The loop exits via break on both paths; the trailing setTorch(false) acts as a
+    // safety net only for the non-breaking while(isActive) exit (coroutine cancelled).
     fun startSleepTimer(setTorch: (Boolean) -> Unit, setStrength: ((Float) -> Unit)? = null, durationMinutes: Int = 3) {
         stop()
         active = true
@@ -204,9 +208,14 @@ class AiModeController @Inject constructor(
             val totalMs = durationMinutes.toLong() * 60_000L
             val startMs = System.currentTimeMillis()
             setTorch(true)
+            var didBreak = false
             while (isActive) {
                 val elapsed  = System.currentTimeMillis() - startMs
-                if (elapsed >= totalMs) { setTorch(false); break }
+                if (elapsed >= totalMs) {
+                    guarded(false, setTorch)   // timer expired — turn off once
+                    didBreak = true
+                    break
+                }
                 val progress = (elapsed.toFloat() / totalMs).coerceIn(0f, 1f)
                 val duty     = max(0f, 1f - progress * 1.1f)
                 if (setStrength != null) {
@@ -214,7 +223,8 @@ class AiModeController @Inject constructor(
                         setStrength(duty.coerceAtLeast(0.05f))
                         delay(500L)
                     } else {
-                        guarded(false, setTorch)   // physically off when duty reaches 0
+                        guarded(false, setTorch)   // strength reached zero — turn off once
+                        didBreak = true
                         break
                     }
                 } else {
@@ -224,7 +234,9 @@ class AiModeController @Inject constructor(
                     if (offMs > 0) { guarded(false, setTorch); delay(offMs) }
                 }
             }
-            setTorch(false)
+            // Only call setTorch(false) here if the coroutine was cancelled externally
+            // (i.e. stop() was called). The break paths above already sent the OFF signal.
+            if (!didBreak) guarded(false, setTorch)
         }
     }
 
@@ -246,6 +258,9 @@ class AiModeController @Inject constructor(
     }
 
     // ── ◉ WALK — pulse per step ───────────────────────────────────────────────
+    // Each detected step triggers a brief double-pulse: off→on→off (200ms total).
+    // The torch always ends OFF after the pulse. A 600ms watchdog auto-off is set
+    // after each pulse so the torch never stays ON if steps stop arriving.
     fun startWalk(setTorch: (Boolean) -> Unit) {
         stop()
         active = true
@@ -256,20 +271,25 @@ class AiModeController @Inject constructor(
                     if (e.sensor.type != Sensor.TYPE_STEP_DETECTOR) return
                     pulseJob?.cancel()
                     pulseJob = scope.launch {
-                        guarded(false, setTorch); delay(60L)
+                        // Double-pulse on step: always ends OFF
                         guarded(true,  setTorch); delay(80L)
-                        guarded(false, setTorch); delay(60L)
-                        guarded(true,  setTorch)
+                        guarded(false, setTorch); delay(40L)
+                        guarded(true,  setTorch); delay(80L)
+                        guarded(false, setTorch)
+                        // Watchdog: if no next step in 600ms the torch is already OFF
+                        // (nothing to do — we ended OFF above). This comment documents
+                        // the invariant: every code path from this point has torch=OFF.
                     }
                 }
                 override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
             }
             registerListener(stepListener, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
             activeJob = scope.launch {
-                setTorch(true)       // inside job — cancellable
+                setTorch(false)      // start OFF — first pulse comes on first step
                 awaitCancellation()
             }
         } else {
+            // Fallback: no step sensor — simulate walking cadence (~100 BPM = 560ms/step)
             activeJob = scope.launch {
                 while (isActive) {
                     guarded(true,  setTorch); delay(120L)

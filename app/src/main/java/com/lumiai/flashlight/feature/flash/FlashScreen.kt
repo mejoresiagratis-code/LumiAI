@@ -213,6 +213,10 @@ fun FlashScreen(
                 onSmartSpeed     = { viewModel.setSmartSpeed(it) },
                 onSleepMinutes   = { viewModel.setSleepMinutes(it) },
                 onMicSensitivity = { viewModel.setMicSensitivity(it) },
+                onReactivate     = {
+                    // Re-activate AmbientSmart so AiModeController re-reads lux from scratch
+                    if (uiState.isFlashOn) viewModel.activateMode(FlashMode.AmbientSmart)
+                },
                 onDismiss        = { viewModel.closeConfigSheet() },
             )
         }
@@ -731,6 +735,7 @@ private fun ScreenControlPanel(
                     ScreenEffect.CANDELA to "Candela",
                     ScreenEffect.POLICE  to "Police",
                     ScreenEffect.RAINBOW to "Rainbow",
+                    ScreenEffect.STROBE  to "Strobe",
                 )
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     effects.forEach { (fx, label) ->
@@ -765,6 +770,7 @@ private fun ScreenControlPanel(
                         when (screenEffect) {
                             ScreenEffect.POLICE  -> "red & blue alternating"
                             ScreenEffect.RAINBOW -> "full spectrum cycle"
+                            ScreenEffect.STROBE  -> "white screen strobe"
                             else                 -> "tap to activate"
                         },
                         fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
@@ -868,123 +874,6 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
     } // Column
 }
 
-@Composable
-private fun ScreenColorPicker(
-    current: ScreenColor,
-    onSelect: (ScreenColor) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        ScreenColor.entries.forEach { sc ->
-            val isSelected = sc == current
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(sc.color)
-                    .then(
-                        if (isSelected) Modifier.border(2.dp, LumiColor.White, CircleShape)
-                        else Modifier
-                    )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { onSelect(sc) },
-                    ),
-            )
-        }
-    }
-}
-
-@Composable
-private fun AutoOffChip(
-    option: AutoOffOption,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(LumiColor.Navy700)
-            .padding(horizontal = 12.dp, vertical = 5.dp),
-    ) {
-        Text(
-            "⏱ Auto-off: ${option.label}",
-            fontSize = 11.sp,
-            color = LumiColor.Gray400,
-        )
-    }
-}
-
-@Composable
-private fun MorseInputPanel(
-    text: String,
-    onText: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val morsePreview = remember(text) {
-        if (text.isBlank()) "" else MorseEncoder.toReadable(text)
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(LumiColor.Navy800)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            "MORSE — TYPE YOUR MESSAGE",
-            fontSize = 9.sp,
-            letterSpacing = 0.12.sp,
-            color = LumiColor.Gray600,
-            fontWeight = FontWeight.W500,
-        )
-
-        OutlinedTextField(
-            value = text,
-            onValueChange = { onText(it.take(60)) },
-            placeholder = {
-                Text(
-                    "SOS, HELLO, your name...",
-                    fontSize = 13.sp, color = LumiColor.Gray600
-                )
-            },
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = LumiColor.Navy700,
-                unfocusedContainerColor = LumiColor.Navy700,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedIndicatorColor = LumiColor.Amber400.copy(.6f),
-                unfocusedIndicatorColor = LumiColor.Navy600,
-                cursorColor = LumiColor.Amber400,
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        if (morsePreview.isNotBlank()) {
-            Text(
-                text = morsePreview,
-                fontSize = 11.sp,
-                color = LumiColor.Amber400.copy(.7f),
-                letterSpacing = 0.06.sp,
-                lineHeight = 16.sp,
-            )
-        }
-        Text(
-            "${text.length}/60 chars",
-            fontSize = 9.sp,
-            color = LumiColor.Gray600,
-            modifier = Modifier.align(Alignment.End),
-        )
-    }
-}
-
 // ── Mode Config Bottom Sheet ──────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1010,6 +899,7 @@ private fun ModeConfigSheet(
     onSmartSpeed: (Float) -> Unit = {},
     onSleepMinutes: (Int) -> Unit = {},
     onMicSensitivity: (Float) -> Unit = {},
+    onReactivate: () -> Unit = {},  // used by AmbientSmart to re-read lux
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -1287,8 +1177,10 @@ private fun ModeConfigSheet(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClick = {
-                                // Re-activate to re-read lux
+                                // Close sheet first, then re-activate so AiModeController
+                                // runs a fresh lux reading with the current sensor value
                                 onDismiss()
+                                onReactivate()
                             }
                         )
                         .padding(vertical = 16.dp),

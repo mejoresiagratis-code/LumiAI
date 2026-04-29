@@ -27,11 +27,8 @@ android {
         versionName           = "2.3.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // AdMob App ID (replace with real one before release)
+        // AdMob App ID
         manifestPlaceholders["admobAppId"] = localProps.getProperty("ADMOB_APP_ID", "ca-app-pub-7644513562367479~7453103317")
-
-        // Room export schema
-        kapt { arguments { arg("room.schemaLocation", "$projectDir/schemas") } }
     }
 
     signingConfigs {
@@ -59,10 +56,10 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig       = signingConfigs.getByName("release")
             buildConfigField("Boolean", "IS_DEBUG", "false")
-            // TODO: replace with real AdMob IDs before release
-            buildConfigField("String", "ADMOB_BANNER_ID",        "\"ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX\"")
-            buildConfigField("String", "ADMOB_INTERSTITIAL_ID",  "\"ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX\"")
-            buildConfigField("String", "ADMOB_REWARDED_ID",      "\"ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX\"")
+            // Production AdMob IDs — account ca-app-pub-7644513562367479
+            buildConfigField("String", "ADMOB_BANNER_ID",        "\"ca-app-pub-7644513562367479/7748616787\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_ID",  "\"ca-app-pub-7644513562367479/4306165418\"")
+            buildConfigField("String", "ADMOB_REWARDED_ID",      "\"ca-app-pub-7644513562367479/3486984320\"")
         }
     }
 
@@ -108,10 +105,8 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // Room
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    // Room — removed: no Entity/Dao/Database exists in this project. DataStore covers all
+    //         persistence needs. Re-add if relational data structures are required in future.
 
     // DataStore
     implementation(libs.datastore.preferences)
@@ -128,8 +123,8 @@ dependencies {
     // Billing
     implementation(libs.play.billing)
 
-    // ML Kit
-    implementation(libs.mlkit.image.labeling)
+    // ML Kit — removed: AmbientSmart uses the hardware light sensor (TYPE_LIGHT) directly.
+    //           Re-add if scene classification via camera frames is implemented in future.
 
     // Firebase
     implementation(platform(libs.firebase.bom))

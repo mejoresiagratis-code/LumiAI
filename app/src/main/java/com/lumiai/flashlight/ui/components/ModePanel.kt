@@ -47,47 +47,8 @@ data class FlashModeItem(
     val info: String = "",
 )
 
-val flashModeItems = listOf(
-    FlashModeItem(FlashMode.Steady, "Steady", "Full brightness, continuous", "flash",
-        info = "Continuous full-brightness flash. Best for general lighting."),
-    FlashModeItem(FlashMode.Screen, "Screen", "White screen, no flash", "screen",
-        info = "Uses screen as white light source. Adjustable color and brightness."),
-    FlashModeItem(FlashMode.MorseCustom(), "Morse", "Text to flash", "morse",
-        info = "Type any text — flash transmits it in Morse code on loop."),
-    FlashModeItem(FlashMode.Strobe(), "Strobe", "1–20 Hz pulse", "strobe",
-        info = "Rapid 1–20 Hz pulse. Use with caution near photosensitive people."),
-    FlashModeItem(FlashMode.Sos, "SOS", "Morse · · · — — —", "sos",
-        info = "SOS signal: · · · — — — · · · repeating. International distress."),
-    FlashModeItem(FlashMode.Disco(), "Disco", "Beat sync · 60–200 BPM", "disco",
-        info = "Beat-synced flash 60–200 BPM. Great for parties."),
-)
-
-val aiModeItems = listOf(
-    FlashModeItem(FlashMode.SmartBrightness, "Smart", "Adapts to ambient light", "smart",
-        accentColor = Color(0xFFFFD84AL), sensorTag = "Light sensor",
-        info = "Reads light sensor and adjusts pulse speed automatically."),
-    FlashModeItem(FlashMode.ReadingMode, "Read", "Warm pulse, auto-dims", "read",
-        accentColor = Color(0xFFFF9A6CL), sensorTag = "Timer curve",
-        info = "Steady warm light that dims over 20 min. Ideal for reading."),
-    FlashModeItem(FlashMode.AmbientSmart, "Ambient", "Reads scene, picks pattern", "ambient",
-        accentColor = Color(0xFF34D399L), sensorTag = "Lux + ML Kit",
-        info = "Detects scene brightness and picks the best light pattern."),
-    FlashModeItem(FlashMode.CustomRhythm(), "Custom", "Pattern adapts to hour", "custom",
-        accentColor = Color(0xFFA78BFAL), sensorTag = "Clock + gen",
-        info = "Rhythm pattern changes automatically by time of day."),
-    FlashModeItem(FlashMode.SleepTimer, "Sleep", "Fades out over 3 minutes", "sleep",
-        accentColor = Color(0xFF4ADE80L), sensorTag = "Duty curve",
-        info = "Gradually fades out over 3 minutes, then turns off."),
-    FlashModeItem(FlashMode.Music, "Music", "Syncs flash to live beats", "music",
-        accentColor = Color(0xFF60A5FAL), sensorTag = "Microphone",
-        info = "Syncs to audio beats via mic. Works with any music."),
-    FlashModeItem(FlashMode.Walk, "Walk", "Pulse on every step", "walk",
-        accentColor = Color(0xFF818CF8L), sensorTag = "Step detector",
-        info = "Pulses on each step from step detector. Hands-free."),
-    FlashModeItem(FlashMode.Voice, "Voice", "Reacts to voice and sound", "voice",
-        accentColor = Color(0xFFF472B6L), sensorTag = "Microphone",
-        info = "Reacts to voice and sound spikes. Great for signaling."),
-)
+// Note: mode item lists are built inline inside ModePanel() with string resources.
+// Do not add top-level lists here — they can't use @Composable stringResource().
 
 
 
