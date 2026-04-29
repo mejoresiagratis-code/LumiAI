@@ -6,6 +6,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import kotlinx.coroutines.delay
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import com.lumiai.flashlight.feature.flash.ScreenEffect
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -97,7 +106,41 @@ fun FlashScreen(
     val torchIntensity by viewModel.torchIntensity.collectAsState()
     val morseSpeed     by viewModel.morseSpeed.collectAsState()
     val strobePattern  by viewModel.strobePattern.collectAsState()
-    val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
+    val screenEffect   by viewModel.screenEffect.collectAsState()
+    val screenTab      by viewModel.screenTab.collectAsState()
+    val screenHue      by viewModel.screenHue.collectAsState()
+    val screenTemp     by viewModel.screenTemp.collectAsState()
+    // Effect engine drives bgColor when an effect is active in Screen mode
+    var effectBgColor by remember { mutableStateOf(screenColor.color) }
+    // Sync effectBgColor when screenColor changes (solid/hue)
+    LaunchedEffect(screenColor) {
+        if (screenEffect == null) effectBgColor = screenColor.color
+    }
+    // Apply temperature color when screenTemp changes
+    LaunchedEffect(screenTemp) {
+        if (screenEffect == null) {
+            val r = 1.0f
+            val g = (0.78f + screenTemp * 0.22f).coerceIn(0f, 1f)
+            val b = (screenTemp * 0.90f).coerceIn(0f, 1f)
+            effectBgColor = androidx.compose.ui.graphics.Color(red = r, green = g, blue = b)
+        }
+    }
+    // Apply hue color when screenHue changes
+    LaunchedEffect(screenHue) {
+        if (screenEffect == null) {
+            val hsv = floatArrayOf(screenHue, 1f, 1f)
+            effectBgColor = androidx.compose.ui.graphics.Color(android.graphics.Color.HSVToColor(hsv))
+        }
+    }
+
+    val bgColor = if (isScreenMode) effectBgColor else LumiColor.Navy950
+
+    if (isScreenMode) {
+        ScreenEffectEngine(
+            effect = screenEffect,
+            onColorChange = { effectBgColor = it },
+        )
+    }
 
     val view = LocalView.current
     if (isScreenMode) {
@@ -201,12 +244,11 @@ fun FlashScreen(
 
             Spacer(Modifier.height(4.dp))
             Text(
-                text = statusLabel(isOn, mode, uiState),
+                text = if (isScreenMode) "" else statusLabel(isOn, mode, uiState),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.W500,
                 letterSpacing = 0.14.sp,
                 color = when {
-                    isScreenMode -> LumiColor.Navy900.copy(.35f)
                     isOn -> LumiColor.Amber400.copy(.7f)
                     else -> LumiColor.Gray600
                 },
@@ -214,14 +256,14 @@ fun FlashScreen(
 
             val btnSize = (screenH * 0.28f).coerceIn(130.dp, 180.dp)
             if (isScreenMode) {
-                // Screen is ON — show minimal off button, hide the big flash button
-                Spacer(Modifier.height(28.dp))
+                // ── Screen ON: minimal close button ──────────────────────────
+                Spacer(Modifier.height(20.dp))
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
                         .graphicsLayer { alpha = uiAlpha }
-                        .background(LumiColor.Navy950.copy(alpha = 0.18f))
+                        .background(LumiColor.Navy950.copy(alpha = 0.15f))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -229,50 +271,10 @@ fun FlashScreen(
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        "✕",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.W300,
-                        color = LumiColor.Navy950.copy(alpha = 0.45f),
-                    )
+                    Text("✕", fontSize = 20.sp, fontWeight = FontWeight.W300,
+                        color = LumiColor.Navy950.copy(alpha = 0.4f))
                 }
-                // Brightness slider inline in Screen mode
-                if (uiVisible) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = uiVisible,
-                        enter = androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.fadeOut(),
-                    ) {
-                        var brightness by remember { mutableFloatStateOf(uiState.screenBrightness) }
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(
-                                "BRIGHTNESS  ${(brightness * 100).toInt()}%",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.W500,
-                                letterSpacing = 0.1.sp,
-                                color = LumiColor.Navy900.copy(0.45f),
-                            )
-                            Slider(
-                                value = brightness,
-                                onValueChange = { brightness = it },
-                                onValueChangeFinished = { viewModel.setScreenBrightness(brightness) },
-                                valueRange = 0.05f..1.0f,
-                                steps = 18,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = LumiColor.Navy900.copy(0.45f),
-                                    activeTrackColor = LumiColor.Navy900.copy(0.35f),
-                                    inactiveTrackColor = LumiColor.Navy900.copy(0.15f),
-                                ),
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(12.dp))
             } else {
                 Spacer(Modifier.height(20.dp))
                 FlashButton(
@@ -313,43 +315,23 @@ fun FlashScreen(
             }
 
             if (isScreenMode) {
-                // Quick color picker — 2 rows of 6 when Screen mode is ON
                 Spacer(Modifier.weight(1f))
-                val colorRows = ScreenColor.entries.chunked(6)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 24.dp, vertical = 20.dp)
-                        .graphicsLayer { alpha = uiAlpha },
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    colorRows.forEach { row ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            row.forEach { sc ->
-                                val sel = sc == screenColor
-                                val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.WARM_WHITE ||
-                                              sc == ScreenColor.YELLOW || sc == ScreenColor.LIME
-                                Box(
-                                    modifier = Modifier
-                                        .size(if (sel) 40.dp else 32.dp)
-                                        .clip(CircleShape)
-                                        .background(sc.color.copy(alpha = if (sel) 1f else 0.7f))
-                                        .then(if (!sel && isLight) Modifier.border(1.dp, LumiColor.Navy600.copy(0.4f), CircleShape) else Modifier)
-                                        .then(if (sel) Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape) else Modifier)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                            onClick = { viewModel.setScreenColor(sc) },
-                                        ),
-                                )
-                            }
-                        }
-                    }
-                }
+                // ── Tabbed control panel ─────────────────────────────────────
+                ScreenControlPanel(
+                    screenColor    = screenColor,
+                    screenEffect   = screenEffect,
+                    screenTab      = screenTab,
+                    screenHue      = screenHue,
+                    screenTemp     = screenTemp,
+                    brightness     = uiState.screenBrightness,
+                    uiAlpha        = uiAlpha,
+                    onColorSelect  = { viewModel.setScreenColor(it) },
+                    onEffectSelect = { viewModel.setScreenEffect(it) },
+                    onTabSelect    = { viewModel.setScreenTab(it) },
+                    onHueChange    = { viewModel.setScreenHue(it) },
+                    onTempChange   = { viewModel.setScreenTemp(it) },
+                    onBrightness   = { viewModel.setScreenBrightness(it) },
+                )
             } else {
                 Spacer(Modifier.navigationBarsPadding())
             }
@@ -479,6 +461,288 @@ private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): 
 }
 
 
+
+
+// ── Screen mode: FX engine — drives screenColor changes for animated effects ─
+@Composable
+fun ScreenEffectEngine(
+    effect: ScreenEffect?,
+    onColorChange: (androidx.compose.ui.graphics.Color) -> Unit,
+) {
+    // Pre-compute first frame per effect so it's applied before cancelling prev
+    val firstFrameColor: androidx.compose.ui.graphics.Color? = remember(effect) {
+        when (effect) {
+            ScreenEffect.POLICE  -> androidx.compose.ui.graphics.Color(0xFFFF3B30)
+            ScreenEffect.STROBE  -> androidx.compose.ui.graphics.Color.White
+            ScreenEffect.CANDELA -> androidx.compose.ui.graphics.Color(0xFFFF9500)
+            ScreenEffect.RAINBOW -> androidx.compose.ui.graphics.Color(0xFF34C759)
+            null                 -> null
+        }
+    }
+    // Apply first frame synchronously (before job starts) — eliminates perceptible transition frame
+    LaunchedEffect(effect) {
+        firstFrameColor?.let { onColorChange(it) }
+    }
+    // Run effect loop
+    LaunchedEffect(effect) {
+        when (effect) {
+            ScreenEffect.CANDELA -> {
+                var brightness = 0.65f; var dir = 1f
+                while (true) {
+                    val delta = (0.02f + kotlin.math.abs(kotlin.random.Random.nextFloat()) * 0.04f) * dir
+                    brightness = (brightness + delta).coerceIn(0.50f, 0.90f)
+                    if (brightness >= 0.90f || brightness <= 0.50f) dir *= -1f
+                    onColorChange(androidx.compose.ui.graphics.Color(
+                        red = 1f, green = 0.55f + brightness * 0.2f, blue = brightness * 0.3f
+                    ))
+                    delay((80 + (kotlin.random.Random.nextFloat() * 120).toLong()))
+                }
+            }
+            ScreenEffect.POLICE -> {
+                var red = true
+                while (true) {
+                    onColorChange(if (red) androidx.compose.ui.graphics.Color(0xFFFF3B30)
+                                  else     androidx.compose.ui.graphics.Color(0xFF007AFF))
+                    red = !red
+                    delay(280L)
+                }
+            }
+            ScreenEffect.RAINBOW -> {
+                var hue = 0f
+                while (true) {
+                    hue = (hue + 1.5f) % 360f
+                    val hsv = floatArrayOf(hue, 1f, 1f)
+                    val argb = android.graphics.Color.HSVToColor(hsv)
+                    onColorChange(androidx.compose.ui.graphics.Color(argb))
+                    delay(30L)
+                }
+            }
+            ScreenEffect.STROBE -> {
+                var on = true
+                while (true) {
+                    onColorChange(if (on) androidx.compose.ui.graphics.Color.White
+                                  else    androidx.compose.ui.graphics.Color.Black)
+                    on = !on
+                    delay(90L)
+                }
+            }
+            null -> Unit
+        }
+    }
+}
+
+// ── Screen mode: unified tabbed control panel ─────────────────────────────────
+@Composable
+private fun ScreenControlPanel(
+    screenColor: ScreenColor,
+    screenEffect: ScreenEffect?,
+    screenTab: Int,
+    screenHue: Float,
+    screenTemp: Float,
+    brightness: Float,
+    uiAlpha: Float,
+    onColorSelect: (ScreenColor) -> Unit,
+    onEffectSelect: (ScreenEffect?) -> Unit,
+    onTabSelect: (Int) -> Unit,
+    onHueChange: (Float) -> Unit,
+    onTempChange: (Float) -> Unit,
+    onBrightness: (Float) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .graphicsLayer { alpha = uiAlpha }
+            .background(
+                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f),
+                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        // Brightness row
+        var bVal by remember(brightness) { mutableFloatStateOf(brightness) }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("BRIGHTNESS", fontSize = 9.sp, fontWeight = FontWeight.W500,
+                letterSpacing = 0.1.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
+                modifier = Modifier.width(80.dp))
+            Slider(value = bVal,
+                onValueChange = { bVal = it },
+                onValueChangeFinished = { onBrightness(bVal) },
+                valueRange = 0.05f..1.0f, steps = 18,
+                colors = SliderDefaults.colors(
+                    thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
+                    activeTrackColor = androidx.compose.ui.graphics.Color.Black.copy(0.3f),
+                    inactiveTrackColor = androidx.compose.ui.graphics.Color.Black.copy(0.12f),
+                ),
+                modifier = Modifier.weight(1f).height(28.dp),
+            )
+            Text("${(bVal*100).toInt()}%", fontSize = 9.sp,
+                color = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
+                modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+        }
+        Spacer(Modifier.height(10.dp))
+        // Tabs
+        val tabLabels = listOf("Solid", "Hue", "Temp", "FX")
+        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(6.dp)) {
+            tabLabels.forEachIndexed { i, label ->
+                val sel = screenTab == i
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (sel) androidx.compose.ui.graphics.Color.Black.copy(0.18f)
+                            else     androidx.compose.ui.graphics.Color.Black.copy(0.07f)
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onTabSelect(i) }
+                        )
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label, fontSize = 11.sp,
+                        fontWeight = if (sel) FontWeight.W500 else FontWeight.W400,
+                        color = androidx.compose.ui.graphics.Color.Black.copy(if (sel) 0.7f else 0.4f))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        // Tab content
+        when (screenTab) {
+            0 -> { // Solid
+                val colorRows = ScreenColor.entries.chunked(6)
+                colorRows.forEach { row ->
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        row.forEach { sc ->
+                            val sel = sc == screenColor && screenEffect == null
+                            val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.WARM_WHITE ||
+                                          sc == ScreenColor.YELLOW || sc == ScreenColor.LIME
+                            Box(modifier = Modifier
+                                .size(if (sel) 36.dp else 28.dp)
+                                .clip(CircleShape)
+                                .background(sc.color)
+                                .then(if (!sel && isLight) Modifier.border(1.dp, LumiColor.Navy600.copy(0.3f), CircleShape) else Modifier)
+                                .then(if (sel) Modifier.border(2.5.dp, if (isLight) LumiColor.Navy700 else androidx.compose.ui.graphics.Color.White, CircleShape) else Modifier)
+                                .clickable(interactionSource = remember { MutableInteractionSource() },
+                                    indication = null, onClick = { onColorSelect(sc) })
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
+            1 -> { // Hue
+                Text("HUE — ${screenHue.toInt()}°", fontSize = 9.sp,
+                    color = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Spacer(Modifier.height(4.dp))
+                Box(modifier = Modifier.fillMaxWidth().height(28.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.horizontalGradient(colors = (0..12).map { i ->
+                            val hsv = floatArrayOf(i * 30f, 1f, 1f)
+                            androidx.compose.ui.graphics.Color(android.graphics.Color.HSVToColor(hsv))
+                        })
+                    )
+                ) {
+                    val thumbPct = screenHue / 360f
+                    Box(modifier = Modifier
+                        .fillMaxHeight()
+                        .width(3.dp)
+                        .offset(x = (thumbPct * 1f).coerceIn(0f,1f).let {
+                            androidx.compose.ui.unit.Dp(it)
+                        })
+                        .background(androidx.compose.ui.graphics.Color.White)
+                    )
+                    androidx.compose.foundation.gestures.detectTapGestures
+                    Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                        detectTapGestures { offset ->
+                            val hue = (offset.x / size.width.toFloat() * 360f).coerceIn(0f, 360f)
+                            onHueChange(hue)
+                        }
+                    })
+                }
+                Spacer(Modifier.height(4.dp))
+                val hueNames = listOf("red","orange","yellow","chartreuse","green","spring",
+                    "cyan","azure","blue","violet","magenta","rose")
+                Text(hueNames[(screenHue / 30f).toInt().coerceIn(0, 11)],
+                    fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f))
+            }
+            2 -> { // Temp
+                val k = (2700 + screenTemp * (6500 - 2700)).toInt()
+                val tempLabel = when {
+                    k < 3000 -> "candlelight"
+                    k < 3500 -> "incandescent"
+                    k < 4500 -> "neutral white"
+                    k < 5500 -> "cool daylight"
+                    else      -> "cold daylight"
+                }
+                Text("TEMPERATURE — ${k}K  $tempLabel", fontSize = 9.sp,
+                    color = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
+                    fontWeight = FontWeight.W500, letterSpacing = 0.05.sp)
+                Spacer(Modifier.height(4.dp))
+                Slider(value = screenTemp,
+                    onValueChange = { onTempChange(it) },
+                    valueRange = 0f..1f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.5f),
+                        activeTrackColor = androidx.compose.ui.graphics.Color(0xFFFF8C00),
+                        inactiveTrackColor = androidx.compose.ui.graphics.Color(0xFFB8D4FF),
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                )
+            }
+            3 -> { // FX
+                val effects = listOf(
+                    ScreenEffect.CANDELA to "Candela",
+                    ScreenEffect.POLICE  to "Police",
+                    ScreenEffect.RAINBOW to "Rainbow",
+                    ScreenEffect.STROBE  to "Strobe",
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    effects.forEach { (fx, label) ->
+                        val active = screenEffect == fx
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (active) androidx.compose.ui.graphics.Color.Black.copy(0.22f)
+                                    else        androidx.compose.ui.graphics.Color.Black.copy(0.07f)
+                                )
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onEffectSelect(fx) }
+                                )
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label, fontSize = 11.sp,
+                                fontWeight = if (active) FontWeight.W500 else FontWeight.W400,
+                                color = androidx.compose.ui.graphics.Color.Black.copy(if (active) 0.75f else 0.4f))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    when (screenEffect) {
+                        ScreenEffect.CANDELA -> "flame flicker"
+                        ScreenEffect.POLICE  -> "red & blue alternating"
+                        ScreenEffect.RAINBOW -> "full spectrum cycle"
+                        ScreenEffect.STROBE  -> "white screen pulse"
+                        null                 -> "tap to activate"
+                    },
+                    fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+    }
+}
 
 @Composable
 private fun ScreenColorPicker(

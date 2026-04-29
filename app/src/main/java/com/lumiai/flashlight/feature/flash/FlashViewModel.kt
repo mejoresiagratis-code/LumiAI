@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Active animated effect in Screen mode. Null = static color. */
+enum class ScreenEffect { CANDELA, POLICE, RAINBOW, STROBE }
+
 data class FlashUiState(
     val isFlashOn: Boolean           = false,
     val currentMode: FlashMode       = FlashMode.Steady,
@@ -145,6 +148,20 @@ class FlashViewModel @Inject constructor(
     fun closeConfigSheet() { _showConfigSheet.value = false }
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
     val screenColor: StateFlow<ScreenColor> = _currentScreenColor.asStateFlow()
+
+    // Screen mode — active animated effect (null = static)
+    private val _screenEffect = MutableStateFlow<ScreenEffect?>(null)
+    val screenEffect: StateFlow<ScreenEffect?> = _screenEffect.asStateFlow()
+
+    // Screen mode — active tab index (0=Solid,1=Hue,2=Temp,3=FX)
+    private val _screenTab = MutableStateFlow(0)
+    val screenTab: StateFlow<Int> = _screenTab.asStateFlow()
+
+    // Hue (0..360) and temperature (0..1 = 2700K..6500K)
+    private val _screenHue = MutableStateFlow(180f)
+    val screenHue: StateFlow<Float> = _screenHue.asStateFlow()
+    private val _screenTemp = MutableStateFlow(0f)   // 0=2700K, 1=6500K
+    val screenTemp: StateFlow<Float> = _screenTemp.asStateFlow()
     private val _autoOff = MutableStateFlow(AutoOffOption.NONE) // synced from DataStore on first settings load
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
     private var autoOffJob: Job? = null
@@ -339,7 +356,29 @@ class FlashViewModel @Inject constructor(
 
     fun setScreenColor(color: ScreenColor) {
         _currentScreenColor.value = color
+        _screenEffect.value = null   // cancel any active effect when solid color chosen
         viewModelScope.launch { settingsRepository.setScreenColorId(color.name.lowercase()) }
+    }
+
+    fun setScreenEffect(effect: ScreenEffect?) {
+        // Toggle: same effect → deactivate. Different effect → switch instantly.
+        _screenEffect.value = if (_screenEffect.value == effect) null else effect
+    }
+
+    fun setScreenTab(tab: Int) { _screenTab.value = tab }
+
+    fun setScreenHue(hue: Float) {
+        _screenHue.value = hue.coerceIn(0f, 360f)
+        _screenEffect.value = null
+        // Convert HSV to Color and update screenColor for persistence
+        val color = android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f))
+        _currentScreenColor.value = ScreenColor.entries.firstOrNull { it.color.value == color.toLong() }
+            ?: _currentScreenColor.value  // keep current if no exact match
+    }
+
+    fun setScreenTemp(temp: Float) {
+        _screenTemp.value = temp.coerceIn(0f, 1f)
+        _screenEffect.value = null
     }
 
     fun setAutoOffFromSettings(option: AutoOffOption) {

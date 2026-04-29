@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
  * Available screen colors for Screen mode.
  */
 enum class ScreenColor(val color: Color, val label: String) {
-    WHITE(      Color(0xFFFFFBEB), "White"),
+    WHITE(      Color(0xFFFFFFFF), "White"),
     WARM_WHITE( Color(0xFFFFE4B5), "Warm white"),
     RED(        Color(0xFFFF3B30), "Red"),
     RED_DARK(   Color(0xFF8B0000), "Night red"),
