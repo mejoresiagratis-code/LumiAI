@@ -1,5 +1,11 @@
 package com.lumiai.flashlight.feature.flash
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import kotlinx.coroutines.delay
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -70,6 +76,23 @@ fun FlashScreen(
         viewModel.toggleFlash()
     }
 
+    // Auto-hide UI in Screen mode after 3 seconds; tap anywhere to reveal
+    var uiVisible by remember { mutableStateOf(true) }
+    LaunchedEffect(isScreenMode) {
+        if (!isScreenMode) uiVisible = true  // always visible when not in screen mode
+    }
+    LaunchedEffect(uiVisible, isScreenMode) {
+        if (isScreenMode && uiVisible) {
+            delay(3000L)
+            uiVisible = false
+        }
+    }
+    val uiAlpha by animateFloatAsState(
+        targetValue = if (!isScreenMode || uiVisible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(400),
+        label = "uiAlpha",
+    )
+
     val screenColor   by viewModel.screenColor.collectAsState()
     val torchIntensity by viewModel.torchIntensity.collectAsState()
     val morseSpeed     by viewModel.morseSpeed.collectAsState()
@@ -139,7 +162,12 @@ fun FlashScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor),
+            .background(bgColor)
+            .then(if (isScreenMode && !uiVisible) Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { uiVisible = true },
+            ) else Modifier),
     ) {
         val screenH = maxHeight
 
@@ -168,6 +196,7 @@ fun FlashScreen(
                 isScreenMode = isScreenMode,
                 onOpenSettings = onOpenSettings,
                 onOpenPro = onOpenPro,
+                modifier = Modifier.graphicsLayer { alpha = uiAlpha },
             )
 
             Spacer(Modifier.height(4.dp))
@@ -191,11 +220,12 @@ fun FlashScreen(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
+                        .graphicsLayer { alpha = uiAlpha }
                         .background(LumiColor.Navy950.copy(alpha = 0.18f))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { viewModel.toggleFlash() },
+                            onClick = { if (uiVisible) viewModel.toggleFlash() else uiVisible = true },
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -205,6 +235,42 @@ fun FlashScreen(
                         fontWeight = FontWeight.W300,
                         color = LumiColor.Navy950.copy(alpha = 0.45f),
                     )
+                }
+                // Brightness slider inline in Screen mode
+                if (uiVisible) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = uiVisible,
+                        enter = androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.fadeOut(),
+                    ) {
+                        var brightness by remember { mutableFloatStateOf(uiState.screenBrightness) }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                "BRIGHTNESS  ${(brightness * 100).toInt()}%",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.W500,
+                                letterSpacing = 0.1.sp,
+                                color = LumiColor.Navy900.copy(0.45f),
+                            )
+                            Slider(
+                                value = brightness,
+                                onValueChange = { brightness = it },
+                                onValueChangeFinished = { viewModel.setScreenBrightness(brightness) },
+                                valueRange = 0.05f..1.0f,
+                                steps = 18,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = LumiColor.Navy900.copy(0.45f),
+                                    activeTrackColor = LumiColor.Navy900.copy(0.35f),
+                                    inactiveTrackColor = LumiColor.Navy900.copy(0.15f),
+                                ),
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(28.dp))
             } else {
@@ -254,7 +320,8 @@ fun FlashScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
+                        .graphicsLayer { alpha = uiAlpha },
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -313,9 +380,10 @@ private fun TopBar(
     isScreenMode: Boolean,
     onOpenSettings: () -> Unit,
     onOpenPro: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
