@@ -23,12 +23,12 @@ android {
         applicationId         = "com.lumiai.flashlight"
         minSdk                = 23          // 97% coverage
         targetSdk             = 35
-        versionCode           = 74
-        versionName           = "2.3.4"
+        versionCode           = 75
+        versionName           = "2.3.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // AdMob App ID (replace with real one before release)
-        manifestPlaceholders["admobAppId"] = localProps.getProperty("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+        manifestPlaceholders["admobAppId"] = localProps.getProperty("ADMOB_APP_ID", "ca-app-pub-7644513562367479~7453103317")
 
         // Room export schema
         kapt { arguments { arg("room.schemaLocation", "$projectDir/schemas") } }

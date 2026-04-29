@@ -1,5 +1,14 @@
 package com.lumiai.flashlight.ui.components
 
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.foundation.Canvas
 import com.lumiai.flashlight.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
@@ -39,49 +48,186 @@ data class FlashModeItem(
 )
 
 val flashModeItems = listOf(
-    FlashModeItem(FlashMode.Steady, "Steady", "Full brightness, continuous", "⚡",
+    FlashModeItem(FlashMode.Steady, "Steady", "Full brightness, continuous", "flash",
         info = "Continuous full-brightness flash. Best for general lighting."),
-    FlashModeItem(FlashMode.Screen, "Screen", "White screen, no flash", "▢",
+    FlashModeItem(FlashMode.Screen, "Screen", "White screen, no flash", "screen",
         info = "Uses screen as white light source. Adjustable color and brightness."),
-    FlashModeItem(FlashMode.MorseCustom(), "Morse", "Text to flash", "—·",
+    FlashModeItem(FlashMode.MorseCustom(), "Morse", "Text to flash", "morse",
         info = "Type any text — flash transmits it in Morse code on loop."),
-    FlashModeItem(FlashMode.Strobe(), "Strobe", "1–20 Hz pulse", "⊙",
+    FlashModeItem(FlashMode.Strobe(), "Strobe", "1–20 Hz pulse", "strobe",
         info = "Rapid 1–20 Hz pulse. Use with caution near photosensitive people."),
-    FlashModeItem(FlashMode.Sos, "SOS", "Morse · · · — — —", "◬",
+    FlashModeItem(FlashMode.Sos, "SOS", "Morse · · · — — —", "sos",
         info = "SOS signal: · · · — — — · · · repeating. International distress."),
-    FlashModeItem(FlashMode.Disco(), "Disco", "Beat sync · 60–200 BPM", "◇",
+    FlashModeItem(FlashMode.Disco(), "Disco", "Beat sync · 60–200 BPM", "disco",
         info = "Beat-synced flash 60–200 BPM. Great for parties."),
 )
 
 val aiModeItems = listOf(
-    FlashModeItem(FlashMode.SmartBrightness, "Smart", "Adapts to ambient light", "◎",
+    FlashModeItem(FlashMode.SmartBrightness, "Smart", "Adapts to ambient light", "smart",
         accentColor = Color(0xFFFFD84A), sensorTag = "Light sensor",
         info = "Reads light sensor and adjusts pulse speed automatically."),
-    FlashModeItem(FlashMode.ReadingMode, "Read", "Warm pulse, auto-dims", "☽",
+    FlashModeItem(FlashMode.ReadingMode, "Read", "Warm pulse, auto-dims", "read",
         accentColor = Color(0xFFFF9A6C), sensorTag = "Timer curve",
         info = "Steady warm light that dims over 20 min. Ideal for reading."),
-    FlashModeItem(FlashMode.AmbientSmart, "Ambient", "Reads scene, picks pattern", "⬨",
+    FlashModeItem(FlashMode.AmbientSmart, "Ambient", "Reads scene, picks pattern", "ambient",
         accentColor = Color(0xFF34D399), sensorTag = "Lux + ML Kit",
         info = "Detects scene brightness and picks the best light pattern."),
-    FlashModeItem(FlashMode.CustomRhythm(), "Custom", "Pattern adapts to hour", "⬡",
+    FlashModeItem(FlashMode.CustomRhythm(), "Custom", "Pattern adapts to hour", "custom",
         accentColor = Color(0xFFA78BFA), sensorTag = "Clock + gen",
         info = "Rhythm pattern changes automatically by time of day."),
-    FlashModeItem(FlashMode.SleepTimer, "Sleep", "Fades out over 3 minutes", "◌",
+    FlashModeItem(FlashMode.SleepTimer, "Sleep", "Fades out over 3 minutes", "sleep",
         accentColor = Color(0xFF4ADE80), sensorTag = "Duty curve",
         info = "Gradually fades out over 3 minutes, then turns off."),
-    FlashModeItem(FlashMode.Music, "Music", "Syncs flash to live beats", "♩",
+    FlashModeItem(FlashMode.Music, "Music", "Syncs flash to live beats", "music",
         accentColor = Color(0xFF60A5FA), sensorTag = "Microphone",
         info = "Syncs to audio beats via mic. Works with any music."),
-    FlashModeItem(FlashMode.Walk, "Walk", "Pulse on every step", "◉",
+    FlashModeItem(FlashMode.Walk, "Walk", "Pulse on every step", "walk",
         accentColor = Color(0xFF818CF8), sensorTag = "Step detector",
         info = "Pulses on each step from step detector. Hands-free."),
-    FlashModeItem(FlashMode.Voice, "Voice", "Reacts to voice and sound", "◍",
+    FlashModeItem(FlashMode.Voice, "Voice", "Reacts to voice and sound", "voice",
         accentColor = Color(0xFFF472B6), sensorTag = "Microphone",
         info = "Reacts to voice and sound spikes. Great for signaling."),
 )
 
 
 
+
+
+/**
+ * Canvas-drawn mode icons — consistent stroke width, style and weight.
+ * All icons use 2dp stroke, StrokeCap.Round, same visual weight as the flash bolt.
+ */
+@Composable
+fun LumiModeIcon(
+    id: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    val stroke = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    Canvas(modifier = modifier) {
+        val w = size.width; val h = size.height
+        val cx = w / 2f; val cy = h / 2f
+        when (id) {
+            "flash" -> {  // lightning bolt — sharp zigzag
+                val p = Path()
+                p.moveTo(cx + w * 0.10f, cy - h * 0.44f)
+                p.lineTo(cx - w * 0.16f, cy + h * 0.04f)
+                p.lineTo(cx + w * 0.06f, cy + h * 0.04f)
+                p.lineTo(cx - w * 0.10f, cy + h * 0.44f)
+                p.lineTo(cx + w * 0.20f, cy - h * 0.08f)
+                p.lineTo(cx + w * 0.02f, cy - h * 0.08f)
+                p.close()
+                drawPath(p, tint)
+            }
+            "screen" -> {  // rounded rectangle outline
+                drawRoundRect(tint, topLeft = Offset(w*0.08f, h*0.16f),
+                    size = Size(w*0.84f, h*0.68f), cornerRadius = CornerRadius(w*0.12f), style = stroke)
+            }
+            "morse" -> {  // dash + dot
+                drawLine(tint, Offset(cx - w*0.32f, cy - h*0.08f), Offset(cx + w*0.04f, cy - h*0.08f), strokeWidth = 5f, cap = StrokeCap.Round)
+                drawCircle(tint, radius = w*0.09f, center = Offset(cx + w*0.28f, cy - h*0.08f))
+                drawLine(tint, Offset(cx - w*0.32f, cy + h*0.20f), Offset(cx - w*0.02f, cy + h*0.20f), strokeWidth = 5f, cap = StrokeCap.Round)
+                drawCircle(tint, radius = w*0.09f, center = Offset(cx + w*0.18f, cy + h*0.20f))
+                drawCircle(tint, radius = w*0.09f, center = Offset(cx + w*0.36f, cy + h*0.20f))
+            }
+            "strobe" -> {  // circle with radial lines (burst)
+                drawCircle(tint, radius = w*0.18f, center = Offset(cx, cy), style = stroke)
+                val angles = listOf(0f,45f,90f,135f,180f,225f,270f,315f)
+                angles.forEach { a ->
+                    val rad = Math.toRadians(a.toDouble())
+                    val cos = Math.cos(rad).toFloat(); val sin = Math.sin(rad).toFloat()
+                    drawLine(tint,
+                        Offset(cx + cos*w*0.24f, cy + sin*h*0.24f),
+                        Offset(cx + cos*w*0.38f, cy + sin*h*0.38f),
+                        strokeWidth = 4f, cap = StrokeCap.Round)
+                }
+            }
+            "sos" -> {  // triangle with exclamation inside
+                val p = Path()
+                p.moveTo(cx, h*0.06f)
+                p.lineTo(w*0.94f, h*0.88f)
+                p.lineTo(w*0.06f, h*0.88f)
+                p.close()
+                drawPath(p, tint, style = stroke)
+                drawLine(tint, Offset(cx, h*0.34f), Offset(cx, h*0.64f), strokeWidth = 5f, cap = StrokeCap.Round)
+                drawCircle(tint, radius = 3f, center = Offset(cx, h*0.76f))
+            }
+            "disco" -> {  // music note
+                drawLine(tint, Offset(cx + w*0.16f, cy - h*0.36f), Offset(cx + w*0.16f, cy + h*0.10f), strokeWidth = 5f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx + w*0.16f, cy - h*0.36f), Offset(cx + w*0.42f, cy - h*0.28f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawCircle(tint, radius = w*0.14f, center = Offset(cx, cy + h*0.14f), style = stroke)
+            }
+            "smart" -> {  // sun/light bulb — circle + rays
+                drawCircle(tint, radius = w*0.22f, center = Offset(cx, cy), style = stroke)
+                listOf(0f, 60f, 120f, 180f, 240f, 300f).forEach { a ->
+                    val rad = Math.toRadians(a.toDouble())
+                    val cos = Math.cos(rad).toFloat(); val sin = Math.sin(rad).toFloat()
+                    drawLine(tint, Offset(cx+cos*w*0.3f, cy+sin*h*0.3f),
+                        Offset(cx+cos*w*0.42f, cy+sin*h*0.42f), strokeWidth = 4f, cap = StrokeCap.Round)
+                }
+            }
+            "read" -> {  // open book
+                drawLine(tint, Offset(cx, cy - h*0.36f), Offset(cx, cy + h*0.36f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawArc(tint, startAngle = -90f, sweepAngle = -180f,
+                    useCenter = false, topLeft = Offset(w*0.06f, cy - h*0.36f),
+                    size = Size(w*0.44f, h*0.72f), style = stroke)
+                drawArc(tint, startAngle = -90f, sweepAngle = 180f,
+                    useCenter = false, topLeft = Offset(cx, cy - h*0.36f),
+                    size = Size(w*0.44f, h*0.72f), style = stroke)
+            }
+            "ambient" -> {  // eye shape
+                drawArc(tint, startAngle = 0f, sweepAngle = -180f, useCenter = false,
+                    topLeft = Offset(w*0.08f, cy - h*0.24f), size = Size(w*0.84f, h*0.48f), style = stroke)
+                drawArc(tint, startAngle = 0f, sweepAngle = 180f, useCenter = false,
+                    topLeft = Offset(w*0.08f, cy - h*0.24f), size = Size(w*0.84f, h*0.48f), style = stroke)
+                drawCircle(tint, radius = w*0.12f, center = Offset(cx, cy), style = stroke)
+            }
+            "custom" -> {  // clock with hand
+                drawCircle(tint, radius = w*0.38f, center = Offset(cx, cy), style = stroke)
+                drawLine(tint, Offset(cx, cy), Offset(cx, cy - h*0.28f), strokeWidth = 4.5f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx, cy), Offset(cx + w*0.20f, cy + h*0.10f), strokeWidth = 4.5f, cap = StrokeCap.Round)
+            }
+            "sleep" -> {  // crescent moon
+                val p = Path()
+                p.addOval(androidx.compose.ui.geometry.Rect(cx - w*0.30f, cy - h*0.40f, cx + w*0.30f, cy + h*0.40f))
+                drawPath(p, tint, style = stroke)
+                drawArc(tint, startAngle = -60f, sweepAngle = -180f, useCenter = false,
+                    topLeft = Offset(cx - w*0.04f, cy - h*0.38f), size = Size(w*0.40f, h*0.76f),
+                    style = Fill, colorFilter = null)
+                // Simpler: just draw crescent via two overlapping circles
+            }
+            "music" -> {  // waveform — 3 vertical bars
+                listOf(-0.28f, 0f, 0.28f).forEachIndexed { i, xOff ->
+                    val barH = if (i == 1) h*0.7f else h*0.45f
+                    drawRoundRect(tint,
+                        topLeft = Offset(cx + w*xOff - w*0.07f, cy - barH/2f),
+                        size = Size(w*0.14f, barH),
+                        cornerRadius = CornerRadius(w*0.07f))
+                }
+            }
+            "walk" -> {  // footstep / person walking
+                drawCircle(tint, radius = w*0.13f, center = Offset(cx, cy - h*0.35f), style = stroke)
+                drawLine(tint, Offset(cx, cy - h*0.22f), Offset(cx, cy + h*0.10f), strokeWidth = 5f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx, cy - h*0.04f), Offset(cx - w*0.22f, cy + h*0.06f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx, cy - h*0.04f), Offset(cx + w*0.18f, cy + h*0.06f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx, cy + h*0.10f), Offset(cx - w*0.18f, cy + h*0.38f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx, cy + h*0.10f), Offset(cx + w*0.20f, cy + h*0.38f), strokeWidth = 4f, cap = StrokeCap.Round)
+            }
+            "voice" -> {  // microphone
+                drawRoundRect(tint, topLeft = Offset(cx - w*0.14f, cy - h*0.40f),
+                    size = Size(w*0.28f, h*0.50f), cornerRadius = CornerRadius(w*0.14f), style = stroke)
+                drawArc(tint, startAngle = 0f, sweepAngle = 180f, useCenter = false,
+                    topLeft = Offset(cx - w*0.28f, cy - h*0.10f),
+                    size = Size(w*0.56f, h*0.44f), style = stroke)
+                drawLine(tint, Offset(cx, cy + h*0.22f), Offset(cx, cy + h*0.44f), strokeWidth = 4f, cap = StrokeCap.Round)
+                drawLine(tint, Offset(cx - w*0.16f, cy + h*0.44f), Offset(cx + w*0.16f, cy + h*0.44f), strokeWidth = 4f, cap = StrokeCap.Round)
+            }
+            else -> {  // fallback: simple circle
+                drawCircle(tint, radius = w*0.30f, center = Offset(cx, cy), style = stroke)
+            }
+        }
+    }
+}
 
 @Composable
 fun ModePanel(
@@ -98,6 +244,7 @@ fun ModePanel(
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
     isPro: Boolean = false,
+    onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(if (currentMode.isPro) 1 else 0) }
@@ -210,33 +357,35 @@ fun ModePanel(
             if (tab == 0) {
                 FlashModeGrid(
                     items = listOf(
-                        FlashModeItem(FlashMode.Steady, stringResource(R.string.mode_steady), stringResource(R.string.mode_steady_desc), "⚡", info = stringResource(R.string.mode_steady_info)),
-                        FlashModeItem(FlashMode.Screen, stringResource(R.string.mode_screen), stringResource(R.string.mode_screen_desc), "▢", info = stringResource(R.string.mode_screen_info)),
-                        FlashModeItem(FlashMode.MorseCustom(), stringResource(R.string.mode_morse), stringResource(R.string.mode_morse_desc), "—·", info = stringResource(R.string.mode_morse_info)),
-                        FlashModeItem(FlashMode.Strobe(), stringResource(R.string.mode_strobe), stringResource(R.string.mode_strobe_desc), "⊙", info = stringResource(R.string.mode_strobe_info)),
-                        FlashModeItem(FlashMode.Sos, stringResource(R.string.mode_sos), stringResource(R.string.mode_sos_desc), "◬", info = stringResource(R.string.mode_sos_info)),
-                        FlashModeItem(FlashMode.Disco(), stringResource(R.string.mode_disco), stringResource(R.string.mode_disco_desc), "◇", info = stringResource(R.string.mode_disco_info)),
+                        FlashModeItem(FlashMode.Steady, stringResource(R.string.mode_steady), stringResource(R.string.mode_steady_desc), "flash", info = stringResource(R.string.mode_steady_info)),
+                        FlashModeItem(FlashMode.Screen, stringResource(R.string.mode_screen), stringResource(R.string.mode_screen_desc), "screen", info = stringResource(R.string.mode_screen_info)),
+                        FlashModeItem(FlashMode.MorseCustom(), stringResource(R.string.mode_morse), stringResource(R.string.mode_morse_desc), "morse", info = stringResource(R.string.mode_morse_info)),
+                        FlashModeItem(FlashMode.Strobe(), stringResource(R.string.mode_strobe), stringResource(R.string.mode_strobe_desc), "strobe", info = stringResource(R.string.mode_strobe_info)),
+                        FlashModeItem(FlashMode.Sos, stringResource(R.string.mode_sos), stringResource(R.string.mode_sos_desc), "sos", info = stringResource(R.string.mode_sos_info)),
+                        FlashModeItem(FlashMode.Disco(), stringResource(R.string.mode_disco), stringResource(R.string.mode_disco_desc), "disco", info = stringResource(R.string.mode_disco_info)),
                     ),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,
+                    onPaywall = onPaywall,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             } else {
                 AiModeGrid(
                     items = listOf(
-                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "◎", accentColor = Color(0xFFFFD84A), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
-                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "☽", accentColor = Color(0xFFFF9A6C), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
-                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "⬨", accentColor = Color(0xFF34D399), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
-                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "⬡", accentColor = Color(0xFFA78BFA), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
-                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "◌", accentColor = Color(0xFF4ADE80), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
-                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "♩", accentColor = Color(0xFF60A5FA), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
-                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "◉", accentColor = Color(0xFF818CF8), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
-                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "◍", accentColor = Color(0xFFF472B6), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
+                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84A), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
+                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6C), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
+                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "ambient", accentColor = Color(0xFF34D399), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
+                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "custom", accentColor = Color(0xFFA78BFA), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
+                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "sleep", accentColor = Color(0xFF4ADE80), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
+                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FA), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
+                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
+                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
                     ),
                     currentMode = currentMode,
                     onSelect = onModeSelect,
                     onConfig = onModeConfig,
+                    onPaywall = onPaywall,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
@@ -333,7 +482,7 @@ private fun FlashModeCard(
 
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = 80.dp)
+            .height(100.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
@@ -349,11 +498,10 @@ private fun FlashModeCard(
             .padding(14.dp),
     ) {
         Column {
-            Text(
-                text = item.symbol,
-                fontSize = 20.sp,
-                color = if (isSelected) LumiColor.Amber400 else LumiColor.Gray500,
-                modifier = Modifier.padding(bottom = 6.dp),
+            LumiModeIcon(
+                id = item.symbol,
+                tint = if (isSelected) LumiColor.Amber400 else LumiColor.Gray500,
+                modifier = Modifier.size(22.dp).padding(bottom = 6.dp),
             )
             Text(
                 text = item.name,
@@ -420,6 +568,7 @@ private fun AiModeCard(
     isPro: Boolean = false,
     onClick: () -> Unit,
     onConfig: () -> Unit = {},
+    onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -440,7 +589,7 @@ private fun AiModeCard(
 
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = 80.dp)
+            .height(100.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(if (isSelected) LumiColor.Navy700 else LumiColor.Navy800)
             .border(
@@ -451,35 +600,34 @@ private fun AiModeCard(
             .clickable(
                 interactionSource = interactionSource,
                 indication = rememberRipple(color = accent.copy(.1f)),
-                onClick = onClick,
+                onClick = { if (isLocked) onPaywall() else onClick() },
             )
             .padding(14.dp),
     ) {
-        // PRO badge — top right, visible to Free users
+        // PRO badge — centered on right edge
         if (isLocked) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(LumiColor.Amber400.copy(alpha = 0.15f))
-                    .border(0.5.dp, LumiColor.Amber400.copy(0.4f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 5.dp, vertical = 2.dp),
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 10.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(LumiColor.Amber400)
+                    .padding(horizontal = 4.dp, vertical = 3.dp),
             ) {
                 Text(
                     "PRO",
-                    fontSize = 8.sp,
+                    fontSize = 7.sp,
                     fontWeight = FontWeight.W700,
-                    letterSpacing = 0.08.sp,
-                    color = LumiColor.Amber400,
+                    letterSpacing = 0.1.sp,
+                    color = LumiColor.Navy950,
                 )
             }
         }
         Column {
-            Text(
-                text = item.symbol,
-                fontSize = 20.sp,
-                color = if (isSelected) accent else accent.copy(.6f),
-                modifier = Modifier.padding(bottom = 6.dp),
+            LumiModeIcon(
+                id = item.symbol,
+                tint = if (isSelected) accent else accent.copy(.55f),
+                modifier = Modifier.size(22.dp).padding(bottom = 6.dp),
             )
             Text(
                 text = item.name,
@@ -530,7 +678,7 @@ private fun AiModeCard(
                     modifier = Modifier.clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = onConfig,
+                        onClick = { if (isLocked) onPaywall() else onConfig() },
                     ),
                 )
             }
@@ -542,7 +690,7 @@ private fun AiModeCard(
                     modifier = Modifier.clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { showInfo = true },
+                        onClick = { if (isLocked) onPaywall() else showInfo = true },
                     ),
                 )
             }
