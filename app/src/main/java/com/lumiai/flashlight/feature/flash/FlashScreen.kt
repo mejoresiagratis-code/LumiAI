@@ -16,6 +16,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.lumiai.flashlight.feature.flash.ScreenEffect
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -86,15 +89,25 @@ fun FlashScreen(
         viewModel.toggleFlash()
     }
 
-    // Auto-hide UI in Screen mode after 3 seconds; tap anywhere to reveal
+    // Auto-hide: hides 3s after LAST INTERACTION, not 3s after appearing
     var uiVisible by remember { mutableStateOf(true) }
-    LaunchedEffect(isScreenMode) {
-        if (!isScreenMode) uiVisible = true  // always visible when not in screen mode
+    var lastInteractionMs by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    // Helper called on every user interaction to reset the idle timer
+    fun onUserInteraction() {
+        lastInteractionMs = System.currentTimeMillis()
+        uiVisible = true
     }
-    LaunchedEffect(uiVisible, isScreenMode) {
-        if (isScreenMode && uiVisible) {
-            delay(3000L)
-            uiVisible = false
+
+    LaunchedEffect(isScreenMode) {
+        if (!isScreenMode) { uiVisible = true; return@LaunchedEffect }
+        // Poll every 500ms — hide when idle for 3000ms
+        while (true) {
+            delay(500L)
+            if (!isScreenMode) break
+            if (uiVisible && System.currentTimeMillis() - lastInteractionMs >= 3000L) {
+                uiVisible = false
+            }
         }
     }
     val uiAlpha by animateFloatAsState(
@@ -207,10 +220,10 @@ fun FlashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(bgColor)
-            .then(if (isScreenMode && !uiVisible) Modifier.clickable(
+            .then(if (isScreenMode) Modifier.clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = { uiVisible = true },
+                onClick = { onUserInteraction() },
             ) else Modifier),
     ) {
         val screenH = maxHeight
@@ -268,7 +281,7 @@ fun FlashScreen(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { if (uiVisible) viewModel.toggleFlash() else uiVisible = true },
+                            onClick = { if (uiVisible) viewModel.toggleFlash() else onUserInteraction() },
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -332,6 +345,7 @@ fun FlashScreen(
                     onHueChange    = { viewModel.setScreenHue(it) },
                     onTempChange   = { viewModel.setScreenTemp(it) },
                     onBrightness   = { viewModel.setScreenBrightness(it) },
+                    onInteraction  = { onUserInteraction() },
                 )
             } else {
                 Spacer(Modifier.navigationBarsPadding())
@@ -548,6 +562,7 @@ private fun ScreenControlPanel(
     onHueChange: (Float) -> Unit,
     onTempChange: (Float) -> Unit,
     onBrightness: (Float) -> Unit,
+    onInteraction: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -568,7 +583,8 @@ private fun ScreenControlPanel(
                 modifier = Modifier.width(80.dp))
             Slider(value = bVal,
                 onValueChange = { bVal = it },
-                onValueChangeFinished = { onBrightness(bVal) },
+                onValueChange = { bVal = it; onBrightness(bVal); onInteraction() },
+                onValueChangeFinished = {},
                 valueRange = 0.05f..1.0f, steps = 18,
                 colors = SliderDefaults.colors(
                     thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
@@ -598,7 +614,7 @@ private fun ScreenControlPanel(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { onTabSelect(i) }
+                            onClick = { onTabSelect(i); onInteraction() }
                         )
                         .padding(vertical = 7.dp),
                     contentAlignment = Alignment.Center,
@@ -628,7 +644,7 @@ private fun ScreenControlPanel(
                                 .then(if (!sel && isLight) Modifier.border(1.dp, LumiColor.Navy600.copy(0.3f), CircleShape) else Modifier)
                                 .then(if (sel) Modifier.border(2.5.dp, if (isLight) LumiColor.Navy700 else androidx.compose.ui.graphics.Color.White, CircleShape) else Modifier)
                                 .clickable(interactionSource = remember { MutableInteractionSource() },
-                                    indication = null, onClick = { onColorSelect(sc) })
+                                    indication = null, onClick = { onColorSelect(sc); onInteraction() })
                             )
                         }
                     }
@@ -662,6 +678,7 @@ private fun ScreenControlPanel(
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             onHueChange((down.position.x / size.width.toFloat() * 360f).coerceIn(0f, 360f))
+                            onInteraction()
                             var stillDown = true
                             while (stillDown) {
                                 val event = awaitPointerEvent()
@@ -711,7 +728,6 @@ private fun ScreenControlPanel(
                     ScreenEffect.CANDELA to "Candela",
                     ScreenEffect.POLICE  to "Police",
                     ScreenEffect.RAINBOW to "Rainbow",
-                    ScreenEffect.STROBE  to "Strobe",
                 )
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     effects.forEach { (fx, label) ->
@@ -727,7 +743,7 @@ private fun ScreenControlPanel(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
-                                    onClick = { onEffectSelect(fx) }
+                                    onClick = { onEffectSelect(fx); onInteraction() }
                                 )
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center,
@@ -739,20 +755,114 @@ private fun ScreenControlPanel(
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    when (screenEffect) {
-                        ScreenEffect.CANDELA -> "flame flicker"
-                        ScreenEffect.POLICE  -> "red & blue alternating"
-                        ScreenEffect.RAINBOW -> "full spectrum cycle"
-                        ScreenEffect.STROBE  -> "white screen pulse"
-                        null                 -> "tap to activate"
-                    },
-                    fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
-                )
+                if (screenEffect == ScreenEffect.CANDELA) {
+                    AnimatedCandle()
+                } else {
+                    Text(
+                        when (screenEffect) {
+                            ScreenEffect.POLICE  -> "red & blue alternating"
+                            ScreenEffect.RAINBOW -> "full spectrum cycle"
+                            else                 -> "tap to activate"
+                        },
+                        fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
+                    )
+                }
             }
         }
         Spacer(Modifier.height(4.dp))
     }
+}
+
+
+@Composable
+private fun AnimatedCandle(modifier: Modifier = Modifier) {
+    val inf = rememberInfiniteTransition(label = "candle")
+
+    // Flame sway left-right
+    val swayX by inf.animateFloat(
+        initialValue = -4f, targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            tween(800, easing = LinearEasing), RepeatMode.Reverse
+        ), label = "swayX"
+    )
+    // Flame height pulse
+    val flameH by inf.animateFloat(
+        initialValue = 0.85f, targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            tween(600, easing = LinearEasing), RepeatMode.Reverse
+        ), label = "flameH"
+    )
+    // Glow pulse
+    val glowA by inf.animateFloat(
+        initialValue = 0.12f, targetValue = 0.28f,
+        animationSpec = infiniteRepeatable(
+            tween(700, easing = LinearEasing), RepeatMode.Reverse
+        ), label = "glowA"
+    )
+
+    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Canvas(
+        modifier = Modifier
+            .width(52.dp)
+            .height(72.dp)
+    ) {
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+
+        // Glow halo
+        drawCircle(
+            color = androidx.compose.ui.graphics.Color(0xFFFF9500).copy(alpha = glowA),
+            radius = 36f * flameH,
+            center = Offset(cx + swayX * 0.3f, cy - 8f),
+        )
+
+        // Candle body
+        val bodyW = 18f; val bodyH = 30f
+        val bodyTop = cy + 4f
+        drawRoundRect(
+            color = androidx.compose.ui.graphics.Color(0xFFF5E6C8),
+            topLeft = androidx.compose.ui.geometry.Offset(cx - bodyW / 2f, bodyTop),
+            size = androidx.compose.ui.geometry.Size(bodyW, bodyH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f),
+        )
+        // Wax drip lines
+        repeat(3) { i ->
+            drawLine(
+                color = androidx.compose.ui.graphics.Color(0xFFE8D5B0),
+                start = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 4f),
+                end   = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 8f + i * 3f),
+                strokeWidth = 2f,
+            )
+        }
+        // Wick
+        drawLine(
+            color = androidx.compose.ui.graphics.Color(0xFF4A3728),
+            start = Offset(cx + swayX * 0.2f, bodyTop - 6f),
+            end   = Offset(cx, bodyTop),
+            strokeWidth = 2f,
+        )
+
+        // Flame — outer (orange)
+        val flamePath = Path().apply {
+            val fx = cx + swayX; val ftop = cy - 22f * flameH
+            moveTo(fx, ftop)
+            cubicTo(fx + 10f, ftop + 8f, fx + 12f, ftop + 20f, cx, bodyTop - 1f)
+            cubicTo(cx - 12f, ftop + 20f, fx - 10f + swayX, ftop + 8f, fx, ftop)
+            close()
+        }
+        drawPath(flamePath, androidx.compose.ui.graphics.Color(0xFFFF7700).copy(alpha = 0.9f))
+
+        // Flame — inner (yellow core)
+        val innerPath = Path().apply {
+            val fx = cx + swayX * 0.5f; val ftop = cy - 12f * flameH
+            moveTo(fx, ftop)
+            cubicTo(fx + 5f, ftop + 5f, fx + 6f, ftop + 12f, cx, bodyTop - 1f)
+            cubicTo(cx - 6f, ftop + 12f, fx - 5f, ftop + 5f, fx, ftop)
+            close()
+        }
+        drawPath(innerPath, androidx.compose.ui.graphics.Color(0xFFFFDD00).copy(alpha = 0.85f))
+    }
+    } // Column
 }
 
 @Composable
