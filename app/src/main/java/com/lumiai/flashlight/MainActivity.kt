@@ -31,8 +31,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var firebaseManager: FirebaseManager
-
 
     override fun attachBaseContext(newBase: android.content.Context) {
         // Apply saved language before the Activity inflates any views
@@ -103,7 +101,7 @@ class MainActivity : ComponentActivity() {
             adManager.initWithConsent(this@MainActivity)
         }
 
-        firebaseManager.init()
+        FirebaseManager.init(this)
         setContent {
             // Collect dark theme preference from DataStore
             val settings by settingsRepository.settings

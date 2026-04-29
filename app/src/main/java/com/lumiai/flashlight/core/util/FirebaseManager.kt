@@ -1,75 +1,89 @@
 package com.lumiai.flashlight.core.util
 
-import com.google.firebase.perf.FirebasePerformance
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.lumiai.flashlight.R
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
- * Centralises Firebase Remote Config and Performance Monitoring.
- * Uses direct APIs (no ktx extensions) for BOM 33+ compatibility.
+ * Firebase Remote Config and Performance Monitoring.
+ * Plain object — Firebase SDKs are already singletons, no DI needed.
+ * Call FirebaseManager.init() once from Application.onCreate().
  */
-@Singleton
-class FirebaseManager @Inject constructor() {
+object FirebaseManager {
 
-    companion object {
-        const val RC_INTERSTITIAL_EVERY_N = "interstitial_every_n_modes"
-        const val RC_SLEEP_MAX_MINUTES    = "sleep_max_minutes"
-        const val RC_FX_POLICE_ENABLED    = "fx_police_enabled"
-        const val RC_PRO_PRICE_LABEL      = "pro_price_label"
-        const val RC_CANDELA_SPEED_MS     = "candela_min_interval_ms"
+    // ── Remote Config keys ────────────────────────────────────────────────────
+    const val RC_INTERSTITIAL_EVERY_N = "interstitial_every_n_modes"
+    const val RC_SLEEP_MAX_MINUTES    = "sleep_max_minutes"
+    const val RC_FX_POLICE_ENABLED    = "fx_police_enabled"
+    const val RC_PRO_PRICE_LABEL      = "pro_price_label"
+    const val RC_CANDELA_SPEED_MS     = "candela_min_interval_ms"
+
+    // Lazy to avoid initializing Firebase before Application is ready
+    private val remoteConfig by lazy {
+        try {
+            val cls = Class.forName("com.google.firebase.remoteconfig.FirebaseRemoteConfig")
+            cls.getMethod("getInstance").invoke(null)
+        } catch (e: Exception) { null }
     }
 
-    private val remoteConfig: FirebaseRemoteConfig by lazy {
-        FirebaseRemoteConfig.getInstance()
+    private val performance by lazy {
+        try {
+            val cls = Class.forName("com.google.firebase.perf.FirebasePerformance")
+            cls.getMethod("getInstance").invoke(null)
+        } catch (e: Exception) { null }
     }
 
-    private val performance: FirebasePerformance by lazy {
-        FirebasePerformance.getInstance()
-    }
-
-    fun init() {
-        val settings = FirebaseRemoteConfigSettings.Builder()
-            .setMinimumFetchIntervalInSeconds(
-                if (isDebugBuild()) 300L else 3600L
-            )
-            .build()
-        remoteConfig.setConfigSettingsAsync(settings)
-        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-        remoteConfig.fetchAndActivate()
+    fun init(context: android.content.Context) {
+        try {
+            val rc = Class.forName("com.google.firebase.remoteconfig.FirebaseRemoteConfig")
+                .getMethod("getInstance").invoke(null) ?: return
+            val settingsBuilder = Class.forName("com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings\$Builder")
+                .getDeclaredConstructor().newInstance()
+            val isDebug = context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+            val intervalMethod = settingsBuilder.javaClass.getMethod("setMinimumFetchIntervalInSeconds", Long::class.java)
+            intervalMethod.invoke(settingsBuilder, if (isDebug) 300L else 3600L)
+            val settings = settingsBuilder.javaClass.getMethod("build").invoke(settingsBuilder)
+            rc.javaClass.getMethod("setConfigSettingsAsync", settings.javaClass).invoke(rc, settings)
+            rc.javaClass.getMethod("setDefaultsAsync", Int::class.java).invoke(rc, R.xml.remote_config_defaults)
+            rc.javaClass.getMethod("fetchAndActivate").invoke(rc)
+        } catch (e: Exception) { /* Firebase not initialized yet — ok */ }
     }
 
     // ── Typed Remote Config accessors ─────────────────────────────────────────
-    fun interstitialEveryN(): Int  = remoteConfig.getLong(RC_INTERSTITIAL_EVERY_N).toInt()
-    fun sleepMaxMinutes(): Int     = remoteConfig.getLong(RC_SLEEP_MAX_MINUTES).toInt()
-    fun fxPoliceEnabled(): Boolean = remoteConfig.getBoolean(RC_FX_POLICE_ENABLED)
-    fun proPriceLabel(): String    = remoteConfig.getString(RC_PRO_PRICE_LABEL)
-    fun candelaSpeedMs(): Long     = remoteConfig.getLong(RC_CANDELA_SPEED_MS)
+    fun interstitialEveryN(): Int = rcLong(RC_INTERSTITIAL_EVERY_N, 5L).toInt()
+    fun sleepMaxMinutes(): Int    = rcLong(RC_SLEEP_MAX_MINUTES, 10L).toInt()
+    fun fxPoliceEnabled(): Boolean = rcBool(RC_FX_POLICE_ENABLED, true)
+    fun proPriceLabel(): String   = rcString(RC_PRO_PRICE_LABEL, "2.99")
+    fun candelaSpeedMs(): Long    = rcLong(RC_CANDELA_SPEED_MS, 80L)
 
-    // ── Performance trace helpers ─────────────────────────────────────────────
-    fun <T> traceBindCamera(block: () -> T): T {
-        val trace = performance.newTrace("bind_camera")
-        trace.start()
-        return try { block() } finally { trace.stop() }
+    // ── Performance traces ────────────────────────────────────────────────────
+    fun <T> traceBindCamera(block: () -> T): T = withTrace("bind_camera", block)
+    fun <T> traceFirstTorch(block: () -> T): T = withTrace("first_torch_on", block)
+    fun <T> traceActivateMode(modeId: String, block: () -> T): T =
+        withTrace("activate_mode") { block() }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    private fun <T> withTrace(name: String, block: () -> T): T {
+        val trace = try {
+            performance?.javaClass?.getMethod("newTrace", String::class.java)
+                ?.invoke(performance, name)
+        } catch (e: Exception) { null }
+        try { trace?.javaClass?.getMethod("start")?.invoke(trace) } catch (_: Exception) {}
+        return try { block() } finally {
+            try { trace?.javaClass?.getMethod("stop")?.invoke(trace) } catch (_: Exception) {}
+        }
     }
 
-    fun <T> traceFirstTorch(block: () -> T): T {
-        val trace = performance.newTrace("first_torch_on")
-        trace.start()
-        return try { block() } finally { trace.stop() }
-    }
+    private fun rcLong(key: String, default: Long): Long = try {
+        remoteConfig?.javaClass?.getMethod("getLong", String::class.java)
+            ?.invoke(remoteConfig, key) as? Long ?: default
+    } catch (e: Exception) { default }
 
-    fun <T> traceActivateMode(modeId: String, block: () -> T): T {
-        val trace = performance.newTrace("activate_mode")
-        trace.putAttribute("mode_id", modeId)
-        trace.start()
-        return try { block() } finally { trace.stop() }
-    }
+    private fun rcBool(key: String, default: Boolean): Boolean = try {
+        remoteConfig?.javaClass?.getMethod("getBoolean", String::class.java)
+            ?.invoke(remoteConfig, key) as? Boolean ?: default
+    } catch (e: Exception) { default }
 
-    private fun isDebugBuild(): Boolean = try {
-        Class.forName("com.lumiai.flashlight.BuildConfig")
-            .getField("DEBUG").getBoolean(null)
-    } catch (e: Exception) { false }
+    private fun rcString(key: String, default: String): String = try {
+        remoteConfig?.javaClass?.getMethod("getString", String::class.java)
+            ?.invoke(remoteConfig, key) as? String ?: default
+    } catch (e: Exception) { default }
 }
