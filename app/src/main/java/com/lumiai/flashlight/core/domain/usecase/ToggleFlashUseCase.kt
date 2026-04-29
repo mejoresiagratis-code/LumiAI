@@ -14,7 +14,7 @@ class ToggleFlashUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(mode: FlashMode, isPro: Boolean): Result<Unit> {
         // ACTIVATE when pro_unlock product is created in Play Console:
-        // if (mode.isPro && !isPro) return Result.failure(ProRequiredException(mode))
+        if (mode.isPro && !isPro) return Result.failure(ProRequiredException(mode))
         return flashRepository.activateMode(mode)
     }
 

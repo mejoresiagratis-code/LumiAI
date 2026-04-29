@@ -16,6 +16,7 @@ import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.usecase.GetProStatusUseCase
 import com.lumiai.flashlight.core.domain.usecase.PurchaseProUseCase
 import com.lumiai.flashlight.core.domain.usecase.ToggleFlashUseCase
+import com.lumiai.flashlight.core.domain.usecase.ProRequiredException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -269,11 +270,16 @@ class FlashViewModel @Inject constructor(
         viewModelScope.launch {
             val state = uiState.value
             val isPro = state.proStatus == ProStatus.Pro
+            // Pro check upfront — show paywall immediately without touching hardware
+            if (mode.isPro && !isPro) {
+                flashRepository.setCurrentMode(mode)  // select card visually
+                showPaywall()
+                return@launch
+            }
             if (state.isFlashOn) {
-                // Flash is ON → switch to new mode immediately
-                toggleFlashUseCase(mode, isPro)
+                val result = toggleFlashUseCase(mode, isPro)
+                result.onFailure { if (it is ProRequiredException) showPaywall() }
             } else {
-                // Flash is OFF → just preview the mode (no flash, no blink)
                 flashRepository.setCurrentMode(mode)
             }
             settingsRepository.updateLastMode(mode.id)

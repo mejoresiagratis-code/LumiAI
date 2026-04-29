@@ -318,6 +318,7 @@ fun FlashScreen(
                     },
                     onStrobeHzChange = { viewModel.updateStrobeHz(it) },
                     onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
+                    isPro            = isPro,
                     modifier         = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))

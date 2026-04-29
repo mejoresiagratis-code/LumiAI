@@ -6,7 +6,7 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lumiai.flashlight.core.data.repository.BillingRepositoryImpl
+import com.lumiai.flashlight.core.data.repository.BillingRepository
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.FlashMode
@@ -34,7 +34,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val flashRepository: FlashRepositoryImpl,
-    private val billingRepository: BillingRepositoryImpl,
+    private val billingRepository: BillingRepository,
     private val getProStatusUseCase: GetProStatusUseCase,
     private val purchaseProUseCase: PurchaseProUseCase,
     private val notificationFlashController: NotificationFlashController,

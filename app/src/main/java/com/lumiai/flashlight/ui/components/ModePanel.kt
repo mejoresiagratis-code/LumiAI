@@ -97,6 +97,7 @@ fun ModePanel(
     onScreenBrightnessChange: (Float) -> Unit = {},
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
+    isPro: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by remember { mutableIntStateOf(if (currentMode.isPro) 1 else 0) }
@@ -416,6 +417,7 @@ private fun FlashModeCard(
 private fun AiModeCard(
     item: FlashModeItem,
     isSelected: Boolean,
+    isPro: Boolean = false,
     onClick: () -> Unit,
     onConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -434,6 +436,8 @@ private fun AiModeCard(
         )
     }
 
+    val isLocked = item.mode.isPro && !isPro
+
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 80.dp)
@@ -451,6 +455,25 @@ private fun AiModeCard(
             )
             .padding(14.dp),
     ) {
+        // PRO badge — top right, visible to Free users
+        if (isLocked) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(LumiColor.Amber400.copy(alpha = 0.15f))
+                    .border(0.5.dp, LumiColor.Amber400.copy(0.4f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 5.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    "PRO",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.W700,
+                    letterSpacing = 0.08.sp,
+                    color = LumiColor.Amber400,
+                )
+            }
+        }
         Column {
             Text(
                 text = item.symbol,
