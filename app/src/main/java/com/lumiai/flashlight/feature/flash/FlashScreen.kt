@@ -19,6 +19,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.animation.core.tween
 import com.lumiai.flashlight.R
 import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
@@ -582,7 +583,6 @@ private fun ScreenControlPanel(
                 letterSpacing = 0.1.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
                 modifier = Modifier.width(80.dp))
             Slider(value = bVal,
-                onValueChange = { bVal = it },
                 onValueChange = { bVal = it; onBrightness(bVal); onInteraction() },
                 onValueChangeFinished = {},
                 valueRange = 0.05f..1.0f, steps = 18,
@@ -821,9 +821,9 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         val bodyTop = cy + 4f
         drawRoundRect(
             color = androidx.compose.ui.graphics.Color(0xFFF5E6C8),
-            topLeft = androidx.compose.ui.geometry.Offset(cx - bodyW / 2f, bodyTop),
-            size = androidx.compose.ui.geometry.Size(bodyW, bodyH),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f),
+            topLeft = Offset(cx - bodyW / 2f, bodyTop),
+            size = Size(bodyW, bodyH),
+            cornerRadius = CornerRadius(4f),
         )
         // Wax drip lines
         repeat(3) { i ->
