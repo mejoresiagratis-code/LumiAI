@@ -26,6 +26,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,11 @@ fun FlashScreen(
     val isOn = uiState.isFlashOn
     val mode = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
+
+    // Physical back button turns off Screen mode
+    BackHandler(enabled = isScreenMode) {
+        viewModel.toggleFlash()
+    }
 
     val screenColor   by viewModel.screenColor.collectAsState()
     val torchIntensity by viewModel.torchIntensity.collectAsState()
@@ -178,13 +184,38 @@ fun FlashScreen(
             )
 
             val btnSize = (screenH * 0.28f).coerceIn(130.dp, 180.dp)
-            Spacer(Modifier.height(20.dp))
-            FlashButton(
-                isOn = isOn,
-                onClick = { viewModel.toggleFlash() },
-                size = btnSize,
-            )
-            Spacer(Modifier.height(28.dp))
+            if (isScreenMode) {
+                // Screen is ON — show minimal off button, hide the big flash button
+                Spacer(Modifier.height(28.dp))
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(LumiColor.Navy950.copy(alpha = 0.18f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { viewModel.toggleFlash() },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "✕",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.W300,
+                        color = LumiColor.Navy950.copy(alpha = 0.45f),
+                    )
+                }
+                Spacer(Modifier.height(28.dp))
+            } else {
+                Spacer(Modifier.height(20.dp))
+                FlashButton(
+                    isOn = isOn,
+                    onClick = { viewModel.toggleFlash() },
+                    size = btnSize,
+                )
+                Spacer(Modifier.height(28.dp))
+            }
 
             if (!isScreenMode) {
                 ModePanel(
@@ -216,33 +247,40 @@ fun FlashScreen(
             }
 
             if (isScreenMode) {
-                // Quick color picker strip at bottom when Screen mode is ON
+                // Quick color picker — 2 rows of 6 when Screen mode is ON
                 Spacer(Modifier.weight(1f))
-                Row(
+                val colorRows = ScreenColor.entries.chunked(6)
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 32.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    ScreenColor.entries.forEach { sc ->
-                        val sel = sc == screenColor
-                        Box(
-                            modifier = Modifier
-                                .size(if (sel) 40.dp else 32.dp)
-                                .clip(CircleShape)
-                                .background(sc.color.copy(alpha = if (sel) 1f else 0.6f))
-                                .then(if (!sel && (sc == ScreenColor.WHITE)) Modifier.border(1.dp, LumiColor.Navy600, CircleShape) else Modifier)
-                                .then(if (sel) {
-                                    val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.YELLOW
-                                    Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape)
-                                } else Modifier)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = { viewModel.setScreenColor(sc) },
-                                ),
-                        )
+                    colorRows.forEach { row ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            row.forEach { sc ->
+                                val sel = sc == screenColor
+                                val isLight = sc == ScreenColor.WHITE || sc == ScreenColor.WARM_WHITE ||
+                                              sc == ScreenColor.YELLOW || sc == ScreenColor.LIME
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (sel) 40.dp else 32.dp)
+                                        .clip(CircleShape)
+                                        .background(sc.color.copy(alpha = if (sel) 1f else 0.7f))
+                                        .then(if (!sel && isLight) Modifier.border(1.dp, LumiColor.Navy600.copy(0.4f), CircleShape) else Modifier)
+                                        .then(if (sel) Modifier.border(3.dp, if (isLight) LumiColor.Navy700 else LumiColor.White, CircleShape) else Modifier)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                            onClick = { viewModel.setScreenColor(sc) },
+                                        ),
+                                )
+                            }
+                        }
                     }
                 }
             } else {
