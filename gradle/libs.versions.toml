@@ -17,7 +17,7 @@ ump                     = "3.0.0"
 playBilling             = "7.0.0"
 mlkitLightSensor        = "17.0.0"  # ML Kit Image Labeling - used for ambient detection
 coroutines              = "1.8.1"
-firebaseBom             = "33.1.1"
+firebaseBom             = "33.7.0"
 splashscreen            = "1.0.1"
 appcompat               = "1.7.0"
 accompanist             = "0.34.0"
@@ -81,9 +81,9 @@ coroutines-android             = { group = "org.jetbrains.kotlinx", name = "kotl
 firebase-bom                   = { group = "com.google.firebase", name = "firebase-bom",        version.ref = "firebaseBom" }
 firebase-analytics             = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-crashlytics           = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
-firebase-performance           = { group = "com.google.firebase", name = "firebase-perf-ktx" }
-firebase-config                = { group = "com.google.firebase", name = "firebase-config-ktx" }
-firebase-messaging             = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
+firebase-performance           = { group = "com.google.firebase", name = "firebase-perf" }
+firebase-config                = { group = "com.google.firebase", name = "firebase-config" }
+firebase-messaging             = { group = "com.google.firebase", name = "firebase-messaging" }
 
 # Test
 junit                          = { group = "junit",            name = "junit",                   version.ref = "junit" }
@@ -97,4 +97,3 @@ kotlin-kapt                    = { id = "org.jetbrains.kotlin.kapt",            
 hilt                           = { id = "com.google.dagger.hilt.android",            version.ref = "hilt" }
 google-services                = { id = "com.google.gms.google-services",            version = "4.4.2" }
 firebase-crashlytics           = { id = "com.google.firebase.crashlytics",           version = "3.0.1" }
-firebase-perf                  = { id = "com.google.firebase.firebase-perf",          version = "1.4.2" }
