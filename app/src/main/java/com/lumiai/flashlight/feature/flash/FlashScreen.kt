@@ -190,6 +190,8 @@ fun FlashScreen(
                 ModePanel(
                     currentMode      = mode,
                     isConfigSheetOpen = showSheet,
+                    torchIntensity   = torchIntensity,
+                    onTorchIntensityChange = { viewModel.setTorchIntensity(it) },
                     strobeHz         = uiState.strobeHz,
                     discoBpm         = uiState.discoBpm,
                     onModeSelect     = { viewModel.activateMode(it) },
@@ -533,12 +535,10 @@ private fun ModeConfigSheet(
         )
 
         val title = when (mode) {
-            is FlashMode.Steady            -> "Steady — Intensity"
             is FlashMode.Strobe            -> stringResource(R.string.config_strobe_title)
             is FlashMode.Disco             -> stringResource(R.string.config_disco_title)
             is FlashMode.MorseCustom       -> stringResource(R.string.config_morse_title)
             is FlashMode.Screen            -> stringResource(R.string.config_screen_title)
-            is FlashMode.Sos               -> "SOS — Intensity"
             is FlashMode.SmartBrightness   -> stringResource(R.string.config_smart_title)
             is FlashMode.SleepTimer        -> stringResource(R.string.config_sleep_title)
             is FlashMode.Music             -> stringResource(R.string.config_music_title)
@@ -555,8 +555,8 @@ private fun ModeConfigSheet(
         )
 
         // ── Intensity slider for torch modes ─────────────────────────────────
-        val hasTorchIntensity = mode is FlashMode.Steady || mode is FlashMode.Strobe ||
-                                mode is FlashMode.Disco  || mode is FlashMode.Sos    ||
+        val hasTorchIntensity = mode is FlashMode.Strobe ||
+                                mode is FlashMode.Disco  ||
                                 mode is FlashMode.MorseCustom
         if (hasTorchIntensity) {
             var intensity by remember { mutableFloatStateOf(torchIntensity) }
@@ -581,9 +581,7 @@ private fun ModeConfigSheet(
                 Text("10%", fontSize = 11.sp, color = LumiColor.Gray600)
                 Text("100%", fontSize = 11.sp, color = LumiColor.Gray600)
             }
-            if (mode is FlashMode.Steady || mode is FlashMode.Sos) {
-                return  // Steady/SOS only have intensity — no other config
-            }
+
         }
 
         when (mode) {

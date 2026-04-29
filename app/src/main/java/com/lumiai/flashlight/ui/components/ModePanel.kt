@@ -91,6 +91,8 @@ fun ModePanel(
     onModeSelect: (FlashMode) -> Unit,
     onModeConfig: (FlashMode) -> Unit = {},   // opens config sheet
     isConfigSheetOpen: Boolean = false,
+    torchIntensity: Float = 1.0f,
+    onTorchIntensityChange: (Float) -> Unit = {},
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -138,9 +140,20 @@ fun ModePanel(
         }
 
         val showSlider = selectedTab == 0 && !isConfigSheetOpen &&
-            (currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
+            (currentMode is FlashMode.Steady || currentMode is FlashMode.Strobe || currentMode is FlashMode.Disco)
         if (showSlider) {
             when (currentMode) {
+                is FlashMode.Steady -> key("steady_slider") {
+                    ContextSlider(
+                        label  = "FLASH INTENSITY",
+                        value  = torchIntensity,
+                        range  = 0.1f..1.0f,
+                        steps  = 17,
+                        format = { "${(it * 100).toInt()}%" },
+                        onSettle = { onTorchIntensityChange(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                    )
+                }
                 is FlashMode.Strobe -> key("strobe_slider") {
                     ContextSlider(
                         label = stringResource(R.string.config_frequency_label),

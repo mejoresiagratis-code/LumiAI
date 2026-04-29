@@ -67,7 +67,14 @@ class FlashViewModel @Inject constructor(
     fun setTorchIntensity(v: Float) {
         val clamped = v.coerceIn(0.1f, 1.0f)
         _torchIntensity.value = clamped
-        viewModelScope.launch { settingsRepository.setTorchIntensity(clamped) }
+        viewModelScope.launch {
+            settingsRepository.setTorchIntensity(clamped)
+            // Live-apply if Steady is currently ON
+            val state = uiState.value
+            if (state.currentMode is FlashMode.Steady && state.isFlashOn) {
+                flashRepository.activateMode(FlashMode.Steady)
+            }
+        }
     }
 
     fun setScreenBrightness(brightness: Float) {
