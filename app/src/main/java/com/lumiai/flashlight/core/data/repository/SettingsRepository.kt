@@ -38,6 +38,7 @@ class SettingsRepository @Inject constructor(
         val SLEEP_MINUTES    = intPreferencesKey("sleep_minutes")
         val MIC_SENSITIVITY  = floatPreferencesKey("mic_sensitivity")
         val SCREEN_COLOR_ID  = stringPreferencesKey("screen_color_id")
+        val SCREEN_TEXT      = stringPreferencesKey("screen_text")
     }
 
     val settings: Flow<UserSettings> = dataStore.data.map { prefs ->
@@ -62,6 +63,7 @@ class SettingsRepository @Inject constructor(
             sleepMinutes        = prefs[Keys.SLEEP_MINUTES]    ?: 3,
             micSensitivity      = prefs[Keys.MIC_SENSITIVITY]  ?: 1.0f,
             screenColorId       = prefs[Keys.SCREEN_COLOR_ID]  ?: "white",
+            screenText          = prefs[Keys.SCREEN_TEXT]       ?: "",
         )
     }
 
@@ -101,6 +103,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setSleepMinutes(v: Int)            { dataStore.edit { it[Keys.SLEEP_MINUTES]    = v } }
     suspend fun setMicSensitivity(v: Float)        { dataStore.edit { it[Keys.MIC_SENSITIVITY]  = v } }
     suspend fun setScreenColorId(v: String)        { dataStore.edit { it[Keys.SCREEN_COLOR_ID]  = v } }
+    suspend fun setScreenText(v: String)           { dataStore.edit { it[Keys.SCREEN_TEXT]       = v } }
 
     suspend fun markOnboardingSeen() {
         dataStore.edit { it[Keys.SEEN_ONBOARDING] = true }

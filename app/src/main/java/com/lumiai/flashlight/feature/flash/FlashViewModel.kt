@@ -8,6 +8,7 @@ import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.feature.flash.AutoOffOption
+import com.lumiai.flashlight.core.util.StrobePattern
 import com.lumiai.flashlight.feature.flash.ScreenColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,6 +18,8 @@ import com.lumiai.flashlight.core.domain.usecase.PurchaseProUseCase
 import com.lumiai.flashlight.core.domain.usecase.ToggleFlashUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -44,6 +47,9 @@ class FlashViewModel @Inject constructor(
 
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    private val _showPaywallEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val showPaywallEvent: SharedFlow<Unit> = _showPaywallEvent.asSharedFlow()
 
     // Auto-off timer
     private val _morseText = MutableStateFlow("")
@@ -75,6 +81,28 @@ class FlashViewModel @Inject constructor(
         val clamped = v.coerceIn(0.5f, 4.0f)
         _morseSpeed.value = clamped
         viewModelScope.launch { settingsRepository.setMorseSpeed(clamped) }
+    }
+
+    // ── Screen text (LED scroller) ──────────────────────────────────────────
+    private val _screenText = MutableStateFlow("")
+    val screenText: StateFlow<String> = _screenText.asStateFlow()
+    fun setScreenText(text: String) {
+        _screenText.value = text
+        viewModelScope.launch { settingsRepository.setScreenText(text) }
+    }
+
+    // ── Strobe pattern ──────────────────────────────────────────────────────
+    private val _strobePattern = MutableStateFlow(StrobePattern.SINGLE)
+    val strobePattern: StateFlow<StrobePattern> = _strobePattern.asStateFlow()
+    fun setStrobePattern(p: StrobePattern) {
+        _strobePattern.value = p
+        // Re-apply immediately if currently strobing
+        val state = uiState.value
+        if (state.currentMode is FlashMode.Strobe && state.isFlashOn) {
+            viewModelScope.launch {
+                flashRepository.activateMode(FlashMode.Strobe(state.strobeHz))
+            }
+        }
     }
 
     // ── AI mode config params ──────────────────────────────────────────────
@@ -138,7 +166,8 @@ class FlashViewModel @Inject constructor(
 
     init {
         // Wire AI config providers to repository
-        flashRepository.torchIntensityProvider = { _torchIntensity.value }
+        flashRepository.torchIntensityProvider  = { _torchIntensity.value }
+        flashRepository.strobePatternProvider   = { _strobePattern.value }
         flashRepository.morseSpeedProvider     = { _morseSpeed.value }
         flashRepository.smartSpeedProvider     = { _smartSpeed.value }
         flashRepository.sleepMinutesProvider   = { _sleepMinutes.value }
@@ -187,6 +216,8 @@ class FlashViewModel @Inject constructor(
                 } ?: ScreenColor.WHITE
                 if (_currentScreenColor.value != restoredColor)
                     _currentScreenColor.value = restoredColor
+                if (_screenText.value != settings.screenText)
+                    _screenText.value = settings.screenText
             }
         }
     }
@@ -221,7 +252,7 @@ class FlashViewModel @Inject constructor(
     }
 
     fun showPaywall() {
-        // TODO: emit paywall event via SharedFlow
+        _showPaywallEvent.tryEmit(Unit)
     }
 
     fun purchasePro(activity: Activity) {

@@ -11,6 +11,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.lumiai.flashlight.core.domain.model.FlashMode
+import com.lumiai.flashlight.core.util.StrobePattern
 import com.lumiai.flashlight.core.util.AiModeController
 import com.lumiai.flashlight.core.util.StrobeController
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,7 @@ class FlashRepositoryImpl constructor(
 
     // AI config providers — set by FlashViewModel after construction
     var torchIntensityProvider: (() -> Float)? = null
+    var strobePatternProvider: (() -> StrobePattern)? = null
     var morseSpeedProvider:    (() -> Float)? = null
     var smartSpeedProvider:    (() -> Float)? = null
     var sleepMinutesProvider:  (() -> Int)?   = null
@@ -127,7 +129,12 @@ class FlashRepositoryImpl constructor(
                 else
                     setTorch(true) // no text yet — steady until user types
             }
-            is FlashMode.Strobe -> strobeController.startStrobe(mode.hz, { setTorch(it) }, torchIntensityProvider?.invoke() ?: 1.0f)
+            is FlashMode.Strobe -> strobeController.startStrobe(
+                hz       = mode.hz,
+                setTorch = { setTorch(it) },
+                intensity = torchIntensityProvider?.invoke() ?: 1.0f,
+                pattern  = strobePatternProvider?.invoke() ?: StrobePattern.SINGLE,
+            )
             is FlashMode.Disco  -> strobeController.startDisco(mode.bpm, { setTorch(it) }, torchIntensityProvider?.invoke() ?: 1.0f)
             is FlashMode.SmartBrightness -> {
                 _isFlashOn.value = true

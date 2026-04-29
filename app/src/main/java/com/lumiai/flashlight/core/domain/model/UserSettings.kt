@@ -23,5 +23,6 @@ data class UserSettings(
     val morseSpeed: Float           = 1.0f,
     val sleepMinutes: Int           = 3,
     val micSensitivity: Float       = 1.0f,
-    val screenColorId: String       = "white",  // "system" | "en" | "es"
+    val screenColorId: String       = "white",
+    val screenText: String          = "",  // "system" | "en" | "es"
 )

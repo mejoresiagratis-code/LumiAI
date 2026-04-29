@@ -1,6 +1,14 @@
 package com.lumiai.flashlight.feature.flash
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.offset
 import com.lumiai.flashlight.R
+import com.lumiai.flashlight.core.util.StrobePattern
 import androidx.compose.ui.res.stringResource
 import android.app.Activity
 import android.view.WindowManager
@@ -53,6 +61,10 @@ fun FlashScreen(
     onOpenPro: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.showPaywallEvent.collect { onOpenPro() }
+    }
     val morseText by viewModel.morseText.collectAsState() // Corregido: Movido aquí para evitar Unresolved reference
     val isPro = uiState.proStatus == ProStatus.Pro
     val isOn = uiState.isFlashOn
@@ -62,6 +74,8 @@ fun FlashScreen(
     val screenColor   by viewModel.screenColor.collectAsState()
     val torchIntensity by viewModel.torchIntensity.collectAsState()
     val morseSpeed     by viewModel.morseSpeed.collectAsState()
+    val strobePattern  by viewModel.strobePattern.collectAsState()
+    val screenText     by viewModel.screenText.collectAsState()
     val bgColor = if (isScreenMode) screenColor.color else LumiColor.Navy950
 
     val view = LocalView.current
@@ -341,6 +355,41 @@ private fun statusLabel(isOn: Boolean, mode: FlashMode, uiState: FlashUiState): 
     else -> stringResource(R.string.status_flashlight_on)
 }
 
+
+@Composable
+private fun LedTextScroller(
+    text: String,
+    textColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    val speedMs = (text.length * 120).coerceIn(2000, 8000)
+    val transition = rememberInfiniteTransition(label = "scroll")
+    val offsetX by transition.animateFloat(
+        initialValue   = 1f,
+        targetValue    = -1f,
+        animationSpec  = infiniteRepeatable(
+            animation = tween(durationMillis = speedMs, easing = LinearEasing),
+        ),
+        label = "offsetX",
+    )
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        val maxWidthPx = constraints.maxWidth.toFloat()
+        Text(
+            text     = text.uppercase(),
+            fontSize = 56.sp,
+            fontWeight = FontWeight.W700,
+            color    = textColor,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .graphicsLayer { translationX = offsetX * maxWidthPx }
+                .wrapContentWidth(unbounded = true),
+        )
+    }
+}
+
 @Composable
 private fun ScreenColorPicker(
     current: ScreenColor,
@@ -468,11 +517,15 @@ private fun ModeConfigSheet(
     screenColor: ScreenColor = ScreenColor.WHITE,
     torchIntensity: Float = 1.0f,
     morseSpeed: Float = 1.0f,
+    strobePattern: StrobePattern = StrobePattern.SINGLE,
+    onStrobePattern: (StrobePattern) -> Unit = {},
     smartSpeed: Float = 1.0f,
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
     onTorchIntensity: (Float) -> Unit = {},
+    screenText: String = "",
     onScreenBrightness: (Float) -> Unit = {},
+    onScreenText: (String) -> Unit = {},
     onMorseSpeed: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
@@ -570,6 +623,57 @@ private fun ModeConfigSheet(
                     Text("1 Hz", fontSize = 11.sp, color = LumiColor.Gray600)
                     Text("20 Hz", fontSize = 11.sp, color = LumiColor.Gray600)
                 }
+                Spacer(Modifier.height(12.dp))
+                Text("BURST PATTERN", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                val patternOptions = listOf(
+                    "Single" to StrobePattern.SINGLE,
+                    "Double" to StrobePattern.DOUBLE,
+                    "Triple" to StrobePattern.TRIPLE,
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    patternOptions.forEach { (label, p) ->
+                        val sel = strobePattern == p
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (sel) LumiColor.Amber400 else LumiColor.Navy700)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) {
+                                    onStrobePattern(p)
+                                    // re-apply immediately if flash is on
+                                }
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    val dots = when (p) {
+                                        StrobePattern.SINGLE -> 1
+                                        StrobePattern.DOUBLE -> 2
+                                        StrobePattern.TRIPLE -> 3
+                                    }
+                                    repeat(dots) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(7.dp)
+                                                .clip(CircleShape)
+                                                .background(if (sel) LumiColor.Navy950 else LumiColor.Amber400)
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(5.dp))
+                                Text(label, fontSize = 12.sp, fontWeight = FontWeight.W600,
+                                    color = if (sel) LumiColor.Navy950 else LumiColor.White)
+                            }
+                        }
+                    }
+                }
+                Text("Single = classic · Double/Triple = burst per cycle",
+                    fontSize = 10.sp, color = LumiColor.Gray600)
             }
             is FlashMode.Disco -> {
                 var bpm by remember { mutableFloatStateOf(uiState.discoBpm) }
@@ -820,6 +924,35 @@ private fun ModeConfigSheet(
                         inactiveTrackColor = LumiColor.Navy600,
                     ),
                 )
+                Spacer(Modifier.height(12.dp))
+                // ── LED text scroller ─────────────────────────────────────
+                Text("SCROLLING TEXT", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                var textInput by remember { mutableStateOf(screenText) }
+                androidx.compose.material3.OutlinedTextField(
+                    value         = textInput,
+                    onValueChange = {
+                        if (it.length <= 40) {
+                            textInput = it
+                            onScreenText(it)
+                        }
+                    },
+                    placeholder   = { Text("TAXI · HELP · your name…",
+                        fontSize = 13.sp, color = LumiColor.Gray600) },
+                    singleLine    = true,
+                    colors        = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor   = LumiColor.Amber400,
+                        unfocusedBorderColor = LumiColor.Navy600,
+                        focusedTextColor     = LumiColor.White,
+                        unfocusedTextColor   = LumiColor.White,
+                        cursorColor          = LumiColor.Amber400,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                    Text("Leave empty to hide text", fontSize = 10.sp, color = LumiColor.Gray600)
+                    Text("${textInput.length}/40", fontSize = 10.sp, color = LumiColor.Gray600)
+                }
                 Spacer(Modifier.height(8.dp))
                 Text("Tap to pick a color",
                     fontSize = 13.sp, color = LumiColor.Gray500)

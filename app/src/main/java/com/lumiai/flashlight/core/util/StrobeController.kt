@@ -2,6 +2,9 @@ package com.lumiai.flashlight.core.util
 
 import com.lumiai.flashlight.core.util.MorseEncoder
 
+/** Flash pattern per strobe cycle */
+enum class StrobePattern { SINGLE, DOUBLE, TRIPLE }
+
 import kotlinx.coroutines.*
 import javax.inject.Singleton
 import kotlin.math.roundToLong
@@ -31,17 +34,32 @@ class StrobeController constructor() {
     }
 
     /** Simple on/off strobe at [hz] cycles per second (max 20 Hz) */
-    fun startStrobe(hz: Float, setTorch: (Boolean) -> Unit, intensity: Float = 1.0f) {
+    fun startStrobe(
+        hz: Float,
+        setTorch: (Boolean) -> Unit,
+        intensity: Float = 1.0f,
+        pattern: StrobePattern = StrobePattern.SINGLE,
+    ) {
         stop(); active = true
-        val clampedHz = hz.coerceIn(0.5f, 20f)
-        val periodMs = (1000f / clampedHz).roundToLong()
-        // Intensity scales duty cycle: 1.0 = 50/50, 0.1 = 10% on / 90% off
+        val clampedHz  = hz.coerceIn(0.5f, 20f)
+        val periodMs   = (1000f / clampedHz).roundToLong()
+        val pulseMs    = (periodMs * intensity.coerceIn(0.1f, 0.9f)).toLong()
+        val burstGapMs = 30L   // gap between pulses in a burst (fast enough to look linked)
         activeJob = scope.launch {
             while (isActive) {
-                val onMs  = (periodMs * intensity.coerceIn(0.1f, 0.9f)).toLong()
-                val offMs = periodMs - onMs
-                guarded(true,  setTorch); delay(onMs)
-                guarded(false, setTorch); delay(offMs)
+                val pulseCount = when (pattern) {
+                    StrobePattern.SINGLE -> 1
+                    StrobePattern.DOUBLE -> 2
+                    StrobePattern.TRIPLE -> 3
+                }
+                val burstDuration = pulseMs * pulseCount + burstGapMs * (pulseCount - 1)
+                val offMs = (periodMs - burstDuration).coerceAtLeast(20L)
+                repeat(pulseCount) { i ->
+                    guarded(true,  setTorch); delay(pulseMs)
+                    guarded(false, setTorch)
+                    if (i < pulseCount - 1) delay(burstGapMs)
+                }
+                delay(offMs)
             }
         }
     }
