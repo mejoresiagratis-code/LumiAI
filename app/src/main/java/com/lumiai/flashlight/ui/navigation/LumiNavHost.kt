@@ -11,6 +11,7 @@ import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.lumiai.flashlight.feature.flash.FlashScreen
 import com.lumiai.flashlight.feature.flash.ModeConfigScreen
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.feature.onboarding.OnboardingScreen
