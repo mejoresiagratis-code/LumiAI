@@ -2,6 +2,8 @@ package com.lumiai.flashlight.feature.flash
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.RepeatMode
@@ -82,15 +84,6 @@ fun FlashScreen(
     val mode = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
 
-    // Physical back: if panel visible → hide it first; if already hidden → turn off Screen mode
-    BackHandler(enabled = isScreenMode) {
-        if (uiVisible) {
-            uiVisible = false
-        } else {
-            viewModel.toggleFlash()
-        }
-    }
-
     // ── Auto-hide system ─────────────────────────────────────────────────────
     // Panel never hides while the user is actively adjusting (finger down).
     // Timer of 3s only starts after the last interaction fully ends.
@@ -109,6 +102,16 @@ fun FlashScreen(
     fun onAdjustEnd() {
         isAdjusting = false
         lastInteractionMs = System.currentTimeMillis()
+    }
+
+    // Physical back: if panel visible → hide it first; if already hidden → turn off Screen mode
+    // Must be declared AFTER uiVisible (Kotlin reads top-to-bottom)
+    BackHandler(enabled = isScreenMode) {
+        if (uiVisible) {
+            uiVisible = false
+        } else {
+            viewModel.toggleFlash()
+        }
     }
 
     LaunchedEffect(isScreenMode) {
@@ -297,12 +300,17 @@ fun FlashScreen(
                 if (!uiVisible) {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp)
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(LumiColor.Amber400.copy(alpha = 0.5f)),
-                    )
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(LumiColor.Amber400.copy(alpha = 0.5f)),
+                        )
+                    }
                 }
                 // ── Tabbed control panel ─────────────────────────────────────
                 ScreenControlPanel(
