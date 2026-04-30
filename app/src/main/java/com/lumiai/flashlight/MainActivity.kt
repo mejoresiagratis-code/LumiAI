@@ -127,6 +127,13 @@ class MainActivity : ComponentActivity() {
             adManager.initWithConsent(this@MainActivity)
         }
 
+        // ── Interstitial — show every 5 mode changes for Free users ──────────
+        lifecycleScope.launch {
+            flashViewModel.showInterstitialEvent.collect {
+                adManager.showInterstitialIfReady(this@MainActivity)
+            }
+        }
+
         FirebaseManager.init(this)
         setContent {
             val settings by settingsRepository.settings

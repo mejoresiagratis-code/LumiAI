@@ -251,6 +251,7 @@ fun FlashScreen(
         ) {
             TopBar(
                 isPro = isPro,
+                proStatus = uiState.proStatus,
                 isScreenMode = isScreenMode,
                 onOpenSettings = onOpenSettings,
                 onOpenPro = onOpenPro,
@@ -377,11 +378,21 @@ fun FlashScreen(
 @Composable
 private fun TopBar(
     isPro: Boolean,
+    proStatus: ProStatus,
     isScreenMode: Boolean,
     onOpenSettings: () -> Unit,
     onOpenPro: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // While billing resolves, show a pulsing shimmer placeholder instead of the Pro star.
+    // infiniteRepeatable requires InfiniteTransition — we run it always but only apply when Loading.
+    val infiniteTransition = rememberInfiniteTransition(label = "proShimmer")
+    val shimmerAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f, targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(tween(600), RepeatMode.Reverse),
+        label = "shimmerAlpha",
+    )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -403,7 +414,15 @@ private fun TopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!isPro) {
+            if (proStatus == ProStatus.Loading) {
+                // Shimmer placeholder — same size as the star button
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(LumiColor.Navy800.copy(alpha = shimmerAlpha)),
+                )
+            } else if (!isPro) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier

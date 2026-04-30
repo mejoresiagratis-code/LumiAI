@@ -501,34 +501,38 @@ private fun FlashModeCard(
         }
         Row(
             modifier = Modifier.align(Alignment.TopEnd),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // ⚙ config button for configurable modes
+            // ⚙ config button — 40×40dp touch target (Material min 48dp, 40 acceptable for icon-in-card)
             val configModes = setOf("strobe","disco","morse_custom","smart_brightness","sleep_timer","music","voice")
             if (item.mode.id in configModes) {
-                Text(
-                    "⚙",
-                    fontSize = 11.sp,
-                    color = LumiColor.Amber400.copy(.6f),
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onConfig,
-                    ),
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onConfig,
+                        ),
+                ) {
+                    Text("⚙", fontSize = 11.sp, color = LumiColor.Amber400.copy(.6f))
+                }
             }
             if (item.info.isNotBlank()) {
-                Text(
-                    "ⓘ",
-                    fontSize = 11.sp,
-                    color = LumiColor.Gray600,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { showInfo = true },
-                    ),
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { showInfo = true },
+                        ),
+                ) {
+                    Text("ⓘ", fontSize = 11.sp, color = LumiColor.Gray600)
+                }
             }
             if (isSelected) {
                 Box(
@@ -647,33 +651,37 @@ private fun AiModeCard(
         }
         Row(
             modifier = Modifier.align(Alignment.TopEnd),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val aiConfigModes = setOf("smart_brightness","sleep_timer","music","voice","ambient_smart","custom_rhythm")
             if (item.mode.id in aiConfigModes) {
-                Text(
-                    "⚙",
-                    fontSize = 11.sp,
-                    color = accent.copy(.6f),
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { if (isLocked) onPaywall() else onConfig() },
-                    ),
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { if (isLocked) onPaywall() else onConfig() },
+                        ),
+                ) {
+                    Text("⚙", fontSize = 11.sp, color = accent.copy(.6f))
+                }
             }
             if (item.info.isNotBlank()) {
-                Text(
-                    "ⓘ",
-                    fontSize = 11.sp,
-                    color = accent.copy(.5f),
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { if (isLocked) onPaywall() else showInfo = true },
-                    ),
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { if (isLocked) onPaywall() else showInfo = true },
+                        ),
+                ) {
+                    Text("ⓘ", fontSize = 11.sp, color = accent.copy(.5f))
+                }
             }
             if (isSelected) {
                 Box(

@@ -55,6 +55,13 @@ class FlashViewModel @Inject constructor(
     private val _showPaywallEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val showPaywallEvent: SharedFlow<Unit> = _showPaywallEvent.asSharedFlow()
 
+    // Fired when the interstitial should be shown (every 5 mode changes for Free users).
+    // MainActivity observes this and calls AdManager.showInterstitialIfReady(activity).
+    private val _showInterstitialEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val showInterstitialEvent: SharedFlow<Unit> = _showInterstitialEvent.asSharedFlow()
+    private var modeChangeCount = 0
+    private val interstitialEvery = 5
+
     // Auto-off timer
     private val _morseText = MutableStateFlow("")
     val morseText: StateFlow<String> = _morseText.asStateFlow()
@@ -279,6 +286,8 @@ class FlashViewModel @Inject constructor(
                 showPaywall()
                 return@launch
             }
+            // Skip counter if selecting the same mode already active
+            val isNewMode = mode.id != state.currentMode.id
             if (state.isFlashOn) {
                 val result = toggleFlashUseCase(mode, isPro)
                 result.onFailure { if (it is ProRequiredException) showPaywall() }
@@ -286,6 +295,14 @@ class FlashViewModel @Inject constructor(
                 flashRepository.setCurrentMode(mode)
             }
             settingsRepository.updateLastMode(mode.id)
+
+            // Interstitial counter — only for Free users on actual mode changes
+            if (!isPro && isNewMode) {
+                modeChangeCount++
+                if (modeChangeCount % interstitialEvery == 0) {
+                    _showInterstitialEvent.tryEmit(Unit)
+                }
+            }
         }
     }
 
