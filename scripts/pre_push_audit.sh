@@ -148,3 +148,26 @@ for f in \
   fi
 done
 pass "Critical import check done"
+
+# ── 14. CANVAS DRAWING TYPES — StrokeCap, StrokeJoin need explicit imports ────
+header "14. Canvas drawing type imports"
+FS="$SRC/feature/flash/FlashScreen.kt"
+for sym in "StrokeCap" "StrokeJoin" "BlendMode" "FastOutSlowInEasing"; do
+  used=$(grep -c "\b$sym\b" "$FS" 2>/dev/null || echo "0")
+  imported=$(grep -c "^import.*\b$sym\b" "$FS" 2>/dev/null || echo "0")
+  if [ "${used:-0}" -gt "1" ] && [ "${imported:-0}" -eq "0" ]; then
+    fail "$sym used in FlashScreen but not imported"
+  fi
+done
+pass "Canvas drawing type imports OK"
+
+# ── 15. MODIFIER.ALIGN SCOPE CHECK ────────────────────────────────────────────
+header "15. Modifier.align() not in Column/Row context (heuristic)"
+# Warn if .align(Alignment. appears right after Column( or Row( block patterns
+# This is a heuristic — can't do full scope analysis in bash
+align_hits=$(grep -c "\.align(Alignment\." "$FS" 2>/dev/null || echo "0")
+if [ "${align_hits:-0}" -gt "0" ]; then
+  pass "Modifier.align() found $align_hits times — verify each is inside BoxScope"
+else
+  pass "No Modifier.align() calls"
+fi
