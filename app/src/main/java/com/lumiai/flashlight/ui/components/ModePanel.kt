@@ -208,9 +208,31 @@ fun ModePanel(
     onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by remember { mutableIntStateOf(if (currentMode.isPro) 1 else 0) }
+    // Only show the AI Modes tab if at least one Pro mode is visible (hidden=false).
+    // During the free-only launch all Pro modes have hidden=true, so this tab disappears.
+    val visibleAiItems = listOf(
+        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84AL), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
+        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6CL), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
+        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "ambient", accentColor = Color(0xFF34D399L), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
+        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "custom", accentColor = Color(0xFFA78BFAL), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
+        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "sleep", accentColor = Color(0xFF4ADE80L), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
+        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FAL), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
+        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8L), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
+        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6L), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
+    ).filter { !it.mode.hidden }
+
+    val hasAiModes = visibleAiItems.isNotEmpty()
+
+    // selectedTab: default to Flash (0). If current mode is a visible Pro mode, show AI tab.
+    var selectedTab by remember {
+        mutableIntStateOf(if (currentMode.isPro && !currentMode.hidden && hasAiModes) 1 else 0)
+    }
+    // Snap back to Flash tab if AI tab disappears (all modes hidden)
+    if (!hasAiModes && selectedTab == 1) selectedTab = 0
 
     Column(modifier = modifier) {
+        // Only render the tab row when AI modes are visible
+        if (hasAiModes) {
         Row(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -249,6 +271,7 @@ fun ModePanel(
                 }
             }
         }
+        } // end if hasAiModes
 
         val showSlider = selectedTab == 0 && !isConfigSheetOpen &&
             (currentMode is FlashMode.Steady || currentMode is FlashMode.Screen ||
@@ -315,7 +338,7 @@ fun ModePanel(
             },
             label = "tab_content",
         ) { tab ->
-            if (tab == 0) {
+            if (tab == 0 || !hasAiModes) {
                 FlashModeGrid(
                     items = listOf(
                         FlashModeItem(FlashMode.Steady, stringResource(R.string.mode_steady), stringResource(R.string.mode_steady_desc), "flash", info = stringResource(R.string.mode_steady_info)),
@@ -333,16 +356,7 @@ fun ModePanel(
                 )
             } else {
                 AiModeGrid(
-                    items = listOf(
-                        FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84AL), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
-                        FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6CL), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
-                        FlashModeItem(FlashMode.AmbientSmart, stringResource(R.string.mode_ambient), stringResource(R.string.mode_ambient_desc), "ambient", accentColor = Color(0xFF34D399L), sensorTag = stringResource(R.string.sensor_lux_ml), info = stringResource(R.string.mode_ambient_info)),
-                        FlashModeItem(FlashMode.CustomRhythm(), stringResource(R.string.mode_custom), stringResource(R.string.mode_custom_desc), "custom", accentColor = Color(0xFFA78BFAL), sensorTag = stringResource(R.string.sensor_clock), info = stringResource(R.string.mode_custom_info)),
-                        FlashModeItem(FlashMode.SleepTimer, stringResource(R.string.mode_sleep), stringResource(R.string.mode_sleep_desc), "sleep", accentColor = Color(0xFF4ADE80L), sensorTag = stringResource(R.string.sensor_duty), info = stringResource(R.string.mode_sleep_info)),
-                        FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FAL), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
-                        FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8L), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
-                        FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6L), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
-                    ),
+                    items = visibleAiItems,   // already filtered — no hidden modes
                     currentMode = currentMode,
                     isPro = isPro,
                     onSelect = onModeSelect,

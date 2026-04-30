@@ -207,14 +207,17 @@ class FlashViewModel @Inject constructor(
             getProStatusUseCase().first { it !is ProStatus.Loading }
             _isReady.value = true
         }
-        // Restore last used mode from DataStore on startup (with saved config values)
+        // Restore last used mode from DataStore on startup.
+        // Skip modes that are now hidden (staged rollout) — fall back to Steady.
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
             val lastMode: FlashMode? = when (settings.lastMode) {
                 "strobe"       -> FlashMode.Strobe(settings.strobeHz)
                 "disco"        -> FlashMode.Disco(settings.discoBpm)
-                "morse_custom" -> FlashMode.MorseCustom(settings.morseText)  // restore with saved text
-                else           -> FlashMode.all().firstOrNull { it.id == settings.lastMode }
+                "morse_custom" -> FlashMode.MorseCustom(settings.morseText)
+                else           -> FlashMode.all().firstOrNull {
+                    it.id == settings.lastMode && !it.hidden   // never restore hidden modes
+                }
             }
             if (lastMode != null && lastMode !is FlashMode.Steady) {
                 flashRepository.setCurrentMode(lastMode)

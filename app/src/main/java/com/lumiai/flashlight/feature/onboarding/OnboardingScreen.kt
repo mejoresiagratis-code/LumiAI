@@ -28,9 +28,9 @@ private data class OnboardingPage(
 )
 
 private val pages = listOf(
-    OnboardingPage("⚡", LumiColor.Amber400,  "Always ready",     "Instant flash from any screen. One tap, full brightness."),
-    OnboardingPage("◎", LumiColor.Amber500,  "Every mode",       "Steady, SOS, Strobe, Disco, Screen — all in one place."),
-    OnboardingPage("✦", LumiColor.Purple400, "AI-powered Pro",   "Upgrade once to unlock Gemini AI features and remove ads forever."),
+    OnboardingPage("⚡", LumiColor.Amber400, "Always ready",  "Instant flash from any screen. One tap, full brightness."),
+    OnboardingPage("◎", LumiColor.Amber500, "Every mode",    "Steady, SOS, Strobe, Disco, Screen — all in one place."),
+    OnboardingPage("✦", LumiColor.Purple400, "More to come", "New modes and features on the way. Keep the app updated."),
 )
 
 @Composable
