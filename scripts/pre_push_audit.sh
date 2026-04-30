@@ -132,3 +132,19 @@ else
   printf "\033[0;32m  AUDIT PASSED — 0 issues, %d warning(s). Safe to push.\033[0m\n" "$WARNINGS"
   exit 0
 fi
+
+# ── 13. CRITICAL IMPORT PATTERN — imports not replaced when adding new ones ────
+header "13. Import replacement safety (FlashScreen + LumiNavHost)"
+for f in \
+  "app/src/main/java/com/lumiai/flashlight/feature/flash/FlashScreen.kt:FlashViewModel" \
+  "app/src/main/java/com/lumiai/flashlight/ui/navigation/LumiNavHost.kt:FlashScreen" \
+  "app/src/main/java/com/lumiai/flashlight/ui/navigation/LumiNavHost.kt:ModeConfigScreen" \
+  "app/src/main/java/com/lumiai/flashlight/feature/flash/ModeConfigScreen.kt:FlashButton"; do
+  file="${f%%:*}"; sym="${f##*:}"
+  used=$(grep -c "$sym" "$file" 2>/dev/null || echo "0")
+  imported=$(grep -c "^import.*$sym\b" "$file" 2>/dev/null || echo "0")
+  if [ "$used" -gt "0" ] && [ "$imported" -eq "0" ]; then
+    fail "$sym used but NOT imported in $(basename $file)"
+  fi
+done
+pass "Critical import check done"

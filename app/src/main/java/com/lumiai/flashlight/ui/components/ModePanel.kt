@@ -443,9 +443,10 @@ private fun FlashModeCard(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // ⚙ config button — all modes have config screen now
+            // ⚙ config button — all modes except Screen have config screen
+            // Screen mode config is the inline ScreenControlPanel (tap screen when ON)
             val configModes = setOf(
-                "steady","screen","morse_custom","strobe","sos","disco",
+                "steady","morse_custom","strobe","sos","disco",
                 "smart_brightness","sleep_timer","music","voice","ambient_smart","custom_rhythm",
             )
             if (item.mode.id in configModes) {

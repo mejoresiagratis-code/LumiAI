@@ -82,28 +82,43 @@ fun FlashScreen(
     val mode = uiState.currentMode
     val isScreenMode = mode is FlashMode.Screen && isOn
 
-    // Physical back button turns off Screen mode
+    // Physical back: if panel visible → hide it first; if already hidden → turn off Screen mode
     BackHandler(enabled = isScreenMode) {
-        viewModel.toggleFlash()
+        if (uiVisible) {
+            uiVisible = false
+        } else {
+            viewModel.toggleFlash()
+        }
     }
 
-    // Auto-hide: hides 3s after LAST INTERACTION, not 3s after appearing
-    var uiVisible by remember { mutableStateOf(true) }
+    // ── Auto-hide system ─────────────────────────────────────────────────────
+    // Panel never hides while the user is actively adjusting (finger down).
+    // Timer of 3s only starts after the last interaction fully ends.
+    var uiVisible    by remember { mutableStateOf(true) }
+    var isAdjusting  by remember { mutableStateOf(false) }
     var lastInteractionMs by remember { mutableStateOf(System.currentTimeMillis()) }
 
-    // Helper called on every user interaction to reset the idle timer
     fun onUserInteraction() {
         lastInteractionMs = System.currentTimeMillis()
         uiVisible = true
     }
+    fun onAdjustStart() {
+        isAdjusting = true
+        uiVisible = true
+    }
+    fun onAdjustEnd() {
+        isAdjusting = false
+        lastInteractionMs = System.currentTimeMillis()
+    }
 
     LaunchedEffect(isScreenMode) {
-        if (!isScreenMode) { uiVisible = true; return@LaunchedEffect }
-        // Poll every 500ms — hide when idle for 3000ms
+        if (!isScreenMode) { uiVisible = true; isAdjusting = false; return@LaunchedEffect }
         while (true) {
             delay(500L)
             if (!isScreenMode) break
-            if (uiVisible && System.currentTimeMillis() - lastInteractionMs >= 3000L) {
+            // Only count down when user is not actively adjusting
+            if (!isAdjusting && uiVisible &&
+                System.currentTimeMillis() - lastInteractionMs >= 3000L) {
                 uiVisible = false
             }
         }
@@ -278,6 +293,17 @@ fun FlashScreen(
 
             if (isScreenMode) {
                 Spacer(Modifier.weight(1f))
+                // Hint dot — always visible so user knows panel can be recalled
+                if (!uiVisible) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 12.dp)
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(LumiColor.Amber400.copy(alpha = 0.5f)),
+                    )
+                }
                 // ── Tabbed control panel ─────────────────────────────────────
                 ScreenControlPanel(
                     screenColor    = screenColor,
@@ -287,13 +313,15 @@ fun FlashScreen(
                     screenTemp     = screenTemp,
                     brightness     = uiState.screenBrightness,
                     uiAlpha        = uiAlpha,
-                    onColorSelect  = { viewModel.setScreenColor(it) },
-                    onEffectSelect = { viewModel.setScreenEffect(it) },
-                    onTabSelect    = { viewModel.setScreenTab(it) },
+                    onColorSelect  = { viewModel.setScreenColor(it); onUserInteraction() },
+                    onEffectSelect = { viewModel.setScreenEffect(it); onUserInteraction() },
+                    onTabSelect    = { viewModel.setScreenTab(it); onUserInteraction() },
                     onHueChange    = { viewModel.setScreenHue(it) },
                     onTempChange   = { viewModel.setScreenTemp(it) },
                     onBrightness   = { viewModel.setScreenBrightness(it) },
                     onInteraction  = { onUserInteraction() },
+                    onAdjustStart  = { onAdjustStart() },
+                    onAdjustEnd    = { onAdjustEnd() },
                 )
             } else {
                 Spacer(Modifier.navigationBarsPadding())
@@ -301,6 +329,16 @@ fun FlashScreen(
 
             // Bottom padding so content scrolls above the ad banner
             if (!isPro && !isScreenMode) Spacer(Modifier.height(90.dp))
+        }
+
+        // ── Candela full-screen overlay ─────────────────────────────────────
+        // The candle fills the entire screen behind the control panel
+        if (isScreenMode && screenEffect == ScreenEffect.CANDELA) {
+            AnimatedCandle(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center),
+            )
         }
 
         // ── AdBanner overlay ────────────────────────────────────────────────
@@ -529,6 +567,8 @@ private fun ScreenControlPanel(
     onTempChange: (Float) -> Unit,
     onBrightness: (Float) -> Unit,
     onInteraction: () -> Unit = {},
+    onAdjustStart: () -> Unit = {},
+    onAdjustEnd: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -548,8 +588,8 @@ private fun ScreenControlPanel(
                 letterSpacing = 0.1.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f),
                 modifier = Modifier.width(80.dp))
             Slider(value = bVal,
-                onValueChange = { bVal = it; onBrightness(bVal); onInteraction() },
-                onValueChangeFinished = {},
+                onValueChange = { bVal = it; onBrightness(bVal); onAdjustStart() },
+                onValueChangeFinished = { onAdjustEnd() },
                 valueRange = 0.05f..1.0f, steps = 18,
                 colors = SliderDefaults.colors(
                     thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
@@ -621,7 +661,7 @@ private fun ScreenControlPanel(
                     color = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
                     fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
                 Spacer(Modifier.height(4.dp))
-                Box(modifier = Modifier.fillMaxWidth().height(28.dp)
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(28.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.horizontalGradient(colors = (0..12).map { i ->
@@ -630,20 +670,25 @@ private fun ScreenControlPanel(
                         })
                     )
                 ) {
-                    val thumbPct = screenHue / 360f
+                    val trackWidthPx = constraints.maxWidth.toFloat()
+                    // Fixed thumb: offset by actual track width, not a bare Dp(float)
+                    val thumbOffsetDp = with(androidx.compose.ui.platform.LocalDensity.current) {
+                        (screenHue / 360f * trackWidthPx - 2f).toDp().coerceAtLeast(0.dp)
+                    }
                     Box(modifier = Modifier
                         .fillMaxHeight()
-                        .width(3.dp)
-                        .offset(x = (thumbPct * 1f).coerceIn(0f,1f).let {
-                            androidx.compose.ui.unit.Dp(it)
-                        })
-                        .background(androidx.compose.ui.graphics.Color.White)
+                        .width(4.dp)
+                        .offset(x = thumbOffsetDp)
+                        .background(
+                            androidx.compose.ui.graphics.Color.White,
+                            RoundedCornerShape(2.dp),
+                        )
                     )
                     Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             onHueChange((down.position.x / size.width.toFloat() * 360f).coerceIn(0f, 360f))
-                            onInteraction()
+                            onAdjustStart()
                             var stillDown = true
                             while (stillDown) {
                                 val event = awaitPointerEvent()
@@ -655,6 +700,7 @@ private fun ScreenControlPanel(
                                     }
                                 }
                             }
+                            onAdjustEnd()
                         }
                     })
                 }
@@ -664,7 +710,7 @@ private fun ScreenControlPanel(
                 Text(hueNames[(screenHue / 30f).toInt().coerceIn(0, 11)],
                     fontSize = 9.sp, color = androidx.compose.ui.graphics.Color.Black.copy(0.35f))
             }
-            2 -> { // Temp
+            2 -> { // Temp — gradient bar behind slider
                 val k = (2700 + screenTemp * (6500 - 2700)).toInt()
                 val tempLabel = when {
                     k < 3000 -> "candlelight"
@@ -677,13 +723,25 @@ private fun ScreenControlPanel(
                     color = androidx.compose.ui.graphics.Color.Black.copy(0.4f),
                     fontWeight = FontWeight.W500, letterSpacing = 0.05.sp)
                 Spacer(Modifier.height(4.dp))
+                // Visual gradient bar warm→cool
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Brush.horizontalGradient(colors = listOf(
+                            androidx.compose.ui.graphics.Color(0xFFFF8C00L), // 2700K warm
+                            androidx.compose.ui.graphics.Color(0xFFFFF5E0L), // 4000K neutral
+                            androidx.compose.ui.graphics.Color(0xFFB8D4FFL), // 6500K cool
+                        )))
+                )
+                Spacer(Modifier.height(2.dp))
                 Slider(value = screenTemp,
-                    onValueChange = { onTempChange(it) },
+                    onValueChange = { onTempChange(it); onAdjustStart() },
+                    onValueChangeFinished = { onAdjustEnd() },
                     valueRange = 0f..1f,
                     colors = SliderDefaults.colors(
                         thumbColor = androidx.compose.ui.graphics.Color.Black.copy(0.5f),
-                        activeTrackColor = androidx.compose.ui.graphics.Color(0xFFFF8C00L),
-                        inactiveTrackColor = androidx.compose.ui.graphics.Color(0xFFB8D4FFL),
+                        activeTrackColor = androidx.compose.ui.graphics.Color.Transparent,
+                        inactiveTrackColor = androidx.compose.ui.graphics.Color.Transparent,
                     ),
                     modifier = Modifier.fillMaxWidth().height(32.dp),
                 )
@@ -709,6 +767,7 @@ private fun ScreenControlPanel(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
+                                    // Fix: onInteraction() was missing for effect buttons
                                     onClick = { onEffectSelect(fx); onInteraction() }
                                 )
                                 .padding(vertical = 10.dp),
@@ -721,9 +780,9 @@ private fun ScreenControlPanel(
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                if (screenEffect == ScreenEffect.CANDELA) {
-                    AnimatedCandle()
-                } else {
+                // Candela: full-screen candle shown as background — no preview in panel
+                // Other effects: short description
+                if (screenEffect != ScreenEffect.CANDELA) {
                     Text(
                         when (screenEffect) {
                             ScreenEffect.POLICE  -> "red & blue alternating"
@@ -741,95 +800,153 @@ private fun ScreenControlPanel(
 }
 
 
+/**
+ * Full-screen animated candle for Screen mode FX.
+ * Renders a large candle centered on the screen — flame, glow, body, wax drips.
+ * Placed as a full-screen layer above the background color, below the control panel.
+ */
 @Composable
 private fun AnimatedCandle(modifier: Modifier = Modifier) {
     val inf = rememberInfiniteTransition(label = "candle")
 
-    // Flame sway left-right
     val swayX by inf.animateFloat(
-        initialValue = -4f, targetValue = 4f,
-        animationSpec = infiniteRepeatable(
-            tween(800, easing = LinearEasing), RepeatMode.Reverse
-        ), label = "swayX"
+        initialValue = -12f, targetValue = 12f,
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "swayX",
     )
-    // Flame height pulse
     val flameH by inf.animateFloat(
-        initialValue = 0.85f, targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            tween(600, easing = LinearEasing), RepeatMode.Reverse
-        ), label = "flameH"
+        initialValue = 0.82f, targetValue = 1.18f,
+        animationSpec = infiniteRepeatable(tween(650, easing = LinearEasing), RepeatMode.Reverse),
+        label = "flameH",
     )
-    // Glow pulse
     val glowA by inf.animateFloat(
-        initialValue = 0.12f, targetValue = 0.28f,
-        animationSpec = infiniteRepeatable(
-            tween(700, easing = LinearEasing), RepeatMode.Reverse
-        ), label = "glowA"
+        initialValue = 0.10f, targetValue = 0.30f,
+        animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse),
+        label = "glowA",
+    )
+    val flicker by inf.animateFloat(
+        initialValue = 0.88f, targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(tween(120, easing = LinearEasing), RepeatMode.Reverse),
+        label = "flicker",
     )
 
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-    Canvas(
-        modifier = Modifier
-            .width(52.dp)
-            .height(72.dp)
-    ) {
-        val cx = size.width / 2f
-        val cy = size.height / 2f
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val cx   = size.width  / 2f
+        // Position candle in lower 60% of screen so flame has room above
+        val bodyW   = size.width  * 0.18f
+        val bodyH   = size.height * 0.28f
+        val bodyTop = size.height * 0.55f
+        val bodyBot = bodyTop + bodyH
 
-        // Glow halo
+        // ── Ambient glow — large soft radial behind the flame ──────────────
         drawCircle(
-            color = androidx.compose.ui.graphics.Color(0xFFFF9500L).copy(alpha = glowA),
-            radius = 36f * flameH,
-            center = Offset(cx + swayX * 0.3f, cy - 8f),
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    androidx.compose.ui.graphics.Color(0xFFFF9500L).copy(alpha = glowA * 0.8f),
+                    androidx.compose.ui.graphics.Color(0xFFFF6000L).copy(alpha = glowA * 0.3f),
+                    androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                center = Offset(cx + swayX * 0.2f, bodyTop - bodyH * 0.6f),
+                radius = size.width * 0.55f,
+            ),
+            radius = size.width * 0.55f,
+            center = Offset(cx + swayX * 0.2f, bodyTop - bodyH * 0.6f),
         )
 
-        // Candle body
-        val bodyW = 18f; val bodyH = 30f
-        val bodyTop = cy + 4f
+        // ── Candle body ────────────────────────────────────────────────────
         drawRoundRect(
             color = androidx.compose.ui.graphics.Color(0xFFF5E6C8L),
             topLeft = Offset(cx - bodyW / 2f, bodyTop),
             size = Size(bodyW, bodyH),
-            cornerRadius = CornerRadius(4f),
+            cornerRadius = CornerRadius(bodyW * 0.12f),
         )
-        // Wax drip lines
-        repeat(3) { i ->
+        // Melted wax drips
+        repeat(4) { i ->
+            val dripX = cx - bodyW * 0.3f + i * bodyW * 0.22f
             drawLine(
                 color = androidx.compose.ui.graphics.Color(0xFFE8D5B0L),
-                start = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 4f),
-                end   = Offset(cx - bodyW / 2f + 4f + i * 5f, bodyTop + 8f + i * 3f),
-                strokeWidth = 2f,
+                start = Offset(dripX, bodyTop + bodyH * 0.08f),
+                end   = Offset(dripX + (i % 2) * 4f - 2f, bodyTop + bodyH * 0.16f + i * 6f),
+                strokeWidth = bodyW * 0.08f,
+                cap = StrokeCap.Round,
             )
         }
-        // Wick
-        drawLine(
-            color = androidx.compose.ui.graphics.Color(0xFF4A3728L),
-            start = Offset(cx + swayX * 0.2f, bodyTop - 6f),
-            end   = Offset(cx, bodyTop),
-            strokeWidth = 2f,
+        // Candle shading — right edge darker
+        drawRoundRect(
+            brush = Brush.horizontalGradient(
+                colors = listOf(
+                    androidx.compose.ui.graphics.Color.Transparent,
+                    androidx.compose.ui.graphics.Color(0xFF8B6B3DL).copy(alpha = 0.18f),
+                ),
+                startX = cx,
+                endX = cx + bodyW / 2f,
+            ),
+            topLeft = Offset(cx - bodyW / 2f, bodyTop),
+            size = Size(bodyW, bodyH),
+            cornerRadius = CornerRadius(bodyW * 0.12f),
         )
 
-        // Flame — outer (orange)
-        val flamePath = Path().apply {
-            val fx = cx + swayX; val ftop = cy - 22f * flameH
-            moveTo(fx, ftop)
-            cubicTo(fx + 10f, ftop + 8f, fx + 12f, ftop + 20f, cx, bodyTop - 1f)
-            cubicTo(cx - 12f, ftop + 20f, fx - 10f + swayX, ftop + 8f, fx, ftop)
-            close()
-        }
-        drawPath(flamePath, androidx.compose.ui.graphics.Color(0xFFFF7700L).copy(alpha = 0.9f))
+        // ── Wick ──────────────────────────────────────────────────────────
+        val wickTop = bodyTop - bodyH * 0.08f
+        drawLine(
+            color = androidx.compose.ui.graphics.Color(0xFF3A2920L),
+            start = Offset(cx + swayX * 0.15f, wickTop),
+            end   = Offset(cx, bodyTop),
+            strokeWidth = bodyW * 0.05f,
+            cap = StrokeCap.Round,
+        )
 
-        // Flame — inner (yellow core)
-        val innerPath = Path().apply {
-            val fx = cx + swayX * 0.5f; val ftop = cy - 12f * flameH
-            moveTo(fx, ftop)
-            cubicTo(fx + 5f, ftop + 5f, fx + 6f, ftop + 12f, cx, bodyTop - 1f)
-            cubicTo(cx - 6f, ftop + 12f, fx - 5f, ftop + 5f, fx, ftop)
+        // ── Flame outer (orange) ──────────────────────────────────────────
+        val flameBaseY = bodyTop - bodyH * 0.02f
+        val flameTipY  = bodyTop - bodyH * flameH * 1.1f
+        val flameWidthX = bodyW * 0.7f
+        val fx = cx + swayX
+
+        val outerFlame = Path().apply {
+            moveTo(fx, flameTipY)
+            cubicTo(fx + flameWidthX, flameTipY + bodyH * 0.4f,
+                    cx + bodyW * 0.45f, flameBaseY - bodyH * 0.05f, cx, flameBaseY)
+            cubicTo(cx - bodyW * 0.45f, flameBaseY - bodyH * 0.05f,
+                    fx - flameWidthX, flameTipY + bodyH * 0.4f, fx, flameTipY)
             close()
         }
-        drawPath(innerPath, androidx.compose.ui.graphics.Color(0xFFFFDD00L).copy(alpha = 0.85f))
+        drawPath(outerFlame,
+            Brush.verticalGradient(
+                colors = listOf(
+                    androidx.compose.ui.graphics.Color(0xFFFFDD00L).copy(alpha = flicker),
+                    androidx.compose.ui.graphics.Color(0xFFFF7700L).copy(alpha = 0.95f * flicker),
+                    androidx.compose.ui.graphics.Color(0xFFFF4500L).copy(alpha = 0.9f),
+                ),
+                startY = flameTipY,
+                endY   = flameBaseY,
+            )
+        )
+
+        // ── Flame inner (bright yellow core) ─────────────────────────────
+        val innerTipY  = bodyTop - bodyH * flameH * 0.65f
+        val innerWidthX = bodyW * 0.28f
+        val ifx = cx + swayX * 0.4f
+
+        val innerFlame = Path().apply {
+            moveTo(ifx, innerTipY)
+            cubicTo(ifx + innerWidthX, innerTipY + bodyH * 0.2f,
+                    cx + bodyW * 0.18f, flameBaseY - bodyH * 0.02f, cx, flameBaseY)
+            cubicTo(cx - bodyW * 0.18f, flameBaseY - bodyH * 0.02f,
+                    ifx - innerWidthX, innerTipY + bodyH * 0.2f, ifx, innerTipY)
+            close()
+        }
+        drawPath(innerFlame,
+            Brush.verticalGradient(
+                colors = listOf(
+                    androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f * flicker),
+                    androidx.compose.ui.graphics.Color(0xFFFFEE44L).copy(alpha = 0.95f),
+                    androidx.compose.ui.graphics.Color(0xFFFFAA00L).copy(alpha = 0.7f),
+                ),
+                startY = innerTipY,
+                endY   = flameBaseY,
+            )
+        )
     }
-    } // Column
 }
 
 @Composable
