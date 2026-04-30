@@ -34,6 +34,7 @@ fun ProPaywallScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isPro = uiState.proStatus == ProStatus.Pro
+    val isRestoring by viewModel.isRestoringPurchases.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(isPro) { if (isPro) onBack() }
@@ -164,15 +165,19 @@ fun ProPaywallScreen(
             }
 
             // ── Footer ─────────────────────────────────────────────────────
-            Text("Restaurar compra",
-                fontSize = 12.sp, color = LumiColor.Gray600,
+            Text(
+                if (isRestoring) "Buscando compra…" else "Restaurar compra",
+                fontSize = 12.sp,
+                color = if (isRestoring) LumiColor.Amber400.copy(.6f) else LumiColor.Gray600,
                 modifier = Modifier
                     .padding(top = 10.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
+                        enabled = !isRestoring,
                         onClick = { viewModel.restorePurchases() },
-                    ))
+                    )
+            )
             Row(
                 modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

@@ -86,7 +86,14 @@ class BillingRepositoryImpl constructor(
     }
 
     override suspend fun restorePurchases(): Result<Unit> = runCatching {
-        checkExistingPurchases()
+        if (billingClient.isReady) {
+            // Client connected — query immediately
+            checkExistingPurchases()
+        } else {
+            // Client disconnected (app resumed after long background, etc.)
+            // Re-establish connection then query. connectAndCheck() handles both.
+            connectAndCheck()
+        }
     }
 
     override fun onPurchasesUpdated(result: BillingResult, purchases: List<Purchase>?) {

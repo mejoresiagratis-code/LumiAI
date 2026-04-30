@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
+import com.lumiai.flashlight.core.data.repository.BillingRepository
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
@@ -46,6 +47,7 @@ class FlashViewModel @Inject constructor(
     private val toggleFlashUseCase: ToggleFlashUseCase,
     private val getProStatusUseCase: GetProStatusUseCase,
     private val purchaseProUseCase: PurchaseProUseCase,
+    private val billingRepository: BillingRepository,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
@@ -323,9 +325,17 @@ class FlashViewModel @Inject constructor(
         _showPaywallEvent.tryEmit(Unit)
     }
 
+    // Exposed so the paywall can show a spinner while restore is in progress
+    private val _isRestoringPurchases = MutableStateFlow(false)
+    val isRestoringPurchases: StateFlow<Boolean> = _isRestoringPurchases.asStateFlow()
+
     fun restorePurchases() {
         viewModelScope.launch {
-            getProStatusUseCase()  // re-check purchase status from billing
+            _isRestoringPurchases.value = true
+            // Triggers a real queryPurchasesAsync to Google Play servers.
+            // proStatusFlow updates automatically when the query returns.
+            billingRepository.restorePurchases()
+            _isRestoringPurchases.value = false
         }
     }
 
