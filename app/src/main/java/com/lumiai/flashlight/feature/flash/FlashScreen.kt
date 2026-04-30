@@ -259,23 +259,12 @@ fun FlashScreen(
 
             if (!isScreenMode) {
                 ModePanel(
-                    currentMode      = mode,
-                    isConfigSheetOpen = false,
-                    torchIntensity         = torchIntensity,
-                    onTorchIntensityChange  = { viewModel.setTorchIntensity(it) },
-                    screenBrightness       = uiState.screenBrightness,
-                    onScreenBrightnessChange = { viewModel.setScreenBrightness(it) },
-                    strobeHz         = uiState.strobeHz,
-                    discoBpm         = uiState.discoBpm,
-                    sosSpeed         = morseSpeed,
-                    onModeSelect     = { viewModel.activateMode(it) },
-                    onModeConfig     = { onOpenModeConfig(it.id) },
-                    onStrobeHzChange = { viewModel.updateStrobeHz(it) },
-                    onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
-                    onSosSpeedChange = { viewModel.updateSosSpeed(it) },
-                    isPro            = isPro,
-                    onPaywall        = { viewModel.showPaywall() },
-                    modifier         = Modifier.fillMaxWidth(),
+                    currentMode  = mode,
+                    onModeSelect = { viewModel.activateMode(it) },
+                    onModeConfig = { onOpenModeConfig(it.id) },
+                    isPro        = isPro,
+                    onPaywall    = { viewModel.showPaywall() },
+                    modifier     = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
             }
@@ -909,6 +898,9 @@ internal fun ModeConfigSheet(
         )
 
         val title = when (mode) {
+            is FlashMode.Steady            -> stringResource(R.string.mode_steady)
+            is FlashMode.Screen            -> stringResource(R.string.mode_screen)
+            is FlashMode.Sos               -> "SOS"
             is FlashMode.Strobe            -> stringResource(R.string.config_strobe_title)
             is FlashMode.Disco             -> stringResource(R.string.config_disco_title)
             is FlashMode.MorseCustom       -> stringResource(R.string.config_morse_title)
@@ -918,7 +910,7 @@ internal fun ModeConfigSheet(
             is FlashMode.Voice             -> stringResource(R.string.config_voice_title)
             is FlashMode.AmbientSmart      -> stringResource(R.string.config_ambient_title)
             is FlashMode.CustomRhythm      -> stringResource(R.string.config_custom_title)
-            else -> return  // ReadingMode, Walk — no config
+            else -> return  // ReadingMode, Walk — hidden, no config needed yet
         }
         Text(
             title,
@@ -928,8 +920,9 @@ internal fun ModeConfigSheet(
         )
 
         // ── Intensity slider for torch modes ─────────────────────────────────
-        val hasTorchIntensity = mode is FlashMode.Strobe ||
-                                mode is FlashMode.Disco  ||
+        val hasTorchIntensity = mode is FlashMode.Steady  ||
+                                mode is FlashMode.Strobe  ||
+                                mode is FlashMode.Disco   ||
                                 mode is FlashMode.MorseCustom
         if (hasTorchIntensity) {
             var intensity by remember { mutableFloatStateOf(torchIntensity) }
@@ -1286,6 +1279,75 @@ internal fun ModeConfigSheet(
                     Text("Low", fontSize = 11.sp, color = LumiColor.Gray600)
                     Text("High", fontSize = 11.sp, color = LumiColor.Gray600)
                 }
+            }
+
+            is FlashMode.Screen -> {
+                // Screen brightness slider
+                var brightness by remember { mutableFloatStateOf(uiState.screenBrightness) }
+                val brightnessPct = (brightness * 100).toInt()
+                Text("SCREEN BRIGHTNESS", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Text("$brightnessPct%", fontSize = 24.sp,
+                    fontWeight = FontWeight.W700, color = LumiColor.Amber400)
+                Slider(
+                    value = brightness,
+                    onValueChange = { brightness = it },
+                    onValueChangeFinished = { onScreenBrightness(brightness) },
+                    valueRange = 0.05f..1.0f,
+                    steps = 18,
+                    colors = SliderDefaults.colors(
+                        thumbColor = LumiColor.Amber400,
+                        activeTrackColor = LumiColor.Amber400,
+                        inactiveTrackColor = LumiColor.Navy600,
+                    ),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                    Text("5%", fontSize = 11.sp, color = LumiColor.Gray600)
+                    Text("100%", fontSize = 11.sp, color = LumiColor.Gray600)
+                }
+            }
+
+            is FlashMode.Sos -> {
+                // SOS speed selector — same 4-button control as was inline
+                Text("VELOCIDAD SOS", fontSize = 10.sp, color = LumiColor.Gray600,
+                    fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                Spacer(Modifier.height(8.dp))
+                val sosOptions = listOf("½×" to 0.5f, "1×" to 1.0f, "2×" to 2.0f, "4×" to 4.0f)
+                val currentSosSpeed = morseSpeed  // SOS shares morseSpeed key
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    sosOptions.forEach { (label, speed) ->
+                        val selected = kotlin.math.abs(currentSosSpeed - speed) < 0.1f
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (selected) LumiColor.Amber400 else LumiColor.Navy700)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onMorseSpeed(speed) },
+                                )
+                                .padding(vertical = 14.dp),
+                        ) {
+                            Text(
+                                label,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.W600,
+                                color = if (selected) LumiColor.Navy950 else LumiColor.White,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                val speedLabel = when {
+                    currentSosSpeed <= 0.6f -> "lento"
+                    currentSosSpeed <= 1.1f -> "ITU estándar"
+                    currentSosSpeed <= 2.1f -> "rápido"
+                    else                    -> "ráfaga"
+                }
+                Text(speedLabel, fontSize = 11.sp,
+                    color = LumiColor.Amber400, fontWeight = FontWeight.W500)
             }
 
             else -> {}
