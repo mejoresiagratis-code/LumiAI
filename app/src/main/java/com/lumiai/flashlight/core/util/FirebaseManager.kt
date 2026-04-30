@@ -57,6 +57,7 @@ object FirebaseManager {
     // ── Performance traces ────────────────────────────────────────────────────
     fun <T> traceBindCamera(block: () -> T): T = withTrace("bind_camera", block)
     fun <T> traceFirstTorch(block: () -> T): T = withTrace("first_torch_on", block)
+    @Suppress("UNUSED_PARAMETER")
     fun <T> traceActivateMode(modeId: String, block: () -> T): T =
         withTrace("activate_mode") { block() }
 

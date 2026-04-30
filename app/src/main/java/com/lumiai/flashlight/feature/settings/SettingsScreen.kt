@@ -227,7 +227,7 @@ fun SettingsScreen(
 
             // ── ABOUT ─────────────────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_language)) {
-                val activity = LocalContext.current as? android.app.Activity
+                val settingsActivity = LocalContext.current as? android.app.Activity
                 val currentLang = uiState.settings.appLanguage
                 com.lumiai.flashlight.core.util.LanguageManager.SUPPORTED_LOCALES
                     .entries.forEachIndexed { i, (code, displayName) ->
@@ -236,8 +236,8 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                if (code != currentLang && activity != null) {
-                                    viewModel.setLanguage(code, activity)
+                                if (code != currentLang && settingsActivity != null) {
+                                    viewModel.setLanguage(code, settingsActivity)
                                 }
                             }
                             .padding(horizontal = 16.dp, vertical = 14.dp),

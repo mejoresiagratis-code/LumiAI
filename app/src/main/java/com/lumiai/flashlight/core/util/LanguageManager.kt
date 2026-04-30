@@ -49,6 +49,7 @@ object LanguageManager {
         Locale.setDefault(locale)
         val config = Configuration(activity.resources.configuration)
         config.setLocale(locale)
+        @Suppress("DEPRECATION")  // createConfigurationContext preferred on API 26+; keeping for minSdk 23 compat
         activity.resources.updateConfiguration(config, activity.resources.displayMetrics)
         activity.recreate()
     }

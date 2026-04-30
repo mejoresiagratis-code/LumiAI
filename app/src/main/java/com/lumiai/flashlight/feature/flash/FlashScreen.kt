@@ -78,7 +78,7 @@ fun FlashScreen(
     LaunchedEffect(Unit) {
         viewModel.showPaywallEvent.collect { onOpenPro() }
     }
-    val morseText by viewModel.morseText.collectAsState() // Corregido: Movido aquí para evitar Unresolved reference
+    val morseText      by viewModel.morseText.collectAsState()  // used in ModeConfigSheet
     val isPro = uiState.proStatus == ProStatus.Pro
     val isOn = uiState.isFlashOn
     val mode = uiState.currentMode
@@ -133,12 +133,10 @@ fun FlashScreen(
     )
 
     val screenColor   by viewModel.screenColor.collectAsState()
-    val torchIntensity by viewModel.torchIntensity.collectAsState()
-    val morseSpeed     by viewModel.morseSpeed.collectAsState()
-    val strobePattern  by viewModel.strobePattern.collectAsState()
-    val screenEffect   by viewModel.screenEffect.collectAsState()
-    val screenTab      by viewModel.screenTab.collectAsState()
-    val screenHue      by viewModel.screenHue.collectAsState()
+    // torchIntensity, morseSpeed, strobePattern collected in ModeConfigScreen directly
+    val screenEffect  by viewModel.screenEffect.collectAsState()
+    val screenTab     by viewModel.screenTab.collectAsState()
+    val screenHue     by viewModel.screenHue.collectAsState()
     val screenTemp     by viewModel.screenTemp.collectAsState()
     // Effect engine drives bgColor when an effect is active in Screen mode
     var effectBgColor by remember { mutableStateOf(screenColor.color) }
@@ -844,7 +842,7 @@ private fun AnimatedCandle(modifier: Modifier = Modifier) {
         val bodyW   = size.width  * 0.18f
         val bodyH   = size.height * 0.28f
         val bodyTop = size.height * 0.55f
-        val bodyBot = bodyTop + bodyH
+        // bodyBot = bodyTop + bodyH — not needed, drawing uses bodyTop + offsets
 
         // ── Ambient glow — large soft radial behind the flame ──────────────
         drawCircle(
@@ -983,7 +981,6 @@ internal fun ModeConfigSheet(
     mode: FlashMode,
     uiState: FlashUiState,
     morseText: String,
-    screenColor: ScreenColor = ScreenColor.WHITE,
     torchIntensity: Float = 1.0f,
     morseSpeed: Float = 1.0f,
     strobePattern: StrobePattern = StrobePattern.SINGLE,
@@ -997,7 +994,6 @@ internal fun ModeConfigSheet(
     onStrobeHz: (Float) -> Unit,
     onDiscoBpm: (Float) -> Unit,
     onMorseText: (String) -> Unit,
-    onScreenColor: (ScreenColor) -> Unit,
     onSmartSpeed: (Float) -> Unit = {},
     onSleepMinutes: (Int) -> Unit = {},
     onMicSensitivity: (Float) -> Unit = {},

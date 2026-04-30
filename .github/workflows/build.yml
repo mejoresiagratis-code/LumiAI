@@ -76,7 +76,7 @@ jobs:
         with:
           name: ${{ env.APK_NAME_BASE }}-debug-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/*.apk
-          retention-days: 14   # reducido de 30 — no necesitamos APKs viejos tanto tiempo
+          retention-days: 3    # debug: solo 3 días — suficiente para probar el APK
 
       # Release firmado — solo en tags v*
       - name: Decode keystore
@@ -109,7 +109,7 @@ jobs:
         with:
           name: ${{ env.APK_NAME_BASE }}-release-signed-${{ github.ref_name }}
           path: app/build/outputs/apk/release/*.apk
-          retention-days: 90
+          retention-days: 30   # release: 30 días suficiente, era 90
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

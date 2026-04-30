@@ -43,6 +43,7 @@ object MorseEncoder {
      * Encodes text to Morse timing pairs.
      * @param speed  WPM multiplier — 1.0 = standard ITU, 2.0 = double speed, 0.5 = half speed
      */
+    @Suppress("UNUSED_PARAMETER")
     fun encode(text: String, speed: Float = 1.0f): List<Pair<Long, Long>> {
         val result = mutableListOf<Pair<Long, Long>>()
         val words  = text.uppercase().trim().split(" ")

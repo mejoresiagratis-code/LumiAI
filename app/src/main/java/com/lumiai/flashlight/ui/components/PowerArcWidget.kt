@@ -36,7 +36,6 @@ import kotlin.math.*
 @Composable
 fun PowerArcWidget(
     isOn: Boolean,
-    isScreenMode: Boolean,
     currentMode: FlashMode,
     batteryLevel: Float,
     isCharging: Boolean,
