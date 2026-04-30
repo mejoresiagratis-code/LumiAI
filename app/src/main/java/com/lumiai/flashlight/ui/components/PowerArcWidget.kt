@@ -22,40 +22,74 @@ import com.lumiai.flashlight.ui.theme.LumiColor
 import kotlin.math.*
 
 /**
- * Power Arc Widget — replaces the FlashButton on the main screen.
+ * Power Arc Widget — main screen hero element.
  *
- * OFF state: Grey arc showing battery level. Center shows mode name.
- * ON state:  Amber arc lit up. Dragging the arc changes intensity.
- *            Center shows estimated runtime recalculated live.
+ * Layout (top to bottom):
+ *   "MODO: CONTINUO"   ← mode label
+ *   [Arc + center time]
+ *   "Intensidad: 50%"  ← intensity label below arc
  *
- * The arc runs from 150° to 390° (240° sweep) — bottom-weighted horseshoe.
- * Drag position maps linearly to intensity 0.1–1.0.
+ * OFF state: grey arc = battery level. Center = battery %.
+ * ON state:  amber arc = intensity. Center = HH:MM + "H RESTANTES".
+ *            Drag on arc → changes intensity live.
  */
 @Composable
 fun PowerArcWidget(
     isOn: Boolean,
     isScreenMode: Boolean,
     currentMode: FlashMode,
-    batteryLevel: Float,          // 0.0–1.0
+    batteryLevel: Float,
     isCharging: Boolean,
-    intensity: Float,             // current torch/screen intensity 0.1–1.0
+    intensity: Float,
     onIntensityChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Estimate runtime based on current settings
     val estimatedMinutes = remember(batteryLevel, currentMode, intensity) {
         EnergyEstimator.estimateMinutesRemaining(batteryLevel, currentMode, intensity)
     }
-    val runtimeText = remember(estimatedMinutes) {
-        EnergyEstimator.formatMinutes(estimatedMinutes)
+
+    // Clock-style format: "01:30" (hours:minutes) or "45m" for under 1h
+    val clockText = remember(estimatedMinutes) {
+        when {
+            estimatedMinutes <= 0   -> "< 1m"
+            estimatedMinutes < 60   -> "${estimatedMinutes}m"
+            else -> {
+                val h = estimatedMinutes / 60
+                val m = estimatedMinutes % 60
+                "%02d:%02d".format(h, m)
+            }
+        }
+    }
+    val timeUnit = remember(estimatedMinutes) {
+        if (estimatedMinutes < 60) "MIN RESTANTES" else "H RESTANTES"
     }
 
-    // Arc constants
-    val startAngle = 150f   // degrees (0 = right, clockwise)
-    val sweepAngle = 240f   // total arc span
+    // Mode name label
+    val modeName = remember(currentMode.id) {
+        when (currentMode.id) {
+            "steady"           -> "CONTINUO"
+            "screen"           -> "PANTALLA"
+            "morse_custom"     -> "MORSE"
+            "strobe"           -> "ESTROBOSCOPIO"
+            "sos"              -> "SOS"
+            "disco"            -> "DISCO"
+            "smart_brightness" -> "INTELIGENTE"
+            "reading_mode"     -> "LECTURA"
+            "ambient_smart"    -> "AMBIENTAL"
+            "custom_rhythm"    -> "PERSONALIZADO"
+            "sleep_timer"      -> "SUEÑO"
+            "music"            -> "MÚSICA"
+            "walk"             -> "CAMINAR"
+            "voice"            -> "VOZ"
+            else               -> "MODO"
+        }
+    }
+
+    // Arc geometry
+    val startAngle = 150f
+    val sweepAngle = 240f
     val arcPadding = 28.dp
 
-    // Animated fill — battery level (off) or intensity (on)
     val fillTarget = if (isOn) intensity else batteryLevel
     val animatedFill by animateFloatAsState(
         targetValue = fillTarget,
@@ -63,7 +97,6 @@ fun PowerArcWidget(
         label = "arcFill",
     )
 
-    // Glow pulse when ON
     val infiniteTransition = rememberInfiniteTransition(label = "arcGlow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.15f, targetValue = 0.45f,
@@ -71,193 +104,196 @@ fun PowerArcWidget(
         label = "glowAlpha",
     )
 
-    // Drag state — tracks finger position mapped to intensity
     var isDragging by remember { mutableStateOf(false) }
     var arcCenter by remember { mutableStateOf(Offset.Zero) }
     var arcRadius by remember { mutableStateOf(0f) }
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(1.15f)   // slightly wider than tall
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Canvas(
+        // ── Mode label ─────────────────────────────────────────────────────
+        Text(
+            text = "MODO: $modeName",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.W500,
+            letterSpacing = 0.12.sp,
+            color = LumiColor.Gray600,
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        // ── Arc + center ────────────────────────────────────────────────────
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(arcPadding)
-                .pointerInput(isOn) {
-                    if (!isOn) return@pointerInput
-                    detectDragGestures(
-                        onDragStart = { isDragging = true },
-                        onDragEnd   = { isDragging = false },
-                        onDragCancel = { isDragging = false },
-                        onDrag = { change, _ ->
-                            change.consume()
-                            val pos = change.position
-                            // Map drag position to angle, then to intensity
-                            val angle = atan2(
-                                (pos.y - arcCenter.y).toDouble(),
-                                (pos.x - arcCenter.x).toDouble()
-                            ).let { Math.toDegrees(it).toFloat() }
-                                .let { if (it < 0) it + 360f else it }
-
-                            // Normalize angle within arc sweep (150°–390°)
-                            var normalized = angle - startAngle
-                            if (normalized < 0) normalized += 360f
-                            if (normalized > sweepAngle) normalized = normalized.coerceIn(0f, sweepAngle)
-                            val newIntensity = (normalized / sweepAngle)
-                                .coerceIn(0.1f, 1.0f)
-                            onIntensityChange(newIntensity)
-                        }
-                    )
-                }
+                .fillMaxWidth()
+                .aspectRatio(1.15f),
         ) {
-            arcCenter = Offset(size.width / 2f, size.height / 2f)
-            arcRadius = size.width / 2f
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(arcPadding)
+                    .pointerInput(isOn) {
+                        if (!isOn) return@pointerInput
+                        detectDragGestures(
+                            onDragStart = { isDragging = true },
+                            onDragEnd   = { isDragging = false },
+                            onDragCancel = { isDragging = false },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val pos = change.position
+                                var angle = Math.toDegrees(
+                                    atan2(
+                                        (pos.y - arcCenter.y).toDouble(),
+                                        (pos.x - arcCenter.x).toDouble()
+                                    )
+                                ).toFloat()
+                                if (angle < 0) angle += 360f
+                                var normalized = angle - startAngle
+                                if (normalized < 0) normalized += 360f
+                                normalized = normalized.coerceIn(0f, sweepAngle)
+                                onIntensityChange((normalized / sweepAngle).coerceIn(0.1f, 1.0f))
+                            }
+                        )
+                    }
+            ) {
+                arcCenter = Offset(size.width / 2f, size.height / 2f)
+                arcRadius = size.width / 2f
 
-            val strokeWidth = 14.dp.toPx()
-            val arcRect = Size(size.width, size.height)
-            val topLeft = Offset(0f, 0f)
+                val strokeWidth = 14.dp.toPx()
+                val arcRect    = Size(size.width, size.height)
+                val topLeft    = Offset(0f, 0f)
 
-            // ── Track (background arc) ─────────────────────────────────────
-            drawArc(
-                color      = if (isOn) LumiColor.Navy700 else LumiColor.Navy600,
-                startAngle = startAngle,
-                sweepAngle = sweepAngle,
-                useCenter  = false,
-                topLeft    = topLeft,
-                size       = arcRect,
-                style      = Stroke(strokeWidth, cap = StrokeCap.Round),
-            )
-
-            // ── Glow halo when ON ──────────────────────────────────────────
-            if (isOn) {
+                // Track
                 drawArc(
-                    color      = LumiColor.Amber400.copy(alpha = glowAlpha * animatedFill),
+                    color      = if (isOn) LumiColor.Navy700 else LumiColor.Navy600,
                     startAngle = startAngle,
-                    sweepAngle = sweepAngle * animatedFill,
-                    useCenter  = false,
-                    topLeft    = Offset(-strokeWidth * 0.8f, -strokeWidth * 0.8f),
-                    size       = Size(arcRect.width + strokeWidth * 1.6f, arcRect.height + strokeWidth * 1.6f),
-                    style      = Stroke(strokeWidth * 2.8f, cap = StrokeCap.Round),
-                )
-            }
-
-            // ── Fill arc ───────────────────────────────────────────────────
-            val fillColor = when {
-                isCharging            -> Color(0xFF4ADE80L)   // green when charging
-                isOn                  -> LumiColor.Amber400
-                batteryLevel < 0.15f  -> Color(0xFFFF4444L)   // red low battery
-                batteryLevel < 0.30f  -> Color(0xFFFF9500L)   // orange
-                else                  -> LumiColor.Navy500
-            }
-            if (animatedFill > 0.01f) {
-                drawArc(
-                    color      = fillColor,
-                    startAngle = startAngle,
-                    sweepAngle = sweepAngle * animatedFill,
+                    sweepAngle = sweepAngle,
                     useCenter  = false,
                     topLeft    = topLeft,
                     size       = arcRect,
                     style      = Stroke(strokeWidth, cap = StrokeCap.Round),
                 )
-            }
 
-            // ── Thumb indicator (drag handle) when ON ──────────────────────
-            if (isOn) {
-                val thumbAngleRad = Math.toRadians(
-                    (startAngle + sweepAngle * animatedFill).toDouble()
-                )
-                val thumbX = arcCenter.x + arcRadius * cos(thumbAngleRad).toFloat()
-                val thumbY = arcCenter.y + arcRadius * sin(thumbAngleRad).toFloat()
-                drawCircle(
-                    color  = LumiColor.Navy950,
-                    radius = strokeWidth * 0.55f,
-                    center = Offset(thumbX, thumbY),
-                )
-                drawCircle(
-                    color  = if (isDragging) LumiColor.Amber300 else LumiColor.Amber400,
-                    radius = strokeWidth * 0.42f,
-                    center = Offset(thumbX, thumbY),
-                )
-            }
-
-            // ── Battery level ticks (5 major, every 20%) ──────────────────
-            if (!isOn) {
-                val tickCount = 5
-                repeat(tickCount + 1) { i ->
-                    val pct = i.toFloat() / tickCount
-                    val tickAngleRad = Math.toRadians(
-                        (startAngle + sweepAngle * pct).toDouble()
+                // Glow
+                if (isOn) {
+                    drawArc(
+                        color      = LumiColor.Amber400.copy(alpha = glowAlpha * animatedFill),
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle * animatedFill,
+                        useCenter  = false,
+                        topLeft    = Offset(-strokeWidth * 0.8f, -strokeWidth * 0.8f),
+                        size       = Size(arcRect.width + strokeWidth * 1.6f, arcRect.height + strokeWidth * 1.6f),
+                        style      = Stroke(strokeWidth * 2.8f, cap = StrokeCap.Round),
                     )
-                    val innerR = arcRadius - strokeWidth * 0.9f
-                    val outerR = arcRadius + strokeWidth * 0.9f
-                    val tx1 = arcCenter.x + innerR * cos(tickAngleRad).toFloat()
-                    val ty1 = arcCenter.y + innerR * sin(tickAngleRad).toFloat()
-                    val tx2 = arcCenter.x + outerR * cos(tickAngleRad).toFloat()
-                    val ty2 = arcCenter.y + outerR * sin(tickAngleRad).toFloat()
-                    drawLine(
-                        color       = LumiColor.Navy800,
-                        start       = Offset(tx1, ty1),
-                        end         = Offset(tx2, ty2),
-                        strokeWidth = 2f,
-                        cap         = StrokeCap.Round,
+                }
+
+                // Fill
+                val fillColor = when {
+                    isCharging            -> Color(0xFF4ADE80L)
+                    isOn                  -> LumiColor.Amber400
+                    batteryLevel < 0.15f  -> Color(0xFFFF4444L)
+                    batteryLevel < 0.30f  -> Color(0xFFFF9500L)
+                    else                  -> LumiColor.Navy500
+                }
+                if (animatedFill > 0.01f) {
+                    drawArc(
+                        color      = fillColor,
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle * animatedFill,
+                        useCenter  = false,
+                        topLeft    = topLeft,
+                        size       = arcRect,
+                        style      = Stroke(strokeWidth, cap = StrokeCap.Round),
+                    )
+                }
+
+                // Thumb when ON
+                if (isOn) {
+                    val thumbAngleRad = Math.toRadians(
+                        (startAngle + sweepAngle * animatedFill).toDouble()
+                    )
+                    val tx = arcCenter.x + arcRadius * cos(thumbAngleRad).toFloat()
+                    val ty = arcCenter.y + arcRadius * sin(thumbAngleRad).toFloat()
+                    drawCircle(color = LumiColor.Navy950, radius = strokeWidth * 0.55f, center = Offset(tx, ty))
+                    drawCircle(
+                        color  = if (isDragging) LumiColor.Amber300 else LumiColor.Amber400,
+                        radius = strokeWidth * 0.42f,
+                        center = Offset(tx, ty),
+                    )
+                }
+
+                // Battery ticks when OFF
+                if (!isOn) {
+                    repeat(6) { i ->
+                        val pct = i.toFloat() / 5f
+                        val tickRad = Math.toRadians((startAngle + sweepAngle * pct).toDouble())
+                        val inner = arcRadius - strokeWidth * 0.9f
+                        val outer = arcRadius + strokeWidth * 0.9f
+                        drawLine(
+                            color       = LumiColor.Navy800,
+                            start       = Offset(arcCenter.x + inner * cos(tickRad).toFloat(), arcCenter.y + inner * sin(tickRad).toFloat()),
+                            end         = Offset(arcCenter.x + outer * cos(tickRad).toFloat(), arcCenter.y + outer * sin(tickRad).toFloat()),
+                            strokeWidth = 2f,
+                            cap         = StrokeCap.Round,
+                        )
+                    }
+                }
+            }
+
+            // ── Center text ────────────────────────────────────────────────
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (isOn) {
+                    Text(
+                        text          = clockText,
+                        fontSize      = 48.sp,
+                        fontWeight    = FontWeight.W700,
+                        color         = LumiColor.White,
+                        letterSpacing = (-1).sp,
+                    )
+                    Text(
+                        text          = timeUnit,
+                        fontSize      = 10.sp,
+                        fontWeight    = FontWeight.W600,
+                        letterSpacing = 0.10.sp,
+                        color         = LumiColor.Amber400,
+                    )
+                } else {
+                    Text(
+                        text       = "${(batteryLevel * 100).toInt()}%",
+                        fontSize   = 44.sp,
+                        fontWeight = FontWeight.W700,
+                        color      = when {
+                            isCharging           -> Color(0xFF4ADE80L)
+                            batteryLevel < 0.15f -> Color(0xFFFF4444L)
+                            else                 -> LumiColor.Gray400
+                        },
+                        letterSpacing = (-0.5).sp,
+                    )
+                    Text(
+                        text     = if (isCharging) "CARGANDO" else "BATERÍA",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.W600,
+                        letterSpacing = 0.10.sp,
+                        color    = LumiColor.Gray600,
                     )
                 }
             }
         }
 
-        // ── Center text ────────────────────────────────────────────────────
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (isOn) {
-                Text(
-                    text       = runtimeText,
-                    fontSize   = 36.sp,
-                    fontWeight = FontWeight.W700,
-                    color      = LumiColor.Amber400,
-                    letterSpacing = (-0.5).sp,
-                )
-                Text(
-                    text     = "remaining",
-                    fontSize = 11.sp,
-                    color    = LumiColor.Gray600,
-                    fontWeight = FontWeight.W400,
-                    letterSpacing = 0.06.sp,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text     = "${(intensity * 100).toInt()}% intensity",
-                    fontSize = 10.sp,
-                    color    = LumiColor.Amber400.copy(.5f),
-                    fontWeight = FontWeight.W500,
-                )
-            } else {
-                Text(
-                    text       = "${(batteryLevel * 100).toInt()}%",
-                    fontSize   = 40.sp,
-                    fontWeight = FontWeight.W700,
-                    color      = when {
-                        isCharging           -> Color(0xFF4ADE80L)
-                        batteryLevel < 0.15f -> Color(0xFFFF4444L)
-                        else                 -> LumiColor.Gray500
-                    },
-                    letterSpacing = (-0.5).sp,
-                )
-                Text(
-                    text     = if (isCharging) "charging" else "battery",
-                    fontSize = 11.sp,
-                    color    = LumiColor.Gray600,
-                    letterSpacing = 0.06.sp,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text     = "select a mode to start",
-                    fontSize = 10.sp,
-                    color    = LumiColor.Gray700,
-                    fontWeight = FontWeight.W400,
-                )
-            }
-        }
+        // ── Intensity label below arc ───────────────────────────────────────
+        Text(
+            text = if (isOn)
+                "Intensidad: ${(intensity * 100).toInt()}%"
+            else
+                "Selecciona un modo para empezar",
+            fontSize   = 12.sp,
+            fontWeight = FontWeight.W400,
+            color      = if (isOn) LumiColor.Gray500 else LumiColor.Gray700,
+            letterSpacing = 0.04.sp,
+        )
+
+        Spacer(Modifier.height(4.dp))
     }
 }
