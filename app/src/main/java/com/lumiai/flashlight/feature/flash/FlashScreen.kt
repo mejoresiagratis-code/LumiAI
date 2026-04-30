@@ -58,7 +58,7 @@ import com.lumiai.flashlight.feature.flash.ScreenColor
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.util.MorseEncoder
 import com.lumiai.flashlight.ui.components.AdBanner
-import com.lumiai.flashlight.ui.components.PowerArcWidget
+import com.lumiai.flashlight.ui.components.FlashButton
 import com.lumiai.flashlight.ui.components.LumiIcons
 import com.lumiai.flashlight.ui.components.ModePanel
 import com.lumiai.flashlight.ui.theme.LumiColor
@@ -226,8 +226,7 @@ fun FlashScreen(
                 },
             )
 
-            val batteryState by viewModel.batteryState.collectAsState()
-
+            val btnSize = (screenH * 0.28f).coerceIn(130.dp, 180.dp)
             if (isScreenMode) {
                 // ── Screen ON: minimal close button ──────────────────────────
                 Spacer(Modifier.height(20.dp))
@@ -249,18 +248,13 @@ fun FlashScreen(
                 }
                 Spacer(Modifier.height(12.dp))
             } else {
-                PowerArcWidget(
-                    isOn          = isOn,
-                    isScreenMode  = false,
-                    currentMode   = mode,
-                    batteryLevel  = batteryState.level,
-                    isCharging    = batteryState.isCharging,
-                    intensity     = torchIntensity,
-                    onIntensityChange = { viewModel.setTorchIntensity(it) },
-                    modifier      = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
+                Spacer(Modifier.height(20.dp))
+                FlashButton(
+                    isOn    = isOn,
+                    onClick = { viewModel.toggleFlash() },
+                    size    = btnSize,
                 )
+                Spacer(Modifier.height(28.dp))
             }
 
             if (!isScreenMode) {
