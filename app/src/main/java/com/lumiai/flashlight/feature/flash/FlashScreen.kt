@@ -311,6 +311,7 @@ fun FlashScreen(
                     onScreenBrightnessChange = { viewModel.setScreenBrightness(it) },
                     strobeHz         = uiState.strobeHz,
                     discoBpm         = uiState.discoBpm,
+                    sosSpeed         = morseSpeed,   // SOS shares the morseSpeed key
                     onModeSelect     = { viewModel.activateMode(it) },
                     onModeConfig     = {
                         viewModel.activateMode(it)
@@ -318,6 +319,7 @@ fun FlashScreen(
                     },
                     onStrobeHzChange = { viewModel.updateStrobeHz(it) },
                     onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
+                    onSosSpeedChange = { viewModel.updateSosSpeed(it) },
                     isPro            = isPro,
                     onPaywall        = { viewModel.showPaywall() },
                     modifier         = Modifier.fillMaxWidth(),

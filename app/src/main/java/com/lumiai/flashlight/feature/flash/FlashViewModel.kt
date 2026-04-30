@@ -97,13 +97,26 @@ class FlashViewModel @Inject constructor(
         }
     }
 
-    // ── Morse speed (WPM multiplier) ────────────────────────────────────────
+    // ── Morse / SOS speed (shared WPM multiplier) ────────────────────────────
+    // SOS and Morse share the same speed key — both use ITU timing and feel natural
+    // at the same multipliers. Stored once in MORSE_SPEED DataStore key.
     private val _morseSpeed = MutableStateFlow(1.0f)  // 0.5× slow .. 4.0× fast
     val morseSpeed: StateFlow<Float> = _morseSpeed.asStateFlow()
+
     fun setMorseSpeed(v: Float) {
         val clamped = v.coerceIn(0.5f, 4.0f)
         _morseSpeed.value = clamped
         viewModelScope.launch { settingsRepository.setMorseSpeed(clamped) }
+    }
+
+    /** SOS speed — same backing store as Morse speed (shared ITU timing multiplier).
+     *  Re-applies to hardware immediately if SOS mode is currently ON. */
+    fun updateSosSpeed(v: Float) {
+        setMorseSpeed(v)
+        val state = uiState.value
+        if (state.currentMode is FlashMode.Sos && state.isFlashOn) {
+            viewModelScope.launch { flashRepository.activateMode(FlashMode.Sos) }
+        }
     }
 
     // ── Screen text (LED scroller) ──────────────────────────────────────────

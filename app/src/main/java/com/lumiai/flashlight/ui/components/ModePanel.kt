@@ -195,8 +195,9 @@ fun ModePanel(
     currentMode: FlashMode,
     strobeHz: Float,
     discoBpm: Float,
+    sosSpeed: Float = 1.0f,
     onModeSelect: (FlashMode) -> Unit,
-    onModeConfig: (FlashMode) -> Unit = {},   // opens config sheet
+    onModeConfig: (FlashMode) -> Unit = {},
     isConfigSheetOpen: Boolean = false,
     torchIntensity: Float = 1.0f,
     onTorchIntensityChange: (Float) -> Unit = {},
@@ -204,6 +205,7 @@ fun ModePanel(
     onScreenBrightnessChange: (Float) -> Unit = {},
     onStrobeHzChange: (Float) -> Unit,
     onDiscoBpmChange: (Float) -> Unit,
+    onSosSpeedChange: (Float) -> Unit = {},
     isPro: Boolean = false,
     onPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -323,6 +325,19 @@ fun ModePanel(
                     )
                 }
                 else -> {}
+            }
+        }
+
+        // SOS speed selector — 4 buttons inline, visible only when SOS is selected
+        if (selectedTab == 0 && !isConfigSheetOpen && currentMode is FlashMode.Sos) {
+            key("sos_speed") {
+                SosSpeedControl(
+                    currentSpeed = sosSpeed,
+                    onSpeedSelect = onSosSpeedChange,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                )
             }
         }
 
@@ -748,5 +763,79 @@ private fun ContextSlider(
             ),
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/**
+ * SOS speed selector — 4 buttons: ½× / 1× / 2× / 4×
+ * Mirrors the Morse speed UI pattern for consistency.
+ * Lives inline below the SOS card, same as other mode controls.
+ */
+@Composable
+private fun SosSpeedControl(
+    currentSpeed: Float,
+    onSpeedSelect: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val options = listOf("½×" to 0.5f, "1×" to 1.0f, "2×" to 2.0f, "4×" to 4.0f)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(LumiColor.Navy800)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "SOS SPEED",
+                fontSize = 9.sp,
+                letterSpacing = 0.14.sp,
+                color = LumiColor.Gray600,
+                fontWeight = FontWeight.W500,
+            )
+            val label = when {
+                currentSpeed <= 0.6f -> "slow"
+                currentSpeed <= 1.1f -> "standard ITU"
+                currentSpeed <= 2.1f -> "fast"
+                else                 -> "burst"
+            }
+            Text(label, fontSize = 11.sp, color = LumiColor.Amber400, fontWeight = FontWeight.W500)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            options.forEach { (label, speed) ->
+                val selected = kotlin.math.abs(currentSpeed - speed) < 0.1f
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (selected) LumiColor.Amber400 else LumiColor.Navy700)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onSpeedSelect(speed) },
+                        )
+                        .padding(vertical = 10.dp),
+                ) {
+                    Text(
+                        label,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.W600,
+                        color = if (selected) LumiColor.Navy950 else LumiColor.White,
+                    )
+                }
+            }
+        }
     }
 }
