@@ -9,7 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
-import com.lumiai.flashlight.feature.flash.FlashScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.lumiai.flashlight.feature.flash.ModeConfigScreen
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.feature.onboarding.OnboardingScreen
 import com.lumiai.flashlight.feature.pro.ProPaywallScreen
@@ -69,6 +71,9 @@ fun LumiNavHost() {
                 viewModel      = flashViewModel,
                 onOpenSettings = { navController.navigate(NavRoute.Settings.route) },
                 onOpenPro      = { navController.navigate(NavRoute.Pro.route) },
+                onOpenModeConfig = { modeId ->
+                    navController.navigate(NavRoute.ModeConfig.route(modeId))
+                },
             )
         }
         composable(NavRoute.Settings.route) {
@@ -79,6 +84,17 @@ fun LumiNavHost() {
         }
         composable(NavRoute.Pro.route) {
             ProPaywallScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = NavRoute.ModeConfig.route,
+            arguments = listOf(navArgument("modeId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val modeId = backStackEntry.arguments?.getString("modeId") ?: "steady"
+            ModeConfigScreen(
+                modeId    = modeId,
+                viewModel = flashViewModel,
+                onBack    = { navController.popBackStack() },
+            )
         }
     }
 }

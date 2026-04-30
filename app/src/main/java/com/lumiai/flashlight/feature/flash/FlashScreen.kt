@@ -69,6 +69,7 @@ fun FlashScreen(
     viewModel: FlashViewModel,
     onOpenSettings: () -> Unit,
     onOpenPro: () -> Unit,
+    onOpenModeConfig: (modeId: String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -172,51 +173,6 @@ fun FlashScreen(
         }
     }
 
-    // ── Config BottomSheet ────────────────────────────────────────────────────
-    val showSheet by viewModel.showConfigSheet.collectAsState()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest  = { viewModel.closeConfigSheet() },
-            sheetState        = sheetState,
-            containerColor    = LumiColor.Navy800,
-            dragHandle        = null,
-        ) {
-            val smartSpeed     by viewModel.smartSpeed.collectAsState()
-                val sleepMinutes   by viewModel.sleepMinutes.collectAsState()
-                val micSensitivity by viewModel.micSensitivity.collectAsState()
-                ModeConfigSheet(
-                mode             = mode,
-                uiState          = uiState,
-                morseText        = morseText,
-                screenColor      = screenColor,
-                torchIntensity   = torchIntensity,
-                morseSpeed       = morseSpeed,
-                strobePattern    = strobePattern,
-                smartSpeed       = smartSpeed,
-                sleepMinutes     = sleepMinutes,
-                micSensitivity   = micSensitivity,
-                onStrobeHz       = { viewModel.updateStrobeHz(it) },
-                onDiscoBpm       = { viewModel.updateDiscoBpm(it) },
-                onMorseText      = { viewModel.updateMorseText(it) },
-                onScreenColor    = { viewModel.setScreenColor(it) },
-                onScreenBrightness = { viewModel.setScreenBrightness(it) },
-                onTorchIntensity = { viewModel.setTorchIntensity(it) },
-                onMorseSpeed     = { viewModel.setMorseSpeed(it) },
-                onStrobePattern  = { viewModel.setStrobePattern(it) },
-                onSmartSpeed     = { viewModel.setSmartSpeed(it) },
-                onSleepMinutes   = { viewModel.setSleepMinutes(it) },
-                onMicSensitivity = { viewModel.setMicSensitivity(it) },
-                onReactivate     = {
-                    // Re-activate AmbientSmart so AiModeController re-reads lux from scratch
-                    if (uiState.isFlashOn) viewModel.activateMode(FlashMode.AmbientSmart)
-                },
-                onDismiss        = { viewModel.closeConfigSheet() },
-            )
-        }
-    }
-
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -310,19 +266,16 @@ fun FlashScreen(
             if (!isScreenMode) {
                 ModePanel(
                     currentMode      = mode,
-                    isConfigSheetOpen = showSheet,
+                    isConfigSheetOpen = false,
                     torchIntensity         = torchIntensity,
                     onTorchIntensityChange  = { viewModel.setTorchIntensity(it) },
                     screenBrightness       = uiState.screenBrightness,
                     onScreenBrightnessChange = { viewModel.setScreenBrightness(it) },
                     strobeHz         = uiState.strobeHz,
                     discoBpm         = uiState.discoBpm,
-                    sosSpeed         = morseSpeed,   // SOS shares the morseSpeed key
+                    sosSpeed         = morseSpeed,
                     onModeSelect     = { viewModel.activateMode(it) },
-                    onModeConfig     = {
-                        viewModel.activateMode(it)
-                        viewModel.openConfigSheet()
-                    },
+                    onModeConfig     = { onOpenModeConfig(it.id) },
                     onStrobeHzChange = { viewModel.updateStrobeHz(it) },
                     onDiscoBpmChange = { viewModel.updateDiscoBpm(it) },
                     onSosSpeedChange = { viewModel.updateSosSpeed(it) },
@@ -918,7 +871,7 @@ private fun AutoOffChip(
 // ── Mode Config Bottom Sheet ──────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ModeConfigSheet(
+internal fun ModeConfigSheet(
     mode: FlashMode,
     uiState: FlashUiState,
     morseText: String,
