@@ -2,6 +2,7 @@ package com.lumiai.flashlight.core.di
 
 import com.lumiai.flashlight.core.data.repository.BillingRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.BillingRepository
+import com.lumiai.flashlight.core.data.repository.BatteryRepository
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -55,6 +56,11 @@ object AppModule {
         // BillingRepositoryImpl is NOT provided separately to avoid a second Singleton.
         return BillingRepositoryImpl(context)
     }
+
+    @Provides @Singleton
+    fun provideBatteryRepository(
+        @ApplicationContext context: Context,
+    ): BatteryRepository = BatteryRepository(context)
 
     @Provides @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =

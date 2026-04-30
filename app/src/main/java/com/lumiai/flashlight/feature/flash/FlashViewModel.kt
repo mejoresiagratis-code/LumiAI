@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.BillingRepository
+import com.lumiai.flashlight.core.data.repository.BatteryRepository
+import com.lumiai.flashlight.core.data.repository.BatteryState
 import com.lumiai.flashlight.core.data.repository.SettingsRepository
 import com.lumiai.flashlight.core.domain.model.UserSettings
 import com.lumiai.flashlight.core.domain.model.FlashMode
@@ -48,11 +50,16 @@ class FlashViewModel @Inject constructor(
     private val getProStatusUseCase: GetProStatusUseCase,
     private val purchaseProUseCase: PurchaseProUseCase,
     private val billingRepository: BillingRepository,
+    private val batteryRepository: BatteryRepository,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    // Battery state — exposed for PowerArcWidget
+    val batteryState: StateFlow<BatteryState> = batteryRepository.batteryState
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BatteryState(1f, false))
 
     private val _showPaywallEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val showPaywallEvent: SharedFlow<Unit> = _showPaywallEvent.asSharedFlow()
