@@ -88,7 +88,7 @@ fun PowerArcWidget(
     // Arc geometry
     val startAngle = 150f
     val sweepAngle = 240f
-    val arcPadding = 28.dp
+    val arcPadding = 16.dp    // smaller padding = larger arc relative to box
 
     val fillTarget = if (isOn) intensity else batteryLevel
     val animatedFill by animateFloatAsState(
@@ -99,7 +99,7 @@ fun PowerArcWidget(
 
     val infiniteTransition = rememberInfiniteTransition(label = "arcGlow")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.15f, targetValue = 0.45f,
+        initialValue = 0.25f, targetValue = 0.65f,  // stronger glow pulse
         animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "glowAlpha",
     )
@@ -128,7 +128,7 @@ fun PowerArcWidget(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.15f),
+                .aspectRatio(1.05f),   // nearly square — arc fills more of the screen
         ) {
             Canvas(
                 modifier = Modifier
@@ -161,13 +161,13 @@ fun PowerArcWidget(
                 arcCenter = Offset(size.width / 2f, size.height / 2f)
                 arcRadius = size.width / 2f
 
-                val strokeWidth = 14.dp.toPx()
+                val strokeWidth = 20.dp.toPx()   // thicker — matches mockup
                 val arcRect    = Size(size.width, size.height)
                 val topLeft    = Offset(0f, 0f)
 
-                // Track
+                // Track — very dark, almost invisible like mockup
                 drawArc(
-                    color      = if (isOn) LumiColor.Navy700 else LumiColor.Navy600,
+                    color      = LumiColor.Navy800,
                     startAngle = startAngle,
                     sweepAngle = sweepAngle,
                     useCenter  = false,
@@ -176,26 +176,26 @@ fun PowerArcWidget(
                     style      = Stroke(strokeWidth, cap = StrokeCap.Round),
                 )
 
-                // Glow
+                // Outer glow halo when ON
                 if (isOn) {
                     drawArc(
-                        color      = LumiColor.Amber400.copy(alpha = glowAlpha * animatedFill),
+                        color      = LumiColor.Amber400.copy(alpha = glowAlpha * animatedFill * 0.6f),
                         startAngle = startAngle,
                         sweepAngle = sweepAngle * animatedFill,
                         useCenter  = false,
-                        topLeft    = Offset(-strokeWidth * 0.8f, -strokeWidth * 0.8f),
-                        size       = Size(arcRect.width + strokeWidth * 1.6f, arcRect.height + strokeWidth * 1.6f),
-                        style      = Stroke(strokeWidth * 2.8f, cap = StrokeCap.Round),
+                        topLeft    = Offset(-strokeWidth, -strokeWidth),
+                        size       = Size(arcRect.width + strokeWidth * 2f, arcRect.height + strokeWidth * 2f),
+                        style      = Stroke(strokeWidth * 2.5f, cap = StrokeCap.Round),
                     )
                 }
 
-                // Fill
+                // Fill arc
                 val fillColor = when {
                     isCharging            -> Color(0xFF4ADE80L)
                     isOn                  -> LumiColor.Amber400
                     batteryLevel < 0.15f  -> Color(0xFFFF4444L)
                     batteryLevel < 0.30f  -> Color(0xFFFF9500L)
-                    else                  -> LumiColor.Navy500
+                    else                  -> LumiColor.Navy600
                 }
                 if (animatedFill > 0.01f) {
                     drawArc(
@@ -209,33 +209,33 @@ fun PowerArcWidget(
                     )
                 }
 
-                // Thumb when ON
+                // Thumb when ON — sized proportional to stroke
                 if (isOn) {
                     val thumbAngleRad = Math.toRadians(
                         (startAngle + sweepAngle * animatedFill).toDouble()
                     )
                     val tx = arcCenter.x + arcRadius * cos(thumbAngleRad).toFloat()
                     val ty = arcCenter.y + arcRadius * sin(thumbAngleRad).toFloat()
-                    drawCircle(color = LumiColor.Navy950, radius = strokeWidth * 0.55f, center = Offset(tx, ty))
+                    drawCircle(color = LumiColor.Navy950, radius = strokeWidth * 0.58f, center = Offset(tx, ty))
                     drawCircle(
                         color  = if (isDragging) LumiColor.Amber300 else LumiColor.Amber400,
-                        radius = strokeWidth * 0.42f,
+                        radius = strokeWidth * 0.40f,
                         center = Offset(tx, ty),
                     )
                 }
 
-                // Battery ticks when OFF
+                // Battery ticks when OFF — slightly more visible
                 if (!isOn) {
                     repeat(6) { i ->
                         val pct = i.toFloat() / 5f
                         val tickRad = Math.toRadians((startAngle + sweepAngle * pct).toDouble())
-                        val inner = arcRadius - strokeWidth * 0.9f
-                        val outer = arcRadius + strokeWidth * 0.9f
+                        val inner = arcRadius - strokeWidth * 0.85f
+                        val outer = arcRadius + strokeWidth * 0.85f
                         drawLine(
-                            color       = LumiColor.Navy800,
+                            color       = LumiColor.Navy700,
                             start       = Offset(arcCenter.x + inner * cos(tickRad).toFloat(), arcCenter.y + inner * sin(tickRad).toFloat()),
                             end         = Offset(arcCenter.x + outer * cos(tickRad).toFloat(), arcCenter.y + outer * sin(tickRad).toFloat()),
-                            strokeWidth = 2f,
+                            strokeWidth = 2.5f,
                             cap         = StrokeCap.Round,
                         )
                     }
