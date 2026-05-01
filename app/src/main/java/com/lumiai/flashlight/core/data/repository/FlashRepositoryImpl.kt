@@ -224,18 +224,23 @@ class FlashRepositoryImpl constructor(
 
     /** Change the current mode without activating flash (used when flash is OFF) */
     // PWM intensity simulation — used when hardware torch strength is not supported.
-    // Runs at 80 Hz (12.5ms period) — imperceptible to human eye.
-    // CRITICAL: only toggles the hardware LED. Never touches _isFlashOn — that's
-    // managed exclusively by setTorch()/toggleFlash() to avoid UI state corruption.
+    // Runs at ~83 Hz (12ms period) — imperceptible to human eye.
+    // CRITICAL: uses CameraX enableTorch() — never camera2 setTorchMode() while
+    // CameraX session is open. Mixing both APIs corrupts hardware state.
     private var pwmJob: Job? = null
     private val pwmScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val pwmPeriodMs = 12L  // ~83 Hz
 
     private fun setLedHardware(on: Boolean) {
-        // Direct camera2 toggle — no state side effects, no _isFlashOn changes
-        try {
-            backCameraId?.let { id -> cameraManager.setTorchMode(id, on) }
-        } catch (_: Exception) {}
+        // Always route through CameraX if session is open — camera2 conflicts with it.
+        val cameraX = cameraXCamera
+        if (cameraX != null) {
+            mainHandler.post { cameraX.cameraControl.enableTorch(on) }
+        } else {
+            // Only use camera2 if CameraX is not bound (no active session)
+            try { backCameraId?.let { id -> cameraManager.setTorchMode(id, on) } }
+            catch (_: Exception) {}
+        }
     }
 
     private fun startPwm(duty: Float) {
@@ -246,11 +251,10 @@ class FlashRepositoryImpl constructor(
         }
         val onMs  = (pwmPeriodMs * duty).toLong().coerceAtLeast(1L)
         val offMs = (pwmPeriodMs - onMs).coerceAtLeast(1L)
-        setLedHardware(true)  // ensure LED is on before starting the cycle
         pwmJob = pwmScope.launch {
             while (isActive) {
-                mainHandler.post { setLedHardware(true)  }; delay(onMs)
-                mainHandler.post { setLedHardware(false) }; delay(offMs)
+                setLedHardware(true);  delay(onMs)
+                setLedHardware(false); delay(offMs)
             }
         }
     }
@@ -258,14 +262,13 @@ class FlashRepositoryImpl constructor(
     fun stopPwm() {
         pwmJob?.cancel()
         pwmJob = null
-        // Don't touch LED here — caller decides whether to leave it on or off
     }
 
     /**
-     * Sets torch brightness level (0.0–1.0) WITHOUT changing logical flash state.
-     * _isFlashOn is managed by setTorch()/toggleFlash() only.
-     * - API 33+ with hardware multi-level: turnOnTorchWithStrengthLevel
-     * - All other devices (Honor etc.): PWM at ~83 Hz
+     * Sets torch brightness (0.0–1.0) WITHOUT changing logical flash state (_isFlashOn).
+     * - API 33+ with hardware multi-level support: uses turnOnTorchWithStrengthLevel
+     * - All other devices (Honor/MagicOS etc.): PWM simulation via CameraX
+     * The torch must already be ON before calling this — call setTorch(true) first.
      */
     fun setTorchStrength(level: Float) {
         val clamped = level.coerceIn(0f, 1f)
@@ -274,14 +277,15 @@ class FlashRepositoryImpl constructor(
             try {
                 backCameraId?.let { id ->
                     val strength = (clamped * maxTorchStrength).toInt().coerceAtLeast(1)
-                    cameraManager.setTorchMode(id, true)
+                    // turnOnTorchWithStrengthLevel only works with camera2 API directly.
+                    // It does not conflict with CameraX when torch is already enabled.
                     cameraManager.turnOnTorchWithStrengthLevel(id, strength)
                 }
             } catch (_: Exception) {
                 startPwm(clamped)  // hardware API failed — use PWM
             }
         } else {
-            startPwm(clamped)  // PWM fallback for all non-supporting devices
+            startPwm(clamped)  // PWM fallback for Honor/MagicOS and all non-supporting devices
         }
     }
 
