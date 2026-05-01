@@ -1034,29 +1034,7 @@ internal fun ModeConfigSheet(
             is FlashMode.Voice             -> stringResource(R.string.config_voice_title)
             is FlashMode.AmbientSmart      -> stringResource(R.string.config_ambient_title)
             is FlashMode.CustomRhythm      -> stringResource(R.string.config_custom_title)
-            is FlashMode.Walk -> {
-                val ctx = androidx.compose.ui.platform.LocalContext.current
-                val stepAvailable = remember {
-                    ctx.getSystemService(android.content.Context.SENSOR_SERVICE)
-                        .let { it as android.hardware.SensorManager }
-                        .getDefaultSensor(android.hardware.Sensor.TYPE_STEP_DETECTOR) != null
-                }
-                val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    androidx.core.content.ContextCompat.checkSelfPermission(
-                        ctx, android.Manifest.permission.ACTIVITY_RECOGNITION
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                } else true
-
-                val (statusText, statusColor) = when {
-                    !hasPermission -> stringResource(R.string.walk_sensor_permission) to LumiColor.Amber400
-                    !stepAvailable -> stringResource(R.string.walk_sensor_fallback) to LumiColor.Gray400
-                    else           -> stringResource(R.string.walk_sensor_available) to LumiColor.Success
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(statusColor))
-                    Text(statusText, fontSize = 12.sp, color = statusColor, fontWeight = FontWeight.W500)
-                }
-            }
+            is FlashMode.Walk              -> stringResource(R.string.mode_walk)
             else -> return  // ReadingMode — hidden, no config needed yet
         }
         Text(
@@ -1496,6 +1474,32 @@ internal fun ModeConfigSheet(
                 }
                 Text(speedLabel, fontSize = 11.sp,
                     color = LumiColor.Amber400, fontWeight = FontWeight.W500)
+            }
+
+            is FlashMode.Walk -> {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val stepAvailable = remember {
+                    (ctx.getSystemService(android.content.Context.SENSOR_SERVICE)
+                        as android.hardware.SensorManager)
+                        .getDefaultSensor(android.hardware.Sensor.TYPE_STEP_DETECTOR) != null
+                }
+                val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        ctx, android.Manifest.permission.ACTIVITY_RECOGNITION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                } else true
+                val (statusText, statusColor) = when {
+                    !hasPermission -> stringResource(R.string.walk_sensor_permission) to LumiColor.Amber400
+                    !stepAvailable -> stringResource(R.string.walk_sensor_fallback) to LumiColor.Gray400
+                    else           -> stringResource(R.string.walk_sensor_available) to LumiColor.Success
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(statusColor))
+                    Text(statusText, fontSize = 12.sp, color = statusColor, fontWeight = FontWeight.W500)
+                }
             }
 
             else -> {}
