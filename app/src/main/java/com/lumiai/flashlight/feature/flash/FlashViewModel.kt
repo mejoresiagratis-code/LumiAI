@@ -90,10 +90,11 @@ class FlashViewModel @Inject constructor(
         _torchIntensity.value = clamped
         viewModelScope.launch {
             settingsRepository.setTorchIntensity(clamped)
-            // Live-apply if Steady is currently ON
+            // Live-apply if flash is ON: call setTorchStrength directly — don't
+            // re-activateMode() which would cancel and restart the whole mode
             val state = uiState.value
-            if (state.currentMode is FlashMode.Steady && state.isFlashOn) {
-                flashRepository.activateMode(FlashMode.Steady)
+            if (state.isFlashOn && state.currentMode is FlashMode.Steady) {
+                flashRepository.setTorchStrength(clamped)
             }
         }
     }
