@@ -984,14 +984,14 @@ internal fun ModeConfigSheet(
     mode: FlashMode,
     uiState: FlashUiState,
     morseText: String,
-    torchIntensity: Float = 1.0f,
+    // torchIntensity: Float — disabled, see intensity slider comment above
     morseSpeed: Float = 1.0f,
     strobePattern: StrobePattern = StrobePattern.SINGLE,
     onStrobePattern: (StrobePattern) -> Unit = {},
     smartSpeed: Float = 1.0f,
     sleepMinutes: Int = 3,
     micSensitivity: Float = 1.0f,
-    onTorchIntensity: (Float) -> Unit = {},
+    onTorchIntensity: (Float) -> Unit = {}, // disabled — slider hidden
     onScreenBrightness: (Float) -> Unit = {},
     onMorseSpeed: (Float) -> Unit = {},
     onStrobeHz: (Float) -> Unit,
@@ -1044,36 +1044,10 @@ internal fun ModeConfigSheet(
             color      = LumiColor.White,
         )
 
-        // ── Intensity slider for torch modes ─────────────────────────────────
-        val hasTorchIntensity = mode is FlashMode.Steady  ||
-                                mode is FlashMode.Strobe  ||
-                                mode is FlashMode.Disco   ||
-                                mode is FlashMode.MorseCustom
-        if (hasTorchIntensity) {
-            var intensity by remember { mutableFloatStateOf(torchIntensity) }
-            val intensityPct = (intensity * 100).toInt()
-            Text("FLASH INTENSITY", fontSize = 10.sp, color = LumiColor.Gray600,
-                fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
-            Text("$intensityPct%", fontSize = 24.sp,
-                fontWeight = FontWeight.W700, color = LumiColor.Amber400)
-            Slider(
-                value = intensity,
-                onValueChange = { intensity = it },
-                onValueChangeFinished = { onTorchIntensity(intensity) },
-                valueRange = 0.1f..1.0f,
-                steps = 17,
-                colors = SliderDefaults.colors(
-                    thumbColor = LumiColor.Amber400,
-                    activeTrackColor = LumiColor.Amber400,
-                    inactiveTrackColor = LumiColor.Navy600,
-                ),
-            )
-            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                Text("10%", fontSize = 11.sp, color = LumiColor.Gray600)
-                Text("100%", fontSize = 11.sp, color = LumiColor.Gray600)
-            }
-
-        }
+        // ── Intensity slider — disabled (torch strength API unstable on most devices)
+        // val hasTorchIntensity = mode is FlashMode.Steady || mode is FlashMode.Strobe ||
+        //     mode is FlashMode.Disco || mode is FlashMode.MorseCustom
+        // When re-enabled: add slider here calling onTorchIntensity()
 
         when (mode) {
             is FlashMode.Strobe -> {

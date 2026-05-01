@@ -113,21 +113,9 @@ class FlashRepositoryImpl constructor(
 
         when (mode) {
             is FlashMode.Steady -> {
-                val intensity = torchIntensityProvider?.invoke() ?: 1.0f
-                if (intensity >= 0.99f) {
-                    // Full brightness — stop any PWM and turn on directly
-                    stopPwm()
-                    setTorch(true)
-                } else if (supportsTorchStrength) {
-                    // Hardware multi-level: turn on then adjust strength
-                    setTorch(true)
-                    mainHandler.postDelayed({ setTorchStrength(intensity) }, 50L)
-                } else {
-                    // PWM fallback (Honor, most devices): logical state = ON,
-                    // hardware controlled by PWM cycle
-                    _isFlashOn.value = true
-                    startPwm(intensity)
-                }
+                // Intensity disabled — always full brightness until torch strength API is stable
+                stopPwm()
+                setTorch(true)
             }
             is FlashMode.Screen -> {
                 // Screen mode: UI-only flash — torch hardware stays OFF.
