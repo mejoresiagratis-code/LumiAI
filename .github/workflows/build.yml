@@ -55,11 +55,14 @@ jobs:
         run: ./gradlew testDebugUnitTest --no-daemon -q
         continue-on-error: true
 
-      # Debug APK — siempre
+      # Debug APK — solo en push a main y PRs
+      # En tags el workflow ya construye el release — el debug sería un duplicado inútil
       - name: Build Debug APK
+        if: "!startsWith(github.ref, 'refs/tags/')"
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename Debug APK
+        if: "!startsWith(github.ref, 'refs/tags/')"
         run: |
           VERSION=$(grep versionName app/build.gradle.kts | grep -oP '"\K[^"]+')
           mv app/build/outputs/apk/debug/app-debug.apk \
@@ -72,6 +75,7 @@ jobs:
           echo "App Distribution upload — configure FIREBASE_TOKEN secret to enable" || true
 
       - name: Upload Debug APK
+        if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_NAME_BASE }}-debug-${{ github.ref_name }}
@@ -116,8 +120,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/release/*.apk   # solo el release firmado
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
