@@ -171,3 +171,18 @@ if [ "${align_hits:-0}" -gt "0" ]; then
 else
   pass "No Modifier.align() calls"
 fi
+
+# ── 16. COMPOSABLES IN VAL ASSIGNMENT (debug passes, release fails) ────────────
+header "16. Composable calls inside val = when(){} blocks"
+# Heuristic: 'remember' or 'stringResource' inside a when block that's part of a val assignment
+# Only checks FlashScreen where this pattern is most common
+FS="$SRC/feature/flash/FlashScreen.kt"
+# Look for 'val title = when' followed by 'remember' before the closing brace
+if grep -q "val title = when" "$FS" 2>/dev/null; then
+  # Extract the title=when block and check for composable calls inside it
+  awk '/val title = when/,/^        \)/' "$FS" | grep -q "remember\|LocalContext\|checkSelfPermission" \
+    && fail "Composable call (remember/LocalContext) inside 'val title = when()' block in FlashScreen" \
+    || pass "No composable calls in title=when() block"
+else
+  pass "No title=when() block found"
+fi
