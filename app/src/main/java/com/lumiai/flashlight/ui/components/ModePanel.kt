@@ -191,6 +191,8 @@ fun LumiModeIcon(
 @Composable
 fun ModePanel(
     currentMode: FlashMode,
+    selectedTab: Int = 0,
+    onTabChange: (Int) -> Unit = {},
     onModeSelect: (FlashMode) -> Unit,
     onModeConfig: (FlashMode) -> Unit = {},
     isPro: Boolean = false,
@@ -213,15 +215,10 @@ fun ModePanel(
 
     val hasAiModes = visibleAiItems.isNotEmpty()
 
-    // selectedTab: default to Flash (0). If current mode is a visible Pro mode, show AI tab.
-    var selectedTab by remember {
-        mutableIntStateOf(if (currentMode.isPro && !currentMode.hidden && hasAiModes) 1 else 0)
-    }
-    // Snap back to Flash tab if AI tab disappears (all modes hidden)
-    if (!hasAiModes && selectedTab == 1) selectedTab = 0
+    // Tab driven by ViewModel — persists across navigation to ModeConfigScreen and back
+    val effectiveTab = if (!hasAiModes) 0 else selectedTab
 
     Column(modifier = modifier) {
-        // Only render the tab row when AI modes are visible
         if (hasAiModes) {
         Row(
             modifier = Modifier
@@ -233,7 +230,7 @@ fun ModePanel(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             listOf(stringResource(R.string.tab_flash), stringResource(R.string.tab_ai_modes)).forEachIndexed { idx, label ->
-                val active = selectedTab == idx
+                val active = effectiveTab == idx
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -243,7 +240,7 @@ fun ModePanel(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { selectedTab = idx },
+                            onClick = { onTabChange(idx) },
                         )
                         .padding(vertical = 8.dp),
                 ) {
@@ -267,7 +264,7 @@ fun ModePanel(
         // No inline sliders or controls — ⚙ button on every card opens config.
 
         AnimatedContent(
-            targetState = selectedTab,
+            targetState = effectiveTab,
             transitionSpec = {
                 if (targetState > initialState)
                     slideInHorizontally { it / 3 } + fadeIn(tween(160)) togetherWith

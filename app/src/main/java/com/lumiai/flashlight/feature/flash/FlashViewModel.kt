@@ -188,6 +188,11 @@ class FlashViewModel @Inject constructor(
     private val _screenTab = MutableStateFlow(0)
     val screenTab: StateFlow<Int> = _screenTab.asStateFlow()
 
+    // Main screen mode panel tab (0=Flash, 1=AI Modes) — persists across ModeConfigScreen navigation
+    private val _modePanelTab = MutableStateFlow(0)
+    val modePanelTab: StateFlow<Int> = _modePanelTab.asStateFlow()
+    fun setModePanelTab(tab: Int) { _modePanelTab.value = tab }
+
     // Hue (0..360) and temperature (0..1 = 2700K..6500K)
     private val _screenHue = MutableStateFlow(180f)
     val screenHue: StateFlow<Float> = _screenHue.asStateFlow()
@@ -308,13 +313,11 @@ class FlashViewModel @Inject constructor(
         viewModelScope.launch {
             val state = uiState.value
             val isPro = state.proStatus == ProStatus.Pro
-            // Pro check upfront — show paywall immediately without touching hardware
             if (mode.isPro && !isPro) {
-                flashRepository.setCurrentMode(mode)  // select card visually
+                flashRepository.setCurrentMode(mode)
                 showPaywall()
                 return@launch
             }
-            // Skip counter if selecting the same mode already active
             val isNewMode = mode.id != state.currentMode.id
             if (state.isFlashOn) {
                 val result = toggleFlashUseCase(mode, isPro)
@@ -323,8 +326,9 @@ class FlashViewModel @Inject constructor(
                 flashRepository.setCurrentMode(mode)
             }
             settingsRepository.updateLastMode(mode.id)
+            // Auto-switch panel tab: Pro mode → AI tab, Free mode → Flash tab
+            if (mode.isPro) setModePanelTab(1) else setModePanelTab(0)
 
-            // Interstitial counter — only for Free users on actual mode changes
             if (!isPro && isNewMode) {
                 modeChangeCount++
                 if (modeChangeCount % interstitialEvery == 0) {

@@ -274,8 +274,11 @@ fun FlashScreen(
             }
 
             if (!isScreenMode) {
+                val modePanelTab by viewModel.modePanelTab.collectAsState()
                 ModePanel(
                     currentMode  = mode,
+                    selectedTab  = modePanelTab,
+                    onTabChange  = { viewModel.setModePanelTab(it) },
                     onModeSelect = { viewModel.activateMode(it) },
                     onModeConfig = { onOpenModeConfig(it.id) },
                     isPro        = isPro,
@@ -610,7 +613,7 @@ private fun ScreenControlPanel(
         }
         Spacer(Modifier.height(10.dp))
         // Tabs
-        val tabLabels = listOf("Solid", "Hue", "Temp", "FX")
+        val tabLabels = listOf(stringResource(R.string.tab_screen_solid), stringResource(R.string.tab_screen_hue), stringResource(R.string.tab_screen_temp), stringResource(R.string.tab_screen_fx))
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(6.dp)) {
             tabLabels.forEachIndexed { i, label ->
                 val sel = screenTab == i
@@ -754,10 +757,10 @@ private fun ScreenControlPanel(
             }
             3 -> { // FX
                 val effects = listOf(
-                    ScreenEffect.CANDELA to "Candela",
-                    ScreenEffect.POLICE  to "Police",
-                    ScreenEffect.RAINBOW to "Rainbow",
-                    ScreenEffect.STROBE  to "Strobe",
+                    ScreenEffect.CANDELA to stringResource(R.string.fx_candela),
+                    ScreenEffect.POLICE  to stringResource(R.string.fx_police),
+                    ScreenEffect.RAINBOW to stringResource(R.string.fx_rainbow),
+                    ScreenEffect.STROBE  to stringResource(R.string.fx_strobe),
                 )
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     effects.forEach { (fx, label) ->
@@ -1031,7 +1034,30 @@ internal fun ModeConfigSheet(
             is FlashMode.Voice             -> stringResource(R.string.config_voice_title)
             is FlashMode.AmbientSmart      -> stringResource(R.string.config_ambient_title)
             is FlashMode.CustomRhythm      -> stringResource(R.string.config_custom_title)
-            else -> return  // ReadingMode, Walk — hidden, no config needed yet
+            is FlashMode.Walk -> {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val stepAvailable = remember {
+                    ctx.getSystemService(android.content.Context.SENSOR_SERVICE)
+                        .let { it as android.hardware.SensorManager }
+                        .getDefaultSensor(android.hardware.Sensor.TYPE_STEP_DETECTOR) != null
+                }
+                val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        ctx, android.Manifest.permission.ACTIVITY_RECOGNITION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                } else true
+
+                val (statusText, statusColor) = when {
+                    !hasPermission -> stringResource(R.string.walk_sensor_permission) to LumiColor.Amber400
+                    !stepAvailable -> stringResource(R.string.walk_sensor_fallback) to LumiColor.Gray400
+                    else           -> stringResource(R.string.walk_sensor_available) to LumiColor.Success
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(statusColor))
+                    Text(statusText, fontSize = 12.sp, color = statusColor, fontWeight = FontWeight.W500)
+                }
+            }
+            else -> return  // ReadingMode — hidden, no config needed yet
         }
         Text(
             title,
@@ -1096,9 +1122,9 @@ internal fun ModeConfigSheet(
                 Text("BURST PATTERN", fontSize = 10.sp, color = LumiColor.Gray600,
                     fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
                 val patternOptions = listOf(
-                    "Single" to StrobePattern.SINGLE,
-                    "Double" to StrobePattern.DOUBLE,
-                    "Triple" to StrobePattern.TRIPLE,
+                    stringResource(R.string.burst_single) to StrobePattern.SINGLE,
+                    stringResource(R.string.burst_double) to StrobePattern.DOUBLE,
+                    stringResource(R.string.burst_triple) to StrobePattern.TRIPLE,
                 )
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     patternOptions.forEach { (label, p) ->
@@ -1141,8 +1167,8 @@ internal fun ModeConfigSheet(
                         }
                     }
                 }
-                Text("Single = classic · Double/Triple = burst per cycle",
-                    fontSize = 10.sp, color = LumiColor.Gray600)
+                Text(stringResource(R.string.burst_hint),
+                    fontSize = 10.sp, color = LumiColor.Gray400)
             }
             is FlashMode.Disco -> {
                 var bpm by remember { mutableFloatStateOf(uiState.discoBpm) }
@@ -1193,14 +1219,15 @@ internal fun ModeConfigSheet(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        if (tapTimes.size < 2) "TAP BEAT  👆" else "TAP BEAT  ${bpm.toInt()} BPM",
+                        if (tapTimes.size < 2) stringResource(R.string.tap_tempo_btn)
+                        else stringResource(R.string.tap_tempo_bpm, bpm.toInt()),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.W600,
                         color = LumiColor.Amber400,
                     )
                 }
-                Text("Tap 3+ times to set tempo by feel",
-                    fontSize = 10.sp, color = LumiColor.Gray600)
+                Text(stringResource(R.string.tap_tempo_hint),
+                    fontSize = 10.sp, color = LumiColor.Gray400)
             }
             is FlashMode.MorseCustom -> {
                 val morsePreview = remember(morseText) {
@@ -1209,7 +1236,7 @@ internal fun ModeConfigSheet(
                 OutlinedTextField(
                     value         = morseText,
                     onValueChange = { onMorseText(it.take(60)) },
-                    placeholder   = { Text("Type your message...",
+                    placeholder   = { Text(stringResource(R.string.morse_placeholder),
                         fontSize = 14.sp, color = LumiColor.Gray600) },
                     singleLine    = false,
                     maxLines      = 3,
@@ -1260,15 +1287,15 @@ internal fun ModeConfigSheet(
                         }
                     }
                 }
-                Text("½× = slow · 1× = standard ITU · 4× = fast burst",
-                    fontSize = 10.sp, color = LumiColor.Gray600)
+                Text(stringResource(R.string.morse_speed_hint),
+                    fontSize = 10.sp, color = LumiColor.Gray400)
             }
             is FlashMode.AmbientSmart -> {
                 Text("AMBIENT SENSITIVITY", fontSize = 10.sp, color = LumiColor.Gray600,
                     fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
                 Spacer(Modifier.height(4.dp))
-                Text("Mode reads lux once at activation and stays steady.",
-                    fontSize = 12.sp, color = LumiColor.Gray500, lineHeight = 17.sp)
+                Text(stringResource(R.string.ambient_desc),
+                    fontSize = 12.sp, color = LumiColor.Gray400, lineHeight = 17.sp)
                 Spacer(Modifier.height(12.dp))
                 Box(
                     modifier = Modifier
@@ -1288,26 +1315,26 @@ internal fun ModeConfigSheet(
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Re-read ambient light now", fontSize = 14.sp,
+                    Text(stringResource(R.string.ambient_reread), fontSize = 14.sp,
                         color = LumiColor.Amber400, fontWeight = FontWeight.W600)
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Tap to re-sample the current light level and adjust.",
-                    fontSize = 11.sp, color = LumiColor.Gray600)
+                Text(stringResource(R.string.ambient_reread_hint),
+                    fontSize = 11.sp, color = LumiColor.Gray400)
             }
             is FlashMode.CustomRhythm -> {
                 Text("CUSTOM RHYTHM", fontSize = 10.sp, color = LumiColor.Gray600,
                     fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
                 Spacer(Modifier.height(4.dp))
-                Text("Pattern changes automatically based on time of day:",
-                    fontSize = 12.sp, color = LumiColor.Gray500)
+                Text(stringResource(R.string.custom_desc),
+                    fontSize = 12.sp, color = LumiColor.Gray400)
                 Spacer(Modifier.height(10.dp))
                 val patterns = listOf(
-                    "6–9h" to "Fast triple · active morning",
-                    "10–14h" to "Steady double · work hours",
-                    "15–19h" to "Slow pulse · afternoon",
-                    "20–22h" to "Very slow · evening wind-down",
-                    "23–5h" to "Ultra slow · night",
+                    stringResource(R.string.rhythm_morning_label) to stringResource(R.string.rhythm_morning),
+                    stringResource(R.string.rhythm_work_label)     to stringResource(R.string.rhythm_work),
+                    stringResource(R.string.rhythm_afternoon_label) to stringResource(R.string.rhythm_afternoon),
+                    stringResource(R.string.rhythm_evening_label)  to stringResource(R.string.rhythm_evening),
+                    stringResource(R.string.rhythm_night_label)    to stringResource(R.string.rhythm_night),
                 )
                 patterns.forEach { (time, desc) ->
                     Row(
@@ -1344,8 +1371,8 @@ internal fun ModeConfigSheet(
                         }
                     }
                 }
-                Text("Faster = more reactive outdoors. Slower = more subtle indoors.",
-                    fontSize = 11.sp, color = LumiColor.Gray600)
+                Text(stringResource(R.string.smart_hint),
+                    fontSize = 11.sp, color = LumiColor.Gray400)
             }
             is FlashMode.SleepTimer -> {
                 Text("FADE DURATION", fontSize = 10.sp, color = LumiColor.Gray600,
@@ -1379,9 +1406,9 @@ internal fun ModeConfigSheet(
                     fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
                 var sens by remember { mutableFloatStateOf(micSensitivity) }
                 val sensLabel = when {
-                    sens < 0.8f -> "Low — only loud sounds"
-                    sens < 1.3f -> "Medium — normal sounds"
-                    else        -> "High — very sensitive"
+                    sens < 0.8f -> stringResource(R.string.sensitivity_low)
+                    sens < 1.3f -> stringResource(R.string.sensitivity_mid)
+                    else        -> stringResource(R.string.sensitivity_high)
                 }
                 Text(sensLabel, fontSize = 14.sp, color = LumiColor.Amber400, fontWeight = FontWeight.W600)
                 Slider(
@@ -1397,8 +1424,8 @@ internal fun ModeConfigSheet(
                     ),
                 )
                 Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                    Text("Low", fontSize = 11.sp, color = LumiColor.Gray600)
-                    Text("High", fontSize = 11.sp, color = LumiColor.Gray600)
+                    Text(stringResource(R.string.sensitivity_label_low), fontSize = 11.sp, color = LumiColor.Gray400)
+                    Text(stringResource(R.string.sensitivity_label_high), fontSize = 11.sp, color = LumiColor.Gray400)
                 }
             }
 

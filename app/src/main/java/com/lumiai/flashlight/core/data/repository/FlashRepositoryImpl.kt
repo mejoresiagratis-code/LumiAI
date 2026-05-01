@@ -17,6 +17,13 @@ import com.lumiai.flashlight.core.util.StrobeController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 
 class FlashRepositoryImpl constructor(
@@ -208,29 +215,58 @@ class FlashRepositoryImpl constructor(
     }
 
     /** Change the current mode without activating flash (used when flash is OFF) */
+    // PWM intensity simulation — used when hardware torch strength is not supported.
+    // Runs at 80 Hz (12.5ms period) — invisible and silent to human eye.
+    // duty = 0.0 (off) → 1.0 (full on). Coroutine-safe, cancellable.
+    private var pwmJob: Job? = null
+    private val pwmScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val pwmPeriodMs = 12L  // 80 Hz
+
+    private fun startPwm(duty: Float) {
+        pwmJob?.cancel()
+        if (duty >= 0.99f) { mainHandler.post { setTorchOnMain(true) }; return }
+        if (duty <= 0.01f) { mainHandler.post { setTorchOnMain(false) }; return }
+        val onMs  = (pwmPeriodMs * duty).toLong().coerceAtLeast(1L)
+        val offMs = (pwmPeriodMs - onMs).coerceAtLeast(1L)
+        pwmJob = pwmScope.launch {
+            while (isActive) {
+                mainHandler.post { setTorchOnMain(true) };  delay(onMs)
+                mainHandler.post { setTorchOnMain(false) }; delay(offMs)
+            }
+        }
+    }
+
+    fun stopPwm() {
+        pwmJob?.cancel()
+        pwmJob = null
+    }
+
     /**
      * Sets torch to a specific brightness level (0.0–1.0).
-     * Only available on API 33+ devices with multi-level torch support.
-     * Falls back to regular on/off on unsupported devices.
+     * - API 33+ with hardware multi-level support: uses turnOnTorchWithStrengthLevel
+     * - All other devices (incl. Honor/MagicOS): PWM simulation at 80 Hz
+     *   The duty cycle is imperceptible to the eye but real hardware toggle.
      */
     fun setTorchStrength(level: Float) {
         val clamped = level.coerceIn(0f, 1f)
         if (android.os.Build.VERSION.SDK_INT >= 33 && supportsTorchStrength) {
+            stopPwm()
             try {
                 backCameraId?.let { id ->
                     val strength = (clamped * maxTorchStrength).toInt().coerceAtLeast(1)
-                    // turnOnTorchWithStrengthLevel requires torch already enabled.
-                    // Ensure it is before setting strength level.
                     cameraManager.setTorchMode(id, true)
                     cameraManager.turnOnTorchWithStrengthLevel(id, strength)
                     _isFlashOn.value = clamped > 0f
                 }
             } catch (e: Exception) {
-                // Fallback: enable at full brightness via CameraX
-                mainHandler.post { setTorchOnMain(clamped > 0f) }
+                // Hardware API failed — fall through to PWM
+                startPwm(clamped)
+                _isFlashOn.value = clamped > 0f
             }
         } else {
-            setTorch(clamped > 0.5f)
+            // PWM fallback — works on all devices including Honor/MagicOS
+            startPwm(clamped)
+            _isFlashOn.value = clamped > 0f
         }
     }
 
@@ -261,6 +297,7 @@ class FlashRepositoryImpl constructor(
     override fun release() {
         strobeController.stop()
         aiController.stop()
+        stopPwm()
         runCatching { setTorchCamera2(false) }
         cameraProvider?.unbindAll()
         cameraXCamera = null

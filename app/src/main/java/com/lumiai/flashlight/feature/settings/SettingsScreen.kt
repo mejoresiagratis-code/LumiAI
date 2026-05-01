@@ -83,33 +83,6 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
-            // ── FLASH ──────────────────────────────────────────────────────
-            SettingsSection(stringResource(R.string.settings_section_flash)) {
-                SettingsSliderRow(
-                    label        = "Strobe frequency",
-                    value        = settings.strobeHz,
-                    range        = 0.5f..20f,
-                    displayValue = { "${it.toInt()} Hz" },
-                    onChange     = { viewModel.setStrobeHz(it) },
-                )
-                SettingsDivider()
-                SettingsSliderRow(
-                    label        = "Disco tempo",
-                    value        = settings.discoBpm,
-                    range        = 60f..200f,
-                    displayValue = { "${it.toInt()} BPM" },
-                    onChange     = { viewModel.setDiscoBpm(it) },
-                )
-                SettingsDivider()
-                SettingsSliderRow(
-                    label        = "Screen brightness",
-                    value        = settings.screenBrightness,
-                    range        = 0.1f..1f,
-                    displayValue = { "${(it * 100).toInt()}%" },
-                    onChange     = { viewModel.setScreenBrightness(activity, it) },
-                )
-            }
-
             // ── BEHAVIOUR ─────────────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_behaviour)) {
                 SettingsToggleRow(
@@ -134,8 +107,7 @@ fun SettingsScreen(
                 )
             }
 
-
-            // ── TIMER ─────────────────────────────────────────────────────────
+            // ── TIMER ─────────────────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_autooff)) {
                 AutoOffOption.entries.forEachIndexed { i, option ->
                     if (i > 0) SettingsDivider()
@@ -161,7 +133,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── FLASH NOTIFICATIONS ────────────────────────────────────────────
+            // ── FLASH NOTIFICATIONS ────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_notifications)) {
                 val hasPermission = FlashNotificationService.isPermissionGranted(context)
                 if (hasPermission) {
@@ -188,7 +160,7 @@ fun SettingsScreen(
                     SettingsDivider()
                     SettingsToggleRow(
                         label    = stringResource(R.string.settings_notif_other),
-                        sublabel = "All other notifications",
+                        sublabel = stringResource(R.string.settings_notif_other_sub),
                         checked  = viewModel.notifFlashOther.value,
                         onChange = { viewModel.setNotifFlashOther(it) },
                     )
@@ -209,9 +181,9 @@ fun SettingsScreen(
             SettingsSection(stringResource(R.string.settings_section_pro)) {
                 if (isPro) {
                     SettingsInfoRow(
-                        label      = "LumiAI Pro",
+                        label      = stringResource(R.string.settings_pro_name),
                         sublabel   = stringResource(R.string.settings_pro_active),
-                        badge      = "ACTIVE",
+                        badge      = stringResource(R.string.settings_pro_badge_active),
                         badgeColor = LumiColor.Success,
                     )
                     SettingsDivider()
@@ -225,35 +197,57 @@ fun SettingsScreen(
                 }
             }
 
-            // ── ABOUT ─────────────────────────────────────────────────────
+            // ── LANGUAGE — dropdown ────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_language)) {
                 val settingsActivity = LocalContext.current as? android.app.Activity
                 val currentLang = uiState.settings.appLanguage
-                com.lumiai.flashlight.core.util.LanguageManager.SUPPORTED_LOCALES
-                    .entries.forEachIndexed { i, (code, displayName) ->
-                    if (i > 0) SettingsDivider()
+                var dropdownExpanded by remember { mutableStateOf(false) }
+                val currentDisplayName = com.lumiai.flashlight.core.util.LanguageManager
+                    .SUPPORTED_LOCALES[currentLang] ?: currentLang
+
+                Box {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                if (code != currentLang && settingsActivity != null) {
-                                    viewModel.setLanguage(code, settingsActivity)
-                                }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                            .clickable { dropdownExpanded = true }
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(displayName, fontSize = 14.sp,
+                        Text(currentDisplayName, fontSize = 14.sp,
                             fontWeight = FontWeight.W500, color = LumiColor.White)
-                        if (code == currentLang) {
-                            Box(modifier = Modifier.size(8.dp).clip(CircleShape)
-                                .background(LumiColor.Amber400))
+                        Text("▾", fontSize = 14.sp, color = LumiColor.Gray400)
+                    }
+                    DropdownMenu(
+                        expanded = dropdownExpanded,
+                        onDismissRequest = { dropdownExpanded = false },
+                        modifier = Modifier.background(LumiColor.Navy700),
+                    ) {
+                        com.lumiai.flashlight.core.util.LanguageManager.SUPPORTED_LOCALES
+                            .entries.forEach { (code, displayName) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        displayName,
+                                        fontSize = 14.sp,
+                                        color = if (code == currentLang) LumiColor.Amber400 else LumiColor.White,
+                                        fontWeight = if (code == currentLang) FontWeight.W600 else FontWeight.W400,
+                                    )
+                                },
+                                onClick = {
+                                    dropdownExpanded = false
+                                    if (code != currentLang && settingsActivity != null) {
+                                        viewModel.setLanguage(code, settingsActivity)
+                                    }
+                                },
+                                modifier = Modifier.background(LumiColor.Navy700),
+                            )
                         }
                     }
                 }
             }
 
+            // ── ABOUT ─────────────────────────────────────────────────────
             SettingsSection(stringResource(R.string.settings_section_about)) {
                 SettingsInfoRow(
                     label      = stringResource(R.string.settings_about_version),
@@ -263,9 +257,9 @@ fun SettingsScreen(
                 )
                 SettingsDivider()
                 SettingsActionRow(
-                    label   = stringResource(R.string.settings_about_privacy),
-                    sublabel = "How we handle your data",
-                    onClick = {
+                    label    = stringResource(R.string.settings_about_privacy),
+                    sublabel = stringResource(R.string.settings_privacy_sub),
+                    onClick  = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                             android.net.Uri.parse("https://mejoresiagratis.com/lumiai-privacy"))
                         context.startActivity(intent)
@@ -273,9 +267,9 @@ fun SettingsScreen(
                 )
                 SettingsDivider()
                 SettingsActionRow(
-                    label   = stringResource(R.string.settings_about_rate),
+                    label    = stringResource(R.string.settings_about_rate),
                     sublabel = stringResource(R.string.settings_about_rate_sub),
-                    onClick = {
+                    onClick  = {
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                             android.net.Uri.parse("market://details?id=com.lumiai.flashlight"))
                         try { context.startActivity(intent) }
@@ -327,37 +321,6 @@ private fun SettingsToggleRow(
                 uncheckedThumbColor = LumiColor.Gray400,
                 uncheckedTrackColor = LumiColor.Navy600,
             ))
-    }
-}
-
-@Composable
-private fun SettingsSliderRow(
-    label: String, value: Float,
-    range: ClosedFloatingPointRange<Float>,
-    displayValue: (Float) -> String,
-    onChange: (Float) -> Unit,
-) {
-    var current by remember { mutableFloatStateOf(value) }
-    var isDragging by remember { mutableStateOf(false) }
-    // Sync external value only when not dragging
-    LaunchedEffect(value) { if (!isDragging) current = value }
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(label, fontSize = 14.sp, fontWeight = FontWeight.W500, color = LumiColor.White)
-            Text(displayValue(current), fontSize = 13.sp, fontWeight = FontWeight.W700, color = LumiColor.Amber400)
-        }
-        Slider(
-            value = current,
-            onValueChange = { isDragging = true; current = it },
-            onValueChangeFinished = { isDragging = false; onChange(current) },
-            valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor        = LumiColor.Amber400,
-                activeTrackColor  = LumiColor.Amber400,
-                inactiveTrackColor = LumiColor.Navy600,
-            ),
-        )
     }
 }
 

@@ -22,8 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lumiai.flashlight.core.domain.model.FlashMode
+import com.lumiai.flashlight.core.domain.model.ProStatus
+import com.lumiai.flashlight.ui.components.AdBanner
 import com.lumiai.flashlight.ui.components.FlashButton
 import com.lumiai.flashlight.ui.theme.LumiColor
+import com.lumiai.flashlight.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * Full-screen mode configuration.
@@ -78,10 +82,23 @@ fun ModeConfigScreen(
         }
     }
 
+    val isPro = uiState.proStatus == ProStatus.Pro
+
     BackHandler { onBack() }
 
     Scaffold(
         containerColor = LumiColor.Navy950,
+        bottomBar = {
+            // Sticky AdBanner — same as FlashScreen, doesn't disappear on scroll
+            if (!isPro) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LumiColor.Navy950)
+                        .navigationBarsPadding(),
+                ) { AdBanner() }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -146,13 +163,13 @@ fun ModeConfigScreen(
             // Status label
             Text(
                 text = when {
-                    !isOn                              -> "TAP TO TURN ON"
-                    uiState.currentMode.id != modeId   -> "Tap to switch to $modeName"
-                    else                               -> when (configMode) {
+                    !isOn -> stringResource(R.string.config_tap_on)
+                    uiState.currentMode.id != modeId -> stringResource(R.string.config_switch_mode, modeName)
+                    else -> when (configMode) {
                         is FlashMode.Strobe -> "STROBE · ${uiState.strobeHz.toInt()} HZ"
                         is FlashMode.Disco  -> "DISCO · ${uiState.discoBpm.toInt()} BPM"
                         is FlashMode.Sos    -> "SOS · · · — — —"
-                        else                -> "FLASHLIGHT ON"
+                        else                -> stringResource(R.string.config_on)
                     }
                 },
                 fontSize = 10.sp,

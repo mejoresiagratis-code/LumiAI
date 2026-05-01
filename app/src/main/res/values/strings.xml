@@ -200,3 +200,74 @@
     <string name="pro_feature_custom">Custom AI rhythms</string>
     <string name="pro_feature_sleep">Sleep timer</string>
 </resources>
+
+    <!-- Screen mode tabs -->
+    <string name="tab_screen_solid">Solid</string>
+    <string name="tab_screen_hue">Hue</string>
+    <string name="tab_screen_temp">Temp</string>
+    <string name="tab_screen_fx">FX</string>
+
+    <!-- Screen effects -->
+    <string name="fx_candela">Candela</string>
+    <string name="fx_police">Police</string>
+    <string name="fx_rainbow">Rainbow</string>
+    <string name="fx_strobe">Strobe</string>
+
+    <!-- Strobe burst patterns -->
+    <string name="burst_single">Single</string>
+    <string name="burst_double">Double</string>
+    <string name="burst_triple">Triple</string>
+    <string name="burst_hint">Simple · Doble/Triple = ráfaga por ciclo</string>
+
+    <!-- Disco tap tempo -->
+    <string name="tap_tempo_hint">Toca 3+ veces para detectar el tempo</string>
+    <string name="tap_tempo_btn">TOCA EL RITMO  👆</string>
+    <string name="tap_tempo_bpm">TOCA · %d BPM</string>
+
+    <!-- Morse config -->
+    <string name="morse_placeholder">Escribe tu mensaje…</string>
+    <string name="morse_speed_hint">½× = lento · 1× = ITU estándar · 4× = ráfaga</string>
+    <string name="morse_speed_label">VELOCIDAD DE TRANSMISIÓN</string>
+
+    <!-- Config screen status -->
+    <string name="config_tap_on">TOCA PARA ENCENDER</string>
+    <string name="config_on">LINTERNA ENCENDIDA</string>
+    <string name="config_switch_mode">Toca para cambiar a %s</string>
+
+    <!-- Sensitivity labels -->
+    <string name="sensitivity_low">Baja — solo sonidos fuertes</string>
+    <string name="sensitivity_mid">Media — sonidos normales</string>
+    <string name="sensitivity_high">Alta — muy sensible</string>
+    <string name="sensitivity_label_low">Baja</string>
+    <string name="sensitivity_label_high">Alta</string>
+
+    <!-- Ambient smart config -->
+    <string name="ambient_desc">El modo lee el lux al activarse y permanece estable.</string>
+    <string name="ambient_reread">Releer luz ambiental</string>
+    <string name="ambient_reread_hint">Toca para muestrear el nivel de luz actual.</string>
+
+    <!-- Custom rhythm config -->
+    <string name="custom_desc">El patrón cambia automáticamente según la hora:</string>
+    <string name="rhythm_morning_label">6–9h</string>
+    <string name="rhythm_work_label">10–14h</string>
+    <string name="rhythm_afternoon_label">15–19h</string>
+    <string name="rhythm_evening_label">20–22h</string>
+    <string name="rhythm_night_label">23–5h</string>
+
+    <!-- Smart brightness config -->
+    <string name="smart_hint">Más rápido = más reactivo en exteriores. Más lento = sutil en interiores.</string>
+
+    <!-- Settings hardcoded strings -->
+    <string name="settings_notif_other_sub">Todas las demás notificaciones</string>
+    <string name="settings_pro_name">LumiAI Pro</string>
+    <string name="settings_privacy_sub">Cómo gestionamos tus datos</string>
+    <string name="settings_pro_badge_active">ACTIVO</string>
+    <string name="settings_strobe_freq_label">Frecuencia Strobe</string>
+    <string name="settings_disco_tempo_label">Tempo Disco</string>
+    <string name="settings_screen_brightness_label">Brillo de pantalla</string>
+
+    <!-- Walk mode -->
+    <string name="walk_sensor_available">Sensor de pasos activo</string>
+    <string name="walk_sensor_fallback">Sin sensor de pasos — usando cadencia simulada</string>
+    <string name="walk_sensor_permission">Permiso ACTIVITY_RECOGNITION necesario</string>
+</resources>
