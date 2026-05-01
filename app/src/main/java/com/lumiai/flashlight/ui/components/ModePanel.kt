@@ -198,7 +198,8 @@ fun ModePanel(
     modifier: Modifier = Modifier,
 ) {
     // Only show the AI Modes tab if at least one Pro mode is visible (hidden=false).
-    // During the free-only launch all Pro modes have hidden=true, so this tab disappears.
+    // In debug builds: show all Pro modes regardless of hidden flag — for testing.
+    // In release builds: hidden=true modes are invisible (staged rollout).
     val visibleAiItems = listOf(
         FlashModeItem(FlashMode.SmartBrightness, stringResource(R.string.mode_smart), stringResource(R.string.mode_smart_desc), "smart", accentColor = Color(0xFFFFD84AL), sensorTag = stringResource(R.string.sensor_light), info = stringResource(R.string.mode_smart_info)),
         FlashModeItem(FlashMode.ReadingMode, stringResource(R.string.mode_read), stringResource(R.string.mode_read_desc), "read", accentColor = Color(0xFFFF9A6CL), sensorTag = stringResource(R.string.sensor_timer), info = stringResource(R.string.mode_read_info)),
@@ -208,7 +209,7 @@ fun ModePanel(
         FlashModeItem(FlashMode.Music, stringResource(R.string.mode_music), stringResource(R.string.mode_music_desc), "music", accentColor = Color(0xFF60A5FAL), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_music_info)),
         FlashModeItem(FlashMode.Walk, stringResource(R.string.mode_walk), stringResource(R.string.mode_walk_desc), "walk", accentColor = Color(0xFF818CF8L), sensorTag = stringResource(R.string.sensor_step), info = stringResource(R.string.mode_walk_info)),
         FlashModeItem(FlashMode.Voice, stringResource(R.string.mode_voice), stringResource(R.string.mode_voice_desc), "voice", accentColor = Color(0xFFF472B6L), sensorTag = stringResource(R.string.sensor_mic), info = stringResource(R.string.mode_voice_info)),
-    ).filter { !it.mode.hidden }
+    ).filter { com.lumiai.flashlight.BuildConfig.IS_DEBUG || !it.mode.hidden }
 
     val hasAiModes = visibleAiItems.isNotEmpty()
 

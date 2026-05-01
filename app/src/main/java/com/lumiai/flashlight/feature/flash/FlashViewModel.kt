@@ -3,6 +3,7 @@ package com.lumiai.flashlight.feature.flash
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lumiai.flashlight.BuildConfig
 import com.lumiai.flashlight.core.data.repository.FlashRepositoryImpl
 import com.lumiai.flashlight.core.data.repository.BillingRepository
 import com.lumiai.flashlight.core.data.repository.BatteryRepository
@@ -196,6 +197,10 @@ class FlashViewModel @Inject constructor(
     val autoOff: StateFlow<AutoOffOption> = _autoOff.asStateFlow()
     private var autoOffJob: Job? = null
 
+    // In debug builds: always Pro — bypasses billing so all modes can be tested
+    // without a Play Store purchase. In release this is always false.
+    private val debugProOverride: Boolean = BuildConfig.IS_DEBUG
+
     val uiState: StateFlow<FlashUiState> = combine(
         flashRepository.isFlashOn,
         flashRepository.currentMode,
@@ -204,7 +209,7 @@ class FlashViewModel @Inject constructor(
     ) { args ->
         val isOn      = args[0] as Boolean
         val mode      = args[1] as FlashMode
-        val proStatus = args[2] as ProStatus
+        val proStatus = if (debugProOverride) ProStatus.Pro else args[2] as ProStatus
         val settings  = args[3] as com.lumiai.flashlight.core.domain.model.UserSettings
         FlashUiState(
             isFlashOn        = isOn,
@@ -245,7 +250,8 @@ class FlashViewModel @Inject constructor(
                 "disco"        -> FlashMode.Disco(settings.discoBpm)
                 "morse_custom" -> FlashMode.MorseCustom(settings.morseText)
                 else           -> FlashMode.all().firstOrNull {
-                    it.id == settings.lastMode && !it.hidden   // never restore hidden modes
+                    it.id == settings.lastMode &&
+                    (BuildConfig.IS_DEBUG || !it.hidden) // debug: restore any mode; release: skip hidden
                 }
             }
             if (lastMode != null && lastMode !is FlashMode.Steady) {
