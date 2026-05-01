@@ -199,7 +199,6 @@
     <string name="pro_feature_ambient">Ambient detection</string>
     <string name="pro_feature_custom">Custom AI rhythms</string>
     <string name="pro_feature_sleep">Sleep timer</string>
-</resources>
 
     <!-- Screen mode tabs -->
     <string name="tab_screen_solid">Solid</string>
