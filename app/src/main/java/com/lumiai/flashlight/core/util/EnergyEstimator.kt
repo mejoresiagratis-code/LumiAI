@@ -64,6 +64,6 @@ object EnergyEstimator {
         minutes < 5     -> "< 5m"
         minutes < 60    -> "${minutes}m"
         minutes < 120   -> "${minutes / 60}h ${minutes % 60}m"
-        else            -> "${minutes / 60}h ${(minutes % 60).let { if (it > 0) " ${it}m" else "" }}"
+        else            -> { val h = minutes / 60; val m = minutes % 60; if (m > 0) "${h}h ${m}m" else "${h}h" }
     }
 }

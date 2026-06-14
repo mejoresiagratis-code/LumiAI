@@ -43,33 +43,37 @@ object MorseEncoder {
      * Encodes text to Morse timing pairs.
      * @param speed  WPM multiplier — 1.0 = standard ITU, 2.0 = double speed, 0.5 = half speed
      */
-    @Suppress("UNUSED_PARAMETER")
     fun encode(text: String, speed: Float = 1.0f): List<Pair<Long, Long>> {
         val result = mutableListOf<Pair<Long, Long>>()
+        // Higher speed → shorter units. Durations scale by 1/speed with a 20ms floor.
+        val s = speed.coerceIn(0.25f, 8.0f)
+        fun scale(ms: Long): Long = (ms / s).toLong().coerceAtLeast(20L)
+        val dit = scale(DIT); val dah = scale(DAH)
+        val elemGap = scale(ELEM_GAP); val charGap = scale(CHAR_GAP); val wordGap = scale(WORD_GAP)
         val words  = text.uppercase().trim().split(" ")
 
         words.forEachIndexed word@{ wi, word ->
             word.forEachIndexed char@{ li, char ->
                 val code = CODE[char] ?: return@char
                 code.forEachIndexed { ei, symbol ->
-                    val onMs = if (symbol == '.') DIT else DAH
-                    val offMs = if (ei < code.length - 1) ELEM_GAP else 0L
+                    val onMs = if (symbol == '.') dit else dah
+                    val offMs = if (ei < code.length - 1) elemGap else 0L
                     result.add(onMs to offMs)
                 }
                 // Gap after letter (not after last letter in word)
                 if (li < word.length - 1) {
-                    result.add(0L to CHAR_GAP)
+                    result.add(0L to charGap)
                 }
             }
             // Gap after word (not after last word)
             if (wi < words.size - 1) {
-                result.add(0L to WORD_GAP)
+                result.add(0L to wordGap)
             }
         }
 
         // Final pause before repeat
         if (result.isNotEmpty()) {
-            result.add(0L to 2000L)
+            result.add(0L to scale(2000L))
         }
         return result
     }

@@ -49,10 +49,25 @@ class BillingRepositoryImpl constructor(
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build()
         ) { result, purchases ->
-            val hasPro = result.responseCode == BillingClient.BillingResponseCode.OK &&
-                    purchases.any { it.products.contains(PRO_PRODUCT_ID) && it.purchaseState == Purchase.PurchaseState.PURCHASED }
-            _proStatus.value = if (hasPro) ProStatus.Pro else ProStatus.Free
+            val proPurchases = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                purchases.filter {
+                    it.products.contains(PRO_PRODUCT_ID) &&
+                    it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+            } else emptyList()
+            _proStatus.value = if (proPurchases.isNotEmpty()) ProStatus.Pro else ProStatus.Free
+            // Acknowledge any purchase not yet acknowledged. Play auto-refunds
+            // unacknowledged purchases after 3 days — including ones found here on
+            // a later launch, not just those arriving via onPurchasesUpdated.
+            proPurchases.filter { !it.isAcknowledged }.forEach { acknowledge(it) }
         }
+    }
+
+    private fun acknowledge(purchase: Purchase) {
+        billingClient.acknowledgePurchase(
+            AcknowledgePurchaseParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken).build()
+        ) { /* fire and forget */ }
     }
 
     override suspend fun launchPurchaseFlow(activity: Activity): Result<Unit> = runCatching {
