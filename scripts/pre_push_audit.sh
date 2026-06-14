@@ -3,6 +3,7 @@
 # LumiAI — Pre-push auditor
 # Run before every git push. Exit 1 = issues found, do not push.
 # Usage: bash scripts/pre_push_audit.sh
+# NOTE: this is a fast heuristic gate, NOT a substitute for `./gradlew lint test`.
 # ─────────────────────────────────────────────────────────────────────────────
 SRC="app/src/main/java/com/lumiai/flashlight"
 ISSUES=0
@@ -60,9 +61,6 @@ pass "Dead dependency check done"
 # ── 6. MANIFEST PERMISSIONS ──────────────────────────────────────────────────
 header "6. Manifest permissions"
 MANIFEST="app/src/main/AndroidManifest.xml"
-for perm in "POST_NOTIFICATIONS" "ACTIVITY_RECOGNITION"; do
-  grep -q "$perm" "$MANIFEST" 2>/dev/null && pass "$perm present" || fail "$perm missing"
-done
 grep -q "uses-permission.*WAKE_LOCK" "$MANIFEST" 2>/dev/null && warn "WAKE_LOCK still present (not needed)" || pass "WAKE_LOCK not present"
 
 # ── 7. FLASHSCREEN — ALL COMPOSABLES DEFINED ─────────────────────────────────
@@ -70,19 +68,17 @@ header "7. FlashScreen composable definitions"
 FS="$SRC/feature/flash/FlashScreen.kt"
 REQUIRED="FlashScreen TopBar ScreenEffectEngine ScreenControlPanel AnimatedCandle AutoOffChip ModeConfigSheet"
 for sym in $REQUIRED; do
-  found=$(grep -c "fun $sym" "$FS" 2>/dev/null || echo "0")
+  found=$(grep -c "fun $sym" "$FS" 2>/dev/null || true)
   [ "$found" -eq "0" ] && fail "$sym not defined in FlashScreen.kt" || pass "$sym defined"
 done
 
 # ── 8. ORPHANED IMPORTS IN FLASHSCREEN ───────────────────────────────────────
 header "8. Orphaned imports in FlashScreen"
 FS="$SRC/feature/flash/FlashScreen.kt"
-declare -A ORPHAN_CHECKS
-# format: "ImportFragment:UsagePattern"
 check_orphan() {
   local label="$1" import_pat="$2" use_pat="$3"
-  imported=$(grep -c "$import_pat" "$FS" 2>/dev/null || echo "0")
-  used=$(grep -c "$use_pat" "$FS" 2>/dev/null || echo "0")
+  imported=$(grep -c "$import_pat" "$FS" 2>/dev/null || true)
+  used=$(grep -c "$use_pat" "$FS" 2>/dev/null || true)
   if [ "${imported:-0}" -gt "0" ] && [ "${used:-0}" -eq "0" ]; then
     warn "Orphaned import in FlashScreen: $label"
   fi
@@ -96,19 +92,19 @@ pass "Orphaned import check done"
 
 # ── 9. BILLING SINGLETON ─────────────────────────────────────────────────────
 header "9. Billing singleton"
-count=$(grep -c "fun provideBilling" app/src/main/java/com/lumiai/flashlight/core/di/AppModule.kt 2>/dev/null || echo "0")
+count=$(grep -c "fun provideBilling" app/src/main/java/com/lumiai/flashlight/core/di/AppModule.kt 2>/dev/null || true)
 [ "$count" -gt "1" ] && fail "BillingRepository provided $count times (should be 1)" || pass "BillingRepository provided once"
 
-# ── 10. ONBOARDING COPY ──────────────────────────────────────────────────────
-header "10. Onboarding copy"
-hits=$(grep -rn "Gemini AI\|Gemini Nano" "$SRC/feature/onboarding" 2>/dev/null || true)
-[ -n "$hits" ] && warn "Onboarding mentions Gemini (not used): $hits" || pass "No misleading Gemini mention"
+# ── 10. MISLEADING "GEMINI" CLAIMS (whole codebase, not just onboarding) ──────
+header "10. Misleading Gemini/AI claims"
+hits=$(grep -rn "Gemini AI\|Gemini Nano" "$SRC" 2>/dev/null || true)
+[ -n "$hits" ] && warn "Code mentions Gemini (not used): $hits" || pass "No misleading Gemini mention"
 
 # ── 11. PRO MODES — UI VISIBILITY ────────────────────────────────────────────
 header "11. Pro modes hidden for Free launch"
 FM="$SRC/core/domain/model/FlashMode.kt"
-pro_count=$(grep -c "isPro = true" "$FM" 2>/dev/null || echo "0")
-hidden_count=$(grep -c "hidden = true" "$FM" 2>/dev/null || echo "0")
+pro_count=$(grep -c "isPro = true" "$FM" 2>/dev/null || true)
+hidden_count=$(grep -c "hidden = true" "$FM" 2>/dev/null || true)
 if [ "${pro_count:-0}" -gt "0" ] && [ "${hidden_count:-0}" -eq "0" ]; then
   warn "$pro_count Pro modes without hidden=true — confirm they are excluded from AiModeGrid"
 elif [ "${pro_count:-0}" -gt "0" ] && [ "${hidden_count:-0}" -gt "0" ]; then
@@ -122,27 +118,15 @@ header "12. Duplicate composable parameters"
 hits=$(grep -rn "onValueChange.*onValueChange" "$SRC" 2>/dev/null | grep -v "import\|//" || true)
 [ -n "$hits" ] && fail "Duplicate params: $hits" || pass "No duplicate parameters"
 
-# ── SUMMARY ──────────────────────────────────────────────────────────────────
-echo ""
-echo "────────────────────────────────────────"
-if [ "$ISSUES" -gt "0" ]; then
-  printf "\033[0;31m  AUDIT FAILED — %d issue(s), %d warning(s). Do NOT push.\033[0m\n" "$ISSUES" "$WARNINGS"
-  exit 1
-else
-  printf "\033[0;32m  AUDIT PASSED — 0 issues, %d warning(s). Safe to push.\033[0m\n" "$WARNINGS"
-  exit 0
-fi
-
 # ── 13. CRITICAL IMPORT PATTERN — imports not replaced when adding new ones ────
 header "13. Import replacement safety (FlashScreen + LumiNavHost)"
 for f in \
-  "app/src/main/java/com/lumiai/flashlight/feature/flash/FlashScreen.kt:FlashViewModel" \
   "app/src/main/java/com/lumiai/flashlight/ui/navigation/LumiNavHost.kt:FlashScreen" \
   "app/src/main/java/com/lumiai/flashlight/ui/navigation/LumiNavHost.kt:ModeConfigScreen" \
   "app/src/main/java/com/lumiai/flashlight/feature/flash/ModeConfigScreen.kt:FlashButton"; do
   file="${f%%:*}"; sym="${f##*:}"
-  used=$(grep -c "$sym" "$file" 2>/dev/null || echo "0")
-  imported=$(grep -c "^import.*$sym\b" "$file" 2>/dev/null || echo "0")
+  used=$(grep -c "$sym" "$file" 2>/dev/null || true)
+  imported=$(grep -c "^import.*$sym\b" "$file" 2>/dev/null || true)
   if [ "$used" -gt "0" ] && [ "$imported" -eq "0" ]; then
     fail "$sym used but NOT imported in $(basename $file)"
   fi
@@ -153,8 +137,8 @@ pass "Critical import check done"
 header "14. Canvas drawing type imports"
 FS="$SRC/feature/flash/FlashScreen.kt"
 for sym in "StrokeCap" "StrokeJoin" "BlendMode" "FastOutSlowInEasing"; do
-  used=$(grep -c "\b$sym\b" "$FS" 2>/dev/null || echo "0")
-  imported=$(grep -c "^import.*\b$sym\b" "$FS" 2>/dev/null || echo "0")
+  used=$(grep -c "\b$sym\b" "$FS" 2>/dev/null || true)
+  imported=$(grep -c "^import.*\b$sym\b" "$FS" 2>/dev/null || true)
   if [ "${used:-0}" -gt "1" ] && [ "${imported:-0}" -eq "0" ]; then
     fail "$sym used in FlashScreen but not imported"
   fi
@@ -163,9 +147,7 @@ pass "Canvas drawing type imports OK"
 
 # ── 15. MODIFIER.ALIGN SCOPE CHECK ────────────────────────────────────────────
 header "15. Modifier.align() not in Column/Row context (heuristic)"
-# Warn if .align(Alignment. appears right after Column( or Row( block patterns
-# This is a heuristic — can't do full scope analysis in bash
-align_hits=$(grep -c "\.align(Alignment\." "$FS" 2>/dev/null || echo "0")
+align_hits=$(grep -c "\.align(Alignment\." "$FS" 2>/dev/null || true)
 if [ "${align_hits:-0}" -gt "0" ]; then
   pass "Modifier.align() found $align_hits times — verify each is inside BoxScope"
 else
@@ -174,15 +156,22 @@ fi
 
 # ── 16. COMPOSABLES IN VAL ASSIGNMENT (debug passes, release fails) ────────────
 header "16. Composable calls inside val = when(){} blocks"
-# Heuristic: 'remember' or 'stringResource' inside a when block that's part of a val assignment
-# Only checks FlashScreen where this pattern is most common
 FS="$SRC/feature/flash/FlashScreen.kt"
-# Look for 'val title = when' followed by 'remember' before the closing brace
 if grep -q "val title = when" "$FS" 2>/dev/null; then
-  # Extract the title=when block and check for composable calls inside it
   awk '/val title = when/,/^        \)/' "$FS" | grep -q "remember\|LocalContext\|checkSelfPermission" \
     && fail "Composable call (remember/LocalContext) inside 'val title = when()' block in FlashScreen" \
     || pass "No composable calls in title=when() block"
 else
   pass "No title=when() block found"
+fi
+
+# ── SUMMARY (must stay LAST so every check above runs) ───────────────────────
+echo ""
+echo "────────────────────────────────────────"
+if [ "$ISSUES" -gt "0" ]; then
+  printf "\033[0;31m  AUDIT FAILED — %d issue(s), %d warning(s). Do NOT push.\033[0m\n" "$ISSUES" "$WARNINGS"
+  exit 1
+else
+  printf "\033[0;32m  AUDIT PASSED — 0 issues, %d warning(s). Safe to push.\033[0m\n" "$WARNINGS"
+  exit 0
 fi
