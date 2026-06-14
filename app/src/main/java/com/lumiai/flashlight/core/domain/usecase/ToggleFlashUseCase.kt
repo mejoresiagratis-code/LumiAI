@@ -6,14 +6,13 @@ import javax.inject.Inject
 
 /**
  * Activates or deactivates a flash mode.
- * Pro restriction is DISABLED until payment is implemented.
- * All modes are accessible regardless of Pro status.
+ * Pro modes are gated: a non-Pro user requesting a Pro mode receives a
+ * ProRequiredException so the UI can present the paywall.
  */
 class ToggleFlashUseCase @Inject constructor(
     private val flashRepository: FlashRepository,
 ) {
     suspend operator fun invoke(mode: FlashMode, isPro: Boolean): Result<Unit> {
-        // ACTIVATE when pro_unlock product is created in Play Console:
         if (mode.isPro && !isPro) return Result.failure(ProRequiredException(mode))
         return flashRepository.activateMode(mode)
     }

@@ -92,12 +92,12 @@ fun ProPaywallScreen(
             // ── Feature list ───────────────────────────────────────────────
             Spacer(Modifier.height(12.dp))
             val features = listOf(
-                Triple("✦", "Sin anuncios", "Experiencia limpia sin interrupciones"),
-                Triple("◎", "Brillo inteligente", "Gemini Nano adapta la intensidad al entorno"),
-                Triple("◑", "Modo lectura", "Luz cálida ajustada para tus ojos"),
-                Triple("⬨", "Detección ambiental", "La cámara analiza la escena y elige el modo"),
-                Triple("⬡", "Ritmos personalizados", "Patrones estroboscópicos adaptativos"),
-                Triple("◌", "Temporizador de sueño", "Fade-out gradual controlado por IA"),
+                Triple("✦", "Sin anuncios", "Experiencia limpia, sin interrupciones"),
+                Triple("◎", "Brillo adaptativo", "Ajusta la intensidad según el sensor de luz"),
+                Triple("◑", "Modo lectura", "Luz cálida y estable, cómoda para los ojos"),
+                Triple("⬨", "Modo ambiental", "Elige el brillo según la luz del entorno"),
+                Triple("⬡", "Ritmos personalizados", "Patrones de parpadeo configurables"),
+                Triple("◌", "Temporizador de sueño", "Atenuación gradual hasta apagarse"),
             )
             Column(
                 modifier = Modifier
@@ -182,7 +182,7 @@ fun ProPaywallScreen(
                 modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                listOf("Pago único", "Sin cuenta", "IA offline").forEach { label ->
+                listOf("Pago único", "Sin cuenta", "Sin conexión").forEach { label ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),

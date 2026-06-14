@@ -1,18 +1,18 @@
 # LumiAI — Android Flashlight App
 
 Flashlight app with Free (AdMob) and Pro (one-time purchase) tiers.
-Pro tier unlocks Gemini Nano AI features.
+Pro unlocks extra flash modes (adaptive brightness, reading, ambient, sleep timer, music/voice/step-reactive) plus ad removal.
 
 ## Tech Stack
 - **Language**: Kotlin 1.9 + Coroutines
 - **UI**: Jetpack Compose + Material 3
 - **DI**: Hilt
 - **Flash control**: CameraX
-- **Persistence**: Room + DataStore
+- **Persistence**: DataStore (Preferences)
 - **Billing**: Google Play Billing 7.x (one-time INAPP)
 - **Ads**: AdMob + UMP (GDPR-compliant consent)
 - **Analytics**: Firebase Analytics + Crashlytics
-- **AI (Pro)**: Gemini Nano on-device + ML Kit
+- **Pro modes**: on-device heuristics (ambient light sensor, microphone energy, step detector, timers) — no cloud and no ML model
 
 ## Setup
 1. Copy `local.properties.template` → `local.properties` and fill values
