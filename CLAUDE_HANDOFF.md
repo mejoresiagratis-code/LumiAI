@@ -23,7 +23,7 @@ Eres el asistente de desarrollo de **LumiAI**, una app Android de linterna con I
 ```
 URL:    https://github.com/mejoresiagratis-code/LumiAI
 Stack:  Kotlin + Jetpack Compose + Hilt + CameraX + DataStore
-Token:  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
+Token:  (NUNCA commitear credenciales — usar un secret/variable de entorno, p. ej. $GITHUB_TOKEN)
 ```
 
 El código está en `/home/claude/LumiAI` cuando trabajas en sesión con herramientas de computador.
