@@ -205,4 +205,52 @@
     <string name="cd_pro">Pro</string>
     <string name="cd_settings">Ajustes</string>
     <string name="cd_back">Atrás</string>
+
+    <!-- i18n: completar español (UX-2) — antes caían al recurso por defecto -->
+    <string name="ambient_desc">El modo mide el lux al activarse y permanece estable.</string>
+    <string name="ambient_reread">Releer luz ambiental</string>
+    <string name="ambient_reread_hint">Toca para muestrear el nivel de luz actual.</string>
+    <string name="burst_single">Simple</string>
+    <string name="burst_double">Doble</string>
+    <string name="burst_triple">Triple</string>
+    <string name="burst_hint">Simple · Doble/Triple = ráfaga por ciclo</string>
+    <string name="config_on">LINTERNA ENCENDIDA</string>
+    <string name="config_switch_mode">Toca para cambiar a %s</string>
+    <string name="config_tap_on">TOCA PARA ENCENDER</string>
+    <string name="custom_desc">El patrón cambia automáticamente según la hora:</string>
+    <string name="fx_strobe">Strobe</string>
+    <string name="fx_police">Policía</string>
+    <string name="fx_rainbow">Arcoíris</string>
+    <string name="fx_candela">Candela</string>
+    <string name="morse_placeholder">Escribe tu mensaje…</string>
+    <string name="morse_speed_label">VELOCIDAD DE TRANSMISIÓN</string>
+    <string name="morse_speed_hint">½× = lento · 1× = ITU estándar · 4× = ráfaga</string>
+    <string name="rhythm_morning_label">6–9h</string>
+    <string name="rhythm_work_label">10–14h</string>
+    <string name="rhythm_afternoon_label">15–19h</string>
+    <string name="rhythm_evening_label">20–22h</string>
+    <string name="rhythm_night_label">23–5h</string>
+    <string name="sensitivity_label_low">Baja</string>
+    <string name="sensitivity_label_high">Alta</string>
+    <string name="sensitivity_low">Baja — solo sonidos fuertes</string>
+    <string name="sensitivity_mid">Media — sonidos normales</string>
+    <string name="sensitivity_high">Alta — muy sensible</string>
+    <string name="settings_disco_tempo_label">Tempo Disco</string>
+    <string name="settings_strobe_freq_label">Frecuencia Strobe</string>
+    <string name="settings_screen_brightness_label">Brillo de pantalla</string>
+    <string name="settings_notif_other_sub">Todas las demás notificaciones</string>
+    <string name="settings_privacy_sub">Cómo gestionamos tus datos</string>
+    <string name="settings_pro_name">LumiAI Pro</string>
+    <string name="settings_pro_badge_active">ACTIVO</string>
+    <string name="smart_hint">Más rápido = más reactivo en exteriores. Más lento = sutil en interiores.</string>
+    <string name="tab_screen_solid">Sólido</string>
+    <string name="tab_screen_temp">Temp</string>
+    <string name="tab_screen_hue">Tono</string>
+    <string name="tab_screen_fx">FX</string>
+    <string name="tap_tempo_btn">TOCA EL RITMO  👆</string>
+    <string name="tap_tempo_bpm">TOCA · %d BPM</string>
+    <string name="tap_tempo_hint">Toca 3+ veces para detectar el tempo</string>
+    <string name="walk_sensor_available">Sensor de pasos activo</string>
+    <string name="walk_sensor_fallback">Sin sensor de pasos — usando cadencia simulada</string>
+    <string name="walk_sensor_permission">Permiso ACTIVITY_RECOGNITION necesario</string>
 </resources>
