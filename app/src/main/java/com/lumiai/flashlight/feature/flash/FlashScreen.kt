@@ -428,7 +428,7 @@ private fun TopBar(
                 ) {
                     Icon(
                         LumiIcons.Star,
-                        contentDescription = "Pro",
+                        contentDescription = stringResource(R.string.cd_pro),
                         tint = LumiColor.Purple300,
                         modifier = Modifier.size(14.dp),
                     )
@@ -464,7 +464,7 @@ private fun TopBar(
             ) {
                 Icon(
                     LumiIcons.Settings,
-                    contentDescription = "Ajustes",
+                    contentDescription = stringResource(R.string.cd_settings),
                     tint = LumiColor.Gray500,
                     modifier = Modifier.size(14.dp),
                 )

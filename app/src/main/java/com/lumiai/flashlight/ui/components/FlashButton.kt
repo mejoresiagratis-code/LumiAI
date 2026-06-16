@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.lumiai.flashlight.R
 import com.lumiai.flashlight.ui.theme.LumiColor
 import kotlin.math.cos
 import kotlin.math.sin
@@ -38,6 +40,7 @@ fun FlashButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val toggleDesc = stringResource(if (isOn) R.string.cd_flashlight_off else R.string.cd_flashlight_on)
 
     // Scale animation using animation.core only
     val scale by animateFloatAsState(
@@ -180,7 +183,7 @@ fun FlashButton(
                     onClick           = onClick,
                 )
                 .semantics {
-                    contentDescription = if (isOn) "Apagar linterna" else "Encender linterna"
+                    contentDescription = toggleDesc
                     role = Role.Button
                 },
         ) {

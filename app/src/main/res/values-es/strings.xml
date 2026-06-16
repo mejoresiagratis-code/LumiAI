@@ -199,4 +199,10 @@
     <string name="pro_feature_ambient">Detección ambiental</string>
     <string name="pro_feature_custom">Ritmos IA personalizados</string>
     <string name="pro_feature_sleep">Temporizador de sueño</string>
+    <!-- Descripciones de accesibilidad (UX-3) -->
+    <string name="cd_flashlight_on">Encender linterna</string>
+    <string name="cd_flashlight_off">Apagar linterna</string>
+    <string name="cd_pro">Pro</string>
+    <string name="cd_settings">Ajustes</string>
+    <string name="cd_back">Atrás</string>
 </resources>

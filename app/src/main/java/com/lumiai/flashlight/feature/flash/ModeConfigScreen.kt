@@ -125,7 +125,7 @@ fun ModeConfigScreen(
                     ) {
                         Icon(
                             configBackIcon(),
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.cd_back),
                             tint = LumiColor.White,
                             modifier = Modifier.size(18.dp),
                         )
