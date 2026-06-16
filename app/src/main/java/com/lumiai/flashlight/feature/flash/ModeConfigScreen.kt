@@ -53,6 +53,7 @@ fun ModeConfigScreen(
     val smartSpeed     by viewModel.smartSpeed.collectAsState()
     val sleepMinutes   by viewModel.sleepMinutes.collectAsState()
     val micSensitivity by viewModel.micSensitivity.collectAsState()
+    val customPattern  by viewModel.customPattern.collectAsState()
     // screenColor is handled by ScreenControlPanel in FlashScreen
 
     val isOn = uiState.isFlashOn
@@ -192,6 +193,8 @@ fun ModeConfigScreen(
                 smartSpeed         = smartSpeed,
                 sleepMinutes       = sleepMinutes,
                 micSensitivity     = micSensitivity,
+                customPattern      = customPattern,
+                onCustomPattern    = { viewModel.setCustomPattern(it) },
                 onStrobeHz         = { viewModel.updateStrobeHz(it) },
                 onDiscoBpm         = { viewModel.updateDiscoBpm(it) },
                 onMorseText        = { viewModel.updateMorseText(it) },

@@ -267,4 +267,13 @@
     <string name="onb_p4_title">Aviso luminoso</string>
     <string name="onb_p4_desc">Haz que la linterna parpadee con llamadas y mensajes. Opcional — cámbialo cuando quieras en Ajustes.</string>
     <string name="onb_enable_notif">Activar aviso luminoso</string>
+    <string name="config_custom_hint">Elige un preset o toca para grabar tu propio ritmo.</string>
+    <string name="config_custom_presets">PRESETS</string>
+    <string name="preset_heartbeat">Latido</string>
+    <string name="preset_breathe">Respira</string>
+    <string name="preset_beacon">Baliza</string>
+    <string name="preset_sos">SOS</string>
+    <string name="config_custom_record">TOCA TU RITMO</string>
+    <string name="config_custom_reset">Reiniciar</string>
+    <string name="config_custom_save">Guardar ritmo</string>
 </resources>

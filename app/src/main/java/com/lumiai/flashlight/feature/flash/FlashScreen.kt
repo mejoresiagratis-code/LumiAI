@@ -1001,6 +1001,8 @@ internal fun ModeConfigSheet(
     onSleepMinutes: (Int) -> Unit = {},
     onMicSensitivity: (Float) -> Unit = {},
     onReactivate: () -> Unit = {},  // used by AmbientSmart to re-read lux
+    customPattern: LongArray = longArrayOf(),
+    onCustomPattern: (LongArray) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -1121,6 +1123,89 @@ internal fun ModeConfigSheet(
                 }
                 Text(stringResource(R.string.burst_hint),
                     fontSize = 10.sp, color = LumiColor.Gray400)
+            }
+            is FlashMode.CustomRhythm -> {
+                Text(stringResource(R.string.config_custom_hint),
+                    fontSize = 12.sp, color = LumiColor.Gray400)
+
+                Text(stringResource(R.string.config_custom_presets), fontSize = 10.sp,
+                    color = LumiColor.Gray600, fontWeight = FontWeight.W500, letterSpacing = 0.1.sp)
+                val presets = listOf(
+                    stringResource(R.string.preset_heartbeat) to longArrayOf(120, 120, 120, 600),
+                    stringResource(R.string.preset_breathe)   to longArrayOf(2000, 500),
+                    stringResource(R.string.preset_beacon)    to longArrayOf(200, 1800),
+                    stringResource(R.string.preset_sos)       to longArrayOf(
+                        200, 200, 200, 200, 200, 600, 600, 200, 600, 200, 600, 600,
+                        200, 200, 200, 200, 200, 1400),
+                )
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    presets.forEach { (label, pat) ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(LumiColor.Navy700)
+                                .clickable { onCustomPattern(pat) }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.W600,
+                                color = LumiColor.White)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+                // Tap-to-record: each tap captures the gap since the previous tap (ms).
+                var taps    by remember { mutableStateOf(listOf<Long>()) }
+                var lastTap by remember { mutableStateOf(0L) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(LumiColor.Navy900)
+                        .clickable {
+                            val now = System.currentTimeMillis()
+                            if (lastTap != 0L) {
+                                taps = taps + (now - lastTap).coerceIn(40L, 5000L)
+                            }
+                            lastTap = now
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (taps.isEmpty()) stringResource(R.string.config_custom_record)
+                        else "● ".repeat(taps.size.coerceAtMost(16)).trim(),
+                        fontSize = 16.sp, fontWeight = FontWeight.W700, color = LumiColor.Amber400,
+                    )
+                }
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(LumiColor.Navy700)
+                            .clickable { taps = emptyList(); lastTap = 0L }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.config_custom_reset),
+                            fontSize = 13.sp, color = LumiColor.White)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(LumiColor.Amber400)
+                            .clickable { if (taps.size >= 2) onCustomPattern(taps.toLongArray()) }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.config_custom_save),
+                            fontSize = 13.sp, fontWeight = FontWeight.W600, color = LumiColor.Navy950)
+                    }
+                }
             }
             is FlashMode.Disco -> {
                 var bpm by remember { mutableFloatStateOf(uiState.discoBpm) }
