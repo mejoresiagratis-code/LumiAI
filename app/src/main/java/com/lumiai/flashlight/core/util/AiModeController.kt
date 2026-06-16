@@ -173,25 +173,37 @@ class AiModeController @Inject constructor(
 
     // ── ⬡ CUSTOM — generative rhythm by hour ─────────────────────────────────
     // Intentional pulsing — this IS the mode's behavior.
-    fun startCustomRhythm(setTorch: (Boolean) -> Unit) {
+    fun startCustomRhythm(setTorch: (Boolean) -> Unit, userPattern: LongArray = longArrayOf()) {
         stop()
         active = true
         activeJob = scope.launch {
             setTorch(true)
-            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-            val pattern = when (hour) {
-                in 6..9   -> listOf(400L to 300L, 300L to 400L, 600L to 200L)
-                in 10..14 -> listOf(600L to 300L, 400L to 300L)
-                in 15..19 -> listOf(900L to 300L, 500L to 500L)
-                in 20..22 -> listOf(1500L to 300L, 700L to 600L)
-                else      -> listOf(2500L to 400L)
-            }
-            var idx = 0
-            while (isActive) {
-                val (onMs, offMs) = pattern[idx % pattern.size]
-                guarded(true,  setTorch); delay(onMs)
-                guarded(false, setTorch); delay(offMs)
-                idx++
+            if (userPattern.isNotEmpty()) {
+                // User-recorded / preset rhythm: flat list of on,off,on,off… durations (ms).
+                val steps = if (userPattern.size % 2 == 0) userPattern else userPattern + 300L
+                var i = 0
+                while (isActive) {
+                    guarded(i % 2 == 0, setTorch)
+                    delay(steps[i % steps.size].coerceIn(40L, 5000L))
+                    i++
+                }
+            } else {
+                // Fallback: time-of-day generated rhythm (used until the user records one).
+                val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                val pattern = when (hour) {
+                    in 6..9   -> listOf(400L to 300L, 300L to 400L, 600L to 200L)
+                    in 10..14 -> listOf(600L to 300L, 400L to 300L)
+                    in 15..19 -> listOf(900L to 300L, 500L to 500L)
+                    in 20..22 -> listOf(1500L to 300L, 700L to 600L)
+                    else      -> listOf(2500L to 400L)
+                }
+                var idx = 0
+                while (isActive) {
+                    val (onMs, offMs) = pattern[idx % pattern.size]
+                    guarded(true,  setTorch); delay(onMs)
+                    guarded(false, setTorch); delay(offMs)
+                    idx++
+                }
             }
         }
     }

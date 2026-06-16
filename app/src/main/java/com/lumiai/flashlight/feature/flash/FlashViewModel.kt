@@ -176,6 +176,19 @@ class FlashViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setMicSensitivity(clamped) }
     }
 
+    // Custom: user-recorded / preset rhythm — flat list of on,off… ms durations
+    private val _customPattern = MutableStateFlow(longArrayOf())
+    val customPattern: StateFlow<LongArray> = _customPattern.asStateFlow()
+    fun setCustomPattern(pattern: LongArray) {
+        _customPattern.value = pattern
+        viewModelScope.launch { settingsRepository.setCustomPattern(pattern.joinToString(",")) }
+        // Re-apply immediately if Custom is the active mode so the new rhythm takes effect.
+        val state = uiState.value
+        if (state.currentMode is FlashMode.CustomRhythm && state.isFlashOn) {
+            viewModelScope.launch { flashRepository.activateMode(FlashMode.CustomRhythm(pattern)) }
+        }
+    }
+
     fun openConfigSheet()  { _showConfigSheet.value = true  }
     fun closeConfigSheet() { _showConfigSheet.value = false }
     private val _currentScreenColor = MutableStateFlow(ScreenColor.WHITE)
@@ -242,6 +255,7 @@ class FlashViewModel @Inject constructor(
         flashRepository.smartSpeedProvider     = { _smartSpeed.value }
         flashRepository.sleepMinutesProvider   = { _sleepMinutes.value }
         flashRepository.micSensitivityProvider = { _micSensitivity.value }
+        flashRepository.customPatternProvider  = { _customPattern.value }
 
         viewModelScope.launch {
             getProStatusUseCase().first { it !is ProStatus.Loading }
@@ -284,6 +298,10 @@ class FlashViewModel @Inject constructor(
                     _sleepMinutes.value = settings.sleepMinutes
                 if (_micSensitivity.value != settings.micSensitivity)
                     _micSensitivity.value = settings.micSensitivity
+                val parsedPattern = settings.customPattern
+                    .split(",").mapNotNull { it.trim().toLongOrNull() }.toLongArray()
+                if (!_customPattern.value.contentEquals(parsedPattern))
+                    _customPattern.value = parsedPattern
                 // Restore screen color by ID
                 val restoredColor = ScreenColor.entries.firstOrNull {
                     it.name.lowercase() == settings.screenColorId

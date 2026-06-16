@@ -25,4 +25,5 @@ data class UserSettings(
     val micSensitivity: Float       = 1.0f,
     val screenColorId: String       = "white",
     val screenText: String          = "",  // "system" | "en" | "es"
+    val customPattern: String       = "",  // CSV of on/off ms durations for Custom mode
 )

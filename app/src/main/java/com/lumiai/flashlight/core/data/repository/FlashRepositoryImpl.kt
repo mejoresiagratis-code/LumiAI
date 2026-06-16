@@ -53,6 +53,7 @@ class FlashRepositoryImpl constructor(
     var smartSpeedProvider:    (() -> Float)? = null
     var sleepMinutesProvider:  (() -> Int)?   = null
     var micSensitivityProvider:(() -> Float)? = null
+    var customPatternProvider: (() -> LongArray)? = null
 
     // Torch strength support (API 33+)
     val maxTorchStrength: Int get() = if (android.os.Build.VERSION.SDK_INT >= 33) {
@@ -164,7 +165,7 @@ class FlashRepositoryImpl constructor(
             }
             is FlashMode.CustomRhythm -> {
                 _isFlashOn.value = true
-                aiController.startCustomRhythm { setTorch(it) }
+                aiController.startCustomRhythm({ setTorch(it) }, customPatternProvider?.invoke() ?: longArrayOf())
             }
             is FlashMode.SleepTimer -> {
                 _isFlashOn.value = true
