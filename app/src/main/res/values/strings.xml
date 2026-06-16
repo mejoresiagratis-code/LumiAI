@@ -52,7 +52,7 @@
     <string name="mode_sos_desc">Morse · · · — — —</string>
     <string name="mode_disco_desc">Beat sync · 60–200 BPM</string>
     <string name="mode_smart_desc">Adapts to ambient light</string>
-    <string name="mode_read_desc">Warm pulse, auto-dims</string>
+    <string name="mode_read_desc">Warm, steady reading light</string>
     <string name="mode_ambient_desc">Reads scene, picks pattern</string>
     <string name="mode_custom_desc">Pattern adapts to hour</string>
     <string name="mode_sleep_desc">Fades out over 3 minutes</string>
@@ -68,7 +68,7 @@
     <string name="mode_sos_info">SOS signal: · · · — — — · · · repeating. International distress.</string>
     <string name="mode_disco_info">Beat-synced flash 60–200 BPM. Great for parties.</string>
     <string name="mode_smart_info">Reads light sensor and adjusts pulse speed automatically.</string>
-    <string name="mode_read_info">Steady warm light that dims over 20 min. Ideal for reading.</string>
+    <string name="mode_read_info">Steady warm light, easy on the eyes. Auto-dims over 20 min on supported devices.</string>
     <string name="mode_ambient_info">Detects scene brightness and picks the best light pattern.</string>
     <string name="mode_custom_info">Rhythm pattern changes automatically by time of day.</string>
     <string name="mode_sleep_info">Gradually fades out over 3 minutes, then turns off.</string>

@@ -52,7 +52,7 @@
     <string name="mode_sos_desc">Morse · · · — — —</string>
     <string name="mode_disco_desc">Sincronizado · 60–200 BPM</string>
     <string name="mode_smart_desc">Se adapta a la luz ambiental</string>
-    <string name="mode_read_desc">Luz cálida, se atenúa sola</string>
+    <string name="mode_read_desc">Luz cálida y continua para leer</string>
     <string name="mode_ambient_desc">Lee la escena, elige patrón</string>
     <string name="mode_custom_desc">Patrón adaptado a la hora</string>
     <string name="mode_sleep_desc">Se apaga gradualmente en 3 min</string>
@@ -68,7 +68,7 @@
     <string name="mode_sos_info">Señal SOS: · · · — — — · · · en bucle. Señal internacional de socorro.</string>
     <string name="mode_disco_info">Flash sincronizado a 60–200 BPM. Perfecto para fiestas.</string>
     <string name="mode_smart_info">Lee el sensor de luz y ajusta la frecuencia de pulso automáticamente.</string>
-    <string name="mode_read_info">Luz cálida continua que se atenúa en 20 min. Ideal para leer.</string>
+    <string name="mode_read_info">Luz cálida y continua, suave para la vista. Se atenúa en 20 min en móviles compatibles.</string>
     <string name="mode_ambient_info">Detecta el brillo de la escena y elige el mejor patrón de luz.</string>
     <string name="mode_custom_info">El ritmo cambia automáticamente según la hora del día.</string>
     <string name="mode_sleep_info">Se atenúa gradualmente hasta apagarse. Ideal para dormir.</string>
