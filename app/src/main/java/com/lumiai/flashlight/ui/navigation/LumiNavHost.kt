@@ -30,8 +30,8 @@ class NavViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
-    val settings: StateFlow<UserSettings> = settingsRepository.settings
-        .stateIn(viewModelScope, SharingStarted.Eagerly, UserSettings())
+    val settings: StateFlow<UserSettings?> = settingsRepository.settings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun markOnboardingSeen() {
         viewModelScope.launch { settingsRepository.markOnboardingSeen() }
@@ -46,12 +46,15 @@ fun LumiNavHost() {
 
     val settings by navViewModel.settings.collectAsState()
 
-    // Determine start destination once settings are loaded
-    // Use Flash as default while loading (hasSeenOnboarding defaults to false → shows onboarding)
-    val startDest = remember(settings.hasSeenOnboarding) {
-        if (settings.hasSeenOnboarding) NavRoute.Flash.route
-        else NavRoute.Onboarding.route
-    }
+    // BUG-5: wait for the persisted settings before choosing the start destination.
+    // NavHost reads startDestination only once; starting before DataStore loads
+    // would use the default (hasSeenOnboarding=false) and show onboarding to
+    // returning users on every launch. Render nothing until settings arrive
+    // (the splash screen is still up during this sub-frame gap).
+    val loaded = settings ?: return
+
+    val startDest = if (loaded.hasSeenOnboarding) NavRoute.Flash.route
+                    else NavRoute.Onboarding.route
 
     NavHost(
         navController    = navController,
