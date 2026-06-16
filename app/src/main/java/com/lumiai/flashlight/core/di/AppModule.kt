@@ -9,6 +9,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.lumiai.flashlight.core.data.repository.*
 import com.lumiai.flashlight.core.util.AiModeController
+import com.lumiai.flashlight.core.torch.Camera2TorchHardware
+import com.lumiai.flashlight.core.torch.TorchController
+import com.lumiai.flashlight.core.torch.TorchHardware
 import com.lumiai.flashlight.service.NotificationFlashController
 import com.lumiai.flashlight.core.util.StrobeController
 import dagger.Module
@@ -33,6 +36,16 @@ object AppModule {
     fun provideAiModeController(
         @ApplicationContext context: Context,
     ): AiModeController = AiModeController(context)
+
+    @Provides @Singleton
+    fun provideTorchHardware(
+        @ApplicationContext context: Context,
+    ): TorchHardware = Camera2TorchHardware(context)
+
+    @Provides @Singleton
+    fun provideTorchController(
+        hardware: TorchHardware,
+    ): TorchController = TorchController(hardware)
 
     @Provides @Singleton
     fun provideStrobeController(): StrobeController = StrobeController()
