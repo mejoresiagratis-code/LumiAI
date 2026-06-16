@@ -2,7 +2,6 @@ package com.lumiai.flashlight
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -58,15 +57,9 @@ class MainActivity : ComponentActivity() {
     private val requestMicPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    // POST_NOTIFICATIONS — Android 13+ (API 33).
-    // Required to post flash-alert notifications. App works without it (feature just won't fire).
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
-
-    // ACTIVITY_RECOGNITION — Android 10+ (API 29).
-    // Required for TYPE_STEP_DETECTOR (Walk mode). Walk degrades to timer fallback if denied.
-    private val requestActivityRecognitionPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    // POST_NOTIFICATIONS / ACTIVITY_RECOGNITION are no longer requested at startup
+    // (UX-1). They belong with the feature that needs them — notifications when the
+    // flash-alert toggle is enabled, activity recognition when Walk mode ships.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -95,19 +88,9 @@ class MainActivity : ComponentActivity() {
             requestCameraPermission.launch(Manifest.permission.CAMERA)
         }
 
-        // ── POST_NOTIFICATIONS — Android 13+ (API 33) ─────────────────────
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-
-        // ── ACTIVITY_RECOGNITION — Android 10+ (API 29) ───────────────────
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestActivityRecognitionPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
-        }
+        // UX-1: only CAMERA is requested at launch (the torch is the core feature).
+        // Notifications / activity-recognition are requested contextually by the
+        // features that use them, not bundled into a first-run permission burst.
 
         // ── RECORD_AUDIO — lazy: only when Music or Voice is selected ─────
         lifecycleScope.launch {
