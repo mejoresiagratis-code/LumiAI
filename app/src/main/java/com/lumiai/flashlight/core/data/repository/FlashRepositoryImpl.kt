@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class FlashRepositoryImpl constructor(
     private val context: Context,
@@ -357,12 +358,19 @@ class FlashRepositoryImpl constructor(
 
     private suspend fun getCameraProvider(): ProcessCameraProvider =
         cameraProvider ?: suspendCancellableCoroutine { cont ->
-            ProcessCameraProvider.getInstance(context).addListener({
-                runCatching {
-                    val provider = ProcessCameraProvider.getInstance(context).get()
-                    cameraProvider = provider
-                    cont.resume(provider)
-                }
+            val future = ProcessCameraProvider.getInstance(context)
+            future.addListener({
+                runCatching { future.get() }
+                    .onSuccess { provider ->
+                        cameraProvider = provider
+                        if (cont.isActive) cont.resume(provider)
+                    }
+                    .onFailure { e ->
+                        // Previously the failure was swallowed and the coroutine
+                        // suspended forever (camera never became ready). Resume
+                        // with the error so bindCamera() can fall back / report.
+                        if (cont.isActive) cont.resumeWithException(e)
+                    }
             }, ContextCompat.getMainExecutor(context))
         }
 }
