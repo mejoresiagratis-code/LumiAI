@@ -1,6 +1,9 @@
 package com.lumiai.flashlight.ui.navigation
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -45,6 +48,7 @@ fun LumiNavHost() {
     val navViewModel: NavViewModel     = hiltViewModel()
 
     val settings by navViewModel.settings.collectAsState()
+    val context = LocalContext.current
 
     // BUG-5: wait for the persisted settings before choosing the start destination.
     // NavHost reads startDestination only once; starting before DataStore loads
@@ -67,6 +71,11 @@ fun LumiNavHost() {
                     navController.navigate(NavRoute.Flash.route) {
                         popUpTo(NavRoute.Onboarding.route) { inclusive = true }
                     }
+                },
+                onEnableNotifications = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    )
                 },
             )
         }

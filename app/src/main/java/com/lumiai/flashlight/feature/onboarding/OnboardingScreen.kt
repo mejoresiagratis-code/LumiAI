@@ -1,7 +1,6 @@
 package com.lumiai.flashlight.feature.onboarding
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,10 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lumiai.flashlight.R
 import com.lumiai.flashlight.ui.theme.LumiColor
 
 private data class OnboardingPage(
@@ -27,17 +28,20 @@ private data class OnboardingPage(
     val desc: String,
 )
 
-private val pages = listOf(
-    OnboardingPage("⚡", LumiColor.Amber400, "Always ready",  "Instant flash from any screen. One tap, full brightness."),
-    OnboardingPage("◎", LumiColor.Amber500, "Every mode",    "Steady, SOS, Strobe, Disco, Screen — all in one place."),
-    OnboardingPage("✦", LumiColor.Purple400, "More to come", "New modes and features on the way. Keep the app updated."),
-)
-
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
     onMarkSeen: (() -> Unit)? = null,
+    onEnableNotifications: () -> Unit = {},
 ) {
+    // Built inside the composable so all copy is localized (values / values-es).
+    val pages = listOf(
+        OnboardingPage("⚡", LumiColor.Amber400,  stringResource(R.string.onb_p1_title), stringResource(R.string.onb_p1_desc)),
+        OnboardingPage("◎", LumiColor.Amber500,  stringResource(R.string.onb_p2_title), stringResource(R.string.onb_p2_desc)),
+        OnboardingPage("✦", LumiColor.Purple400, stringResource(R.string.onb_p3_title), stringResource(R.string.onb_p3_desc)),
+        OnboardingPage("🔔", LumiColor.Amber500, stringResource(R.string.onb_p4_title), stringResource(R.string.onb_p4_desc)),
+    )
+
     var page by remember { mutableIntStateOf(0) }
     val current = pages[page]
 
@@ -73,7 +77,7 @@ fun OnboardingScreen(
             // Skip
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 Text(
-                    "Skip",
+                    stringResource(R.string.onb_skip),
                     fontSize = 14.sp,
                     color = LumiColor.Gray500,
                     modifier = Modifier.clickable(onClick = { onMarkSeen?.invoke(); onFinished() }).padding(8.dp),
@@ -133,7 +137,7 @@ fun OnboardingScreen(
             // Bottom nav
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Dots
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -149,6 +153,28 @@ fun OnboardingScreen(
                         )
                     }
                 }
+
+                // Optional: enable notification flash (last page only). Non-coercive —
+                // opens the system Notification-access screen; the user can skip it.
+                if (page == pages.lastIndex) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(LumiColor.Navy700)
+                            .clickable { onEnableNotifications() },
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onb_enable_notif),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.W600,
+                            color = LumiColor.Amber400,
+                        )
+                    }
+                }
+
                 // CTA button
                 Box(
                     contentAlignment = Alignment.Center,
@@ -168,7 +194,7 @@ fun OnboardingScreen(
                         },
                 ) {
                     Text(
-                        text = if (page == pages.lastIndex) "Get started" else "Next",
+                        text = if (page == pages.lastIndex) stringResource(R.string.onb_start) else stringResource(R.string.onb_next),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.W600,
                         color = if (page == pages.lastIndex) LumiColor.Navy900 else LumiColor.White,

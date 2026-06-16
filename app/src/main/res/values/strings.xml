@@ -275,4 +275,18 @@
     <string name="cd_pro">Pro</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_back">Back</string>
+
+    <!-- Onboarding (UX) -->
+    <string name="onb_skip">Skip</string>
+    <string name="onb_next">Next</string>
+    <string name="onb_start">Get started</string>
+    <string name="onb_p1_title">Always ready</string>
+    <string name="onb_p1_desc">Instant flash from any screen. One tap, full brightness.</string>
+    <string name="onb_p2_title">Every mode</string>
+    <string name="onb_p2_desc">Steady, SOS, Strobe, Disco, Screen — all in one place.</string>
+    <string name="onb_p3_title">More to come</string>
+    <string name="onb_p3_desc">New modes and features on the way. Keep the app updated.</string>
+    <string name="onb_p4_title">Flash on alerts</string>
+    <string name="onb_p4_desc">Make the torch blink for calls and messages. Optional — change it anytime in Settings.</string>
+    <string name="onb_enable_notif">Enable notification flash</string>
 </resources>

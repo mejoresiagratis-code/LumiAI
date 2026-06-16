@@ -253,4 +253,18 @@
     <string name="walk_sensor_available">Sensor de pasos activo</string>
     <string name="walk_sensor_fallback">Sin sensor de pasos — usando cadencia simulada</string>
     <string name="walk_sensor_permission">Permiso ACTIVITY_RECOGNITION necesario</string>
+
+    <!-- Onboarding (UX) -->
+    <string name="onb_skip">Saltar</string>
+    <string name="onb_next">Siguiente</string>
+    <string name="onb_start">Empezar</string>
+    <string name="onb_p1_title">Siempre lista</string>
+    <string name="onb_p1_desc">Luz al instante desde cualquier pantalla. Un toque, brillo máximo.</string>
+    <string name="onb_p2_title">Todos los modos</string>
+    <string name="onb_p2_desc">Continua, SOS, Strobe, Disco, Pantalla — todo en un sitio.</string>
+    <string name="onb_p3_title">Y más por llegar</string>
+    <string name="onb_p3_desc">Nuevos modos y funciones en camino. Mantén la app actualizada.</string>
+    <string name="onb_p4_title">Aviso luminoso</string>
+    <string name="onb_p4_desc">Haz que la linterna parpadee con llamadas y mensajes. Opcional — cámbialo cuando quieras en Ajustes.</string>
+    <string name="onb_enable_notif">Activar aviso luminoso</string>
 </resources>
