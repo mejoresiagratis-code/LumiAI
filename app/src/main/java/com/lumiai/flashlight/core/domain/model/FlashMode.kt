@@ -40,10 +40,10 @@ sealed class FlashMode(
         }
         override fun hashCode(): Int = pattern.contentHashCode()
     }
-    object SleepTimer      : FlashMode("sleep_timer",      isPro = true, hidden = true)
-    object Music           : FlashMode("music",            isPro = true, hidden = true)
+    object SleepTimer      : FlashMode("sleep_timer",      isPro = true, hidden = false)
+    object Music           : FlashMode("music",            isPro = true, hidden = false)
     object Walk            : FlashMode("walk",             isPro = true, hidden = true)
-    object Voice           : FlashMode("voice",            isPro = true, hidden = true)
+    object Voice           : FlashMode("voice",            isPro = true, hidden = false)
 
     companion object {
         fun freeModes(): List<FlashMode>    = listOf(Steady, Screen, Sos, MorseCustom(), Strobe(), Disco())

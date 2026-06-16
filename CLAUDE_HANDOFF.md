@@ -22,40 +22,89 @@ Eres el asistente de desarrollo de **LumiAI**, una app Android de linterna con I
 
 ```
 URL:    https://github.com/mejoresiagratis-code/LumiAI
-Stack:  Kotlin + Jetpack Compose + Hilt + CameraX + DataStore
-Token:  (NUNCA commitear credenciales — usar un secret/variable de entorno, p. ej. $GITHUB_TOKEN)
+Stack:  Kotlin 1.9 + Jetpack Compose + Material 3 + Hilt + CameraX + DataStore
+Token:  (NUNCA commitear credenciales — usar $GITHUB_TOKEN)
 ```
 
 El código está en `/home/claude/LumiAI` cuando trabajas en sesión con herramientas de computador.
 
 ---
 
-## Estado actual — v2.4.0 (versionCode 77)
+## Estado actual — v2.5.7 (versionCode 87)
 
 ### Versiones recientes
-- `v2.4.0` — Free-only launch: Pro modes hidden, onboarding sin Gemini AI, auditor script
-- `v2.3.7a` — Restore AutoOffChip deleted by accident + orphaned imports cleanup
-- `v2.3.7` — Critical bugs: AdMob IDs, splash logo, permisos, widget sync, AmbientSmart re-read, SleepTimer double-off, Walk torch leak. Room + ML Kit eliminados. BillingRepository singleton fix.
-- `v2.3.6` — 4 fixes: restorePurchases, onPaywall en grids, isPro propagado, Color L suffix Canvas
-- `v2.3.5` — Iconos Canvas unificados, Pro UX completo, AdMob IDs reales, paywall sin scroll
+
+- `v2.5.7` / versionCode 87 — **estado actual** · Music + Voice + SleepTimer activados
+- `v2.5.6` / versionCode 86 — base anterior
+- `v2.6.4` — último tag CI generado automáticamente (mismo código base de v2.5.x)
+- `v2.5.x` — sprint Pro modes: AiModeController, MusicBeatDetector, ModeConfigScreen añadidos
+- `v2.5.0` — servicios del sistema: FlashTileService, FlashNotificationService, BootReceiver
+- `v2.4.x` — widget home screen: FlashWidgetReceiver, PowerArcWidget
+- `v2.4.0` — Free-only launch, todos los Pro modes en hidden=true
 
 ### Arquitectura — archivos clave
+
 ```
-feature/flash/FlashScreen.kt          — UI principal, 6 modos Free visibles, Screen mode tabbed
-feature/flash/FlashViewModel.kt       — StateFlows, activateMode, hidden mode guard en restore
-feature/pro/ProPaywallScreen.kt       — Paywall sin scroll, en español
-ui/components/ModePanel.kt            — LumiModeIcon Canvas, AiModeCard filtrado por hidden
-core/domain/model/FlashMode.kt        — sealed class con isPro + hidden flags
-core/data/repository/FlashRepositoryImpl.kt  — activateMode, torch ordering
-core/data/repository/SettingsRepository.kt   — DataStore 25 claves
-core/util/StrobeController.kt         — wasActive guard, StrobePattern enum
-core/util/AiModeController.kt         — wasActive guard, 8 modos IA (SleepTimer fix, Walk fix)
-core/util/FirebaseManager.kt          — object singleton (sin Hilt)
-core/di/AppModule.kt                  — Hilt, BillingRepository single instance
-scripts/pre_push_audit.sh             — ⬅ EJECUTAR SIEMPRE antes de push (12 checks)
+com/lumiai/flashlight/
+├── LumiAIApp.kt
+├── MainActivity.kt
+├── core/
+│   ├── data/repository/
+│   │   ├── BillingRepository.kt + Impl   Google Play Billing 7.x
+│   │   ├── FlashRepository.kt + Impl     CameraX torch
+│   │   ├── SettingsRepository.kt         DataStore (22 claves)
+│   │   └── BatteryRepository.kt
+│   ├── di/
+│   │   ├── AppModule.kt
+│   │   ├── AdManager.kt                  AdMob interstitial/rewarded
+│   │   └── TorchControllerEntryPoint.kt
+│   ├── domain/model/
+│   │   ├── FlashMode.kt                  ← CLAVE: sealed class, flags isPro + hidden
+│   │   ├── ProStatus.kt
+│   │   └── UserSettings.kt
+│   ├── torch/
+│   │   ├── TorchController.kt            mutex + StateFlow del estado real del LED
+│   │   ├── TorchHardware.kt
+│   │   └── Camera2TorchHardware.kt
+│   └── util/
+│       ├── AiModeController.kt           controla los 8 modos Pro IA
+│       ├── MusicBeatDetector.kt          RMS beat detection via micrófono
+│       ├── EnergyEstimator.kt            estimación de batería por modo
+│       ├── StrobeController.kt
+│       ├── MorseEncoder.kt
+│       ├── ShakeDetector.kt
+│       ├── FirebaseManager.kt            singleton (NO Hilt)
+│       └── LanguageManager.kt
+├── feature/
+│   ├── flash/
+│   │   ├── FlashScreen.kt                pantalla principal
+│   │   ├── FlashViewModel.kt
+│   │   ├── ModeConfigScreen.kt           config full-screen por modo
+│   │   ├── AutoOffTimer.kt
+│   │   └── ScreenColor.kt
+│   ├── onboarding/OnboardingScreen.kt
+│   ├── pro/ProPaywallScreen.kt
+│   └── settings/SettingsScreen.kt + ViewModel
+├── service/
+│   ├── FlashTileService.kt               Quick Settings tile
+│   ├── FlashNotificationService.kt       flash en llamadas/mensajes
+│   ├── BootReceiver.kt
+│   └── NotificationFlashController.kt
+├── ui/
+│   ├── components/
+│   │   ├── FlashButton.kt
+│   │   ├── ModePanel.kt
+│   │   ├── AdBanner.kt
+│   │   ├── LumiIcons.kt
+│   │   └── PowerArcWidget.kt
+│   ├── navigation/LumiNavHost.kt + NavRoutes.kt
+│   └── theme/Color.kt + Theme.kt + Type.kt
+└── widget/
+    └── FlashWidgetReceiver.kt
 ```
 
 ### AdMob IDs reales (producción)
+
 ```
 App ID:       ca-app-pub-7644513562367479~7453103317
 Banner:       ca-app-pub-7644513562367479/7748616787
@@ -65,164 +114,147 @@ Rewarded:     ca-app-pub-7644513562367479/3486984320
 
 ---
 
-## Auditor pre-push — OBLIGATORIO
+## Auditor pre-push — OBLIGATORIO (16 checks)
 
 ```bash
 bash scripts/pre_push_audit.sh
 ```
 
-El script hace 12 checks y termina con `AUDIT PASSED` o `AUDIT FAILED`.
-**Nunca pushear con FAILED.** Los checks son:
-
-1. Scope-member imports prohibidos (drawCircle, awaitPointerEvent, etc.)
-2. Firebase @Inject (rompe kapt)
-3. Color(0xFF…) sin sufijo L en archivos con Canvas
-4. AdMob IDs de producción en release (no XXXX)
-5. Dependencias muertas (Room, ML Kit)
-6. Permisos en manifest (POST_NOTIFICATIONS, ACTIVITY_RECOGNITION, sin WAKE_LOCK)
-7. Todos los composables de FlashScreen definidos (AutoOffChip, TopBar, etc.)
-8. Imports huérfanos en FlashScreen
-9. BillingRepository singleton único en AppModule
-10. Sin mención a "Gemini AI" en onboarding
-11. Pro modes con flag `hidden`
-12. Sin parámetros duplicados en composables
+16 checks. Termina con `AUDIT PASSED` o `AUDIT FAILED`. **Nunca pushear con FAILED.**
 
 ---
 
 ## Reglas de compilación críticas
 
-### Imports prohibidos (scope members — no importables)
 ```kotlin
-// ❌ NUNCA importar — son métodos de clase, no extensiones
+// ❌ NUNCA importar — scope members
 androidx.compose.ui.input.pointer.awaitPointerEvent
 androidx.compose.ui.graphics.drawscope.drawCircle / drawLine / drawPath / drawRoundRect
-```
 
-### Firebase — NUNCA Hilt
-```kotlin
-// ❌ rompe kapt
+// ❌ Firebase via Hilt — rompe kapt
 @Inject lateinit var firebase: FirebaseManager
 // ✅ singleton directo
 FirebaseManager.init(this)
+
+// ❌ firebase-perf-ktx no existe en BOM 33+
+// ✅ FirebasePerformance.getInstance()
+
+// Canvas: siempre sufijo L
+Color(0xFFFF3B30L)  // ✅
+Color(0xFFFF3B30)   // ❌
 ```
 
-### Firebase ktx — NO existen en BOM 33+
-```kotlin
-// ❌ firebase-perf-ktx, Firebase.performance, Firebase.remoteConfig (no existen)
-// ✅ FirebaseRemoteConfig.getInstance(), FirebasePerformance.getInstance()
-```
+### AiModeController — reglas de ciclo de vida
 
-### Color en Canvas
-```kotlin
-Color(0xFFFF3B30L)  // ✅ siempre sufijo L en archivos con Canvas
-Color(0xFFFF3B30)   // ❌ ambiguo, falla en Compose
-```
+1. Cada `start*()` llama a `stop()` primero
+2. Todo modo llama `setTorch(true)` inmediatamente
+3. `stop()` desregistra TODOS los sensor listeners
+4. READ y AMBIENT son modos "steady" — sin pulso visible
 
 ---
 
 ## Modos Flash — estado actual
 
 ### Free (6) — siempre visibles
+
 | ID | Nombre | Config |
 |---|---|---|
 | steady | Continuo | Slider intensidad inline |
-| screen | Pantalla | Slider brillo inline, 12 colores, tabs Solid/Hue/Temp/FX |
+| screen | Pantalla | Slider brillo, 12 colores, tabs Solid/Hue/Temp/FX |
 | morse_custom | Morse | TextField + velocidad ½×/1×/2×/4× |
-| strobe | Estroboscopio | Slider Hz inline + burst pattern en ⚙ |
-| sos | SOS | Sin ⚙ |
-| disco | Disco | Slider BPM inline + tap-tempo en ⚙ |
+| strobe | Estroboscopio | Slider Hz + burst pattern en ⚙ |
+| sos | SOS | Selector velocidad en ⚙ |
+| disco | Disco | Slider BPM + tap-tempo en ⚙ |
 
-### Pro (8) — todos `hidden = true` en v2.4.0
-Para revelar un modo: cambiar `hidden = true → false` en `FlashMode.kt`, bump versionCode, push.
-El tab "AI Modes" reaparece automáticamente cuando `hidden=false` en al menos un modo.
+### Pro (8)
 
 | ID | Nombre | Estado |
 |---|---|---|
-| smart_brightness | Inteligente | hidden |
-| reading_mode | Lectura | hidden (falta fallback para dispositivos sin torch strength API 33+) |
-| ambient_smart | Ambiental | hidden (falta fallback) |
-| custom_rhythm | Personalizado | hidden (valor cuestionable, repensar) |
-| sleep_timer | Sueño | hidden ✅ listo |
-| music | Música | hidden ✅ listo — top Pro |
-| walk | Caminar | hidden (ACTIVITY_RECOGNITION añadido, pero caso de uso nicho) |
-| voice | Voz | hidden ✅ listo — top Pro |
+| smart_brightness | Inteligente | hidden=true — falta fallback sin sensor luz |
+| reading_mode | Lectura | hidden=true — falta fallback sin torch strength API 33+ |
+| ambient_smart | Ambiental | hidden=true — falta fallback + UI lux |
+| custom_rhythm | Personalizado | hidden=true — tap-to-record implementado ✅ |
+| sleep_timer | Sueño | **✅ ACTIVO (hidden=false)** |
+| music | Música | **✅ ACTIVO (hidden=false)** — top Pro |
+| walk | Caminar | hidden=true — ACTIVITY_RECOGNITION pendiente en manifest |
+| voice | Voz | **✅ ACTIVO (hidden=false)** |
 
 ---
 
-## Screen mode — detalle
-- UI oculta tras 3s de inactividad (desde última interacción, no desde aparición)
-- Back físico apaga Screen mode (BackHandler)
-- Botón ✕ en pantalla
-- Tabs: Solid (12 colores) / Hue (0-360°) / Temp (2700K-6500K) / FX (Candela, Police, Rainbow, Strobe)
-- AnimatedCandle: Canvas con 3 InfiniteTransition
+## DataStore — 22 claves
 
----
-
-## DataStore — 25 claves
 ```
 LAST_MODE, STROBE_HZ, DISCO_BPM, SCREEN_BRIGHT, AUTO_OFF,
 DARK_THEME, SHAKE_TOGGLE, KEEP_SCREEN, SEEN_ONBOARDING,
 NOTIF_ENABLED, NOTIF_CALLS, NOTIF_MESSAGES, NOTIF_OTHER,
 APP_LANGUAGE, TORCH_INTENSITY, MORSE_TEXT, MORSE_SPEED,
 SLEEP_MINUTES, MIC_SENSITIVITY, SCREEN_COLOR_ID,
-SCREEN_TEXT (pendiente), SCREEN_TAB (pendiente)
+SCREEN_TEXT, CUSTOM_PATTERN
 ```
 
 ---
 
-## Roadmap completo
+## Servicios del sistema
 
-### 🔴 Play Store — pendiente TÚ (sin código)
-- [ ] Subir APK release a Play Console y crear ficha de la app
-- [ ] Privacy Policy URL pública (Pablo la tiene — subirla a hosting)
-- [ ] Declaración de permisos sensibles en Play Console (RECORD_AUDIO, BIND_NOTIFICATION_LISTENER)
+| Servicio | Función | Permiso |
+|---|---|---|
+| FlashTileService | Quick Settings tile | BIND_QUICK_SETTINGS_TILE |
+| FlashNotificationService | Flash en llamadas/mensajes | BIND_NOTIFICATION_LISTENER_SERVICE |
+| BootReceiver | Restaura estado al arrancar | RECEIVE_BOOT_COMPLETED |
+| FlashWidgetReceiver | Widget home screen | AppWidgetProvider |
+
+---
+
+## Roadmap
+
+### 🔴 Play Store — pendiente Pablo
+
+- [ ] Subir APK release a Play Console y crear ficha
+- [ ] **Privacy Policy** en `mejoresiagratis.com/lumiai-privacy` (URL ya en SettingsScreen)
+- [ ] Declaración de permisos sensibles (RECORD_AUDIO, BIND_NOTIFICATION_LISTENER)
 - [ ] Firebase: activar Analytics + Crashlytics en consola lumiai-54bbc
 - [ ] Remote Config: crear 5 parámetros en Firebase Console
-- [ ] Screenshots para Play Store (mínimo 2 por tamaño: teléfono + tablet)
-- [ ] `pro_unlock` producto creado en Play Console (para cuando se active Pro)
+- [ ] Screenshots para Play Store
+- [ ] `pro_unlock` producto creado en Play Console (€2,99)
 
-### 🟡 Sprint siguiente — código (v2.4.x)
-- [ ] **Touch targets**: ampliar área táctil de ⚙ e ⓘ a mínimo 40×40dp en todas las tarjetas
-- [ ] **ProStatus loading**: shimmer/skeleton mientras billing resuelve (evita flash de UI)
-- [ ] **SOS speed selector**: 4 botones inline ½×/1×/2×/4× (ya en StrobeController, solo UI)
-- [ ] **restorePurchases()**: forzar re-query al servidor Google Billing (ahora solo re-subscribe al flow)
-- [ ] **Interstitial AdMob**: cada 5 cambios de modo (AdManager.preloadInterstitial() ya existe)
+### 🟡 Sprint v2.6.x — código
+
+- [ ] **Touch targets**: ⚙ e ⓘ a mínimo 40×40dp en todas las tarjetas
+- [ ] **ProStatus loading**: shimmer/skeleton mientras billing resuelve
+- [ ] **restorePurchases()**: forzar re-query al servidor Google Billing
+- [ ] **Interstitial AdMob**: cada 5 cambios de modo (AdManager.preloadInterstitial() existe)
 - [ ] **Rewarded ad**: "Probar Pro 30 minutos" en paywall
+- [ ] **RECORD_AUDIO + ACTIVITY_RECOGNITION**: añadir al manifest antes de activar Music/Voice/Walk en producción si Play Store lo requiere
 
-### 🟠 Pro modes — antes de activar (v2.5.x)
-- [ ] **ReadingMode fallback**: pulso muy lento (~3s on/off) para dispositivos sin torch strength API 33+
-- [ ] **AmbientSmart fallback**: igual + UI informativa del lux detectado
-- [ ] **CustomRhythm**: añadir visualización del patrón activo + posiblemente fusionar con otro modo
-- [ ] Activar Music (hidden=false) — ya listo, es el mejor modo Pro
-- [ ] Activar Voice (hidden=false) — ya listo, segundo mejor
-- [ ] Activar SleepTimer (hidden=false) — ya listo
+### 🟠 Pro modes — pendientes de activar
 
-### 🟢 Diseño — rediseño UX/UI (v2.6.x o cuando haya tracción)
-- [ ] **Material 3 color tokens**: refactorizar `LumiColor.kt` de hex hardcoded a tokens semánticos
-  (`MaterialTheme.colorScheme.surface`, etc.) para que dark/light funcione automáticamente
-- [ ] **Light mode real**: actualmente el toggle dark/light existe en DataStore y Settings,
-  pero los colores son todos hardcoded Navy. Con tokens M3, el switch funciona solo.
-- [ ] **Minimalismo**: reducir densidad de la grid de modos, más espacio, tipografía más grande
-- [ ] **Animación FlashButton**: glow pulse cuando está ON, transición más expresiva al ON/OFF
-- [ ] **Onboarding visual**: reemplazar emojis por LumiModeIcon Canvas en las páginas
+- [ ] **CustomRhythm** (`hidden=false`) — tap-to-record implementado ✅
+- [ ] **ReadingMode fallback** — pulso lento para dispositivos sin torch strength API 33+
+- [ ] **AmbientSmart fallback** — + UI informativa del lux
+- [ ] **Walk** — añadir ACTIVITY_RECOGNITION al manifest primero
 
-### 🔵 Nuevos modos — ideas validadas (v2.7.x+)
-- [ ] **Morse SOS + GPS**: transmite SOS + coordenadas via pantalla. Feature de seguridad viral
-- [ ] **Respira**: linterna sigue ritmo de respiración (4s on / 4s off). Mindfulness, único en linternas
-- [ ] **Cámara lenta**: strobe calibrado para efecto slow-motion en vídeo (24fps → 12Hz)
-- [ ] **LED Scroller**: texto desplazándose en pantalla con la linterna parpadeando en sync
-- [ ] **Saved Morse**: 3 mensajes guardados en DataStore para morse rápido
+### 🟢 Diseño (v2.8.x)
+
+- [ ] Material 3 color tokens — refactorizar LumiColor.kt de hex hardcoded
+- [ ] Light mode real — colores hardcoded Navy, tokens M3 lo arreglan solos
+- [ ] Animación FlashButton: glow pulse cuando ON
+
+### 🔵 Nuevos modos
+
+- [ ] **Morse SOS + GPS** — feature de seguridad viral
+- [ ] **Respira** — 4s on / 4s off, mindfulness
+- [ ] **Cámara lenta** — strobe calibrado para slow-motion en vídeo
+- [ ] **Saved Morse** — 3 mensajes guardados en DataStore
 
 ---
 
 ## CI/CD
 
-- **Debug APK**: en cada push a `main` (~6 min)
+- **Debug APK**: cada push a `main` (~6 min)
 - **Release APK firmado**: solo en tags `v*` (~12 min)
 - Keystore en secret `KEYSTORE_BASE64`, alias `lumiai_key`
-- Retención: 14 días debug, 90 días release
-- Build debug: ~17MB | Build release: ~4.5MB (R8 + minify + shrink)
+- SDK: compileSdk 35, minSdk 23, targetSdk 35
 
 ---
 
-*Actualizado: 30/04/2026 — v2.4.0 (versionCode 77)*
+*Actualizado: 17/06/2026 — v2.5.7 (versionCode 87) · Music + Voice + SleepTimer activados*

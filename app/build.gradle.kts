@@ -23,8 +23,8 @@ android {
         applicationId         = "com.lumiai.flashlight"
         minSdk                = 23          // 97% coverage
         targetSdk             = 35
-        versionCode           = 86
-        versionName           = "2.5.6"
+        versionCode           = 87
+        versionName           = "2.5.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // AdMob App ID
