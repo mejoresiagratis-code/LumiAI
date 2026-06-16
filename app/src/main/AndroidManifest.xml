@@ -7,14 +7,15 @@
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <!-- WAKE_LOCK removed: screen kept on via WindowManager.FLAG_KEEP_SCREEN_ON in MainActivity -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- RECORD_AUDIO removed: only the hidden Music/Voice Pro modes use the mic.
+         Re-add it (and request at runtime) when those modes are enabled. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Android 13+ (API 33): required to post any notification (flash alerts feature) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Android 10+ (API 29): required for TYPE_STEP_DETECTOR sensor (Walk mode) -->
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- ACTIVITY_RECOGNITION removed: only the hidden Walk mode (TYPE_STEP_DETECTOR)
+         needs it. Re-add it (and request at runtime) when Walk mode is enabled. -->
 
     <!-- AdMob advertising ID -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
