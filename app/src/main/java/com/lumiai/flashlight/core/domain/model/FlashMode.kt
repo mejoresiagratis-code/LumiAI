@@ -29,7 +29,17 @@ sealed class FlashMode(
     object ReadingMode     : FlashMode("reading_mode",     isPro = true, hidden = true)
     object AmbientSmart    : FlashMode("ambient_smart",    isPro = true, hidden = true)
     data class CustomRhythm(val pattern: LongArray = longArrayOf())
-                           : FlashMode("custom_rhythm",   isPro = true, hidden = true)
+                           : FlashMode("custom_rhythm",   isPro = true, hidden = true) {
+        // LongArray uses reference identity in the generated data-class equals/hashCode,
+        // so two CustomRhythm with the same pattern compared unequal (breaking state
+        // de-duplication / recomposition). Compare by content instead.
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is CustomRhythm) return false
+            return pattern.contentEquals(other.pattern)
+        }
+        override fun hashCode(): Int = pattern.contentHashCode()
+    }
     object SleepTimer      : FlashMode("sleep_timer",      isPro = true, hidden = true)
     object Music           : FlashMode("music",            isPro = true, hidden = true)
     object Walk            : FlashMode("walk",             isPro = true, hidden = true)
