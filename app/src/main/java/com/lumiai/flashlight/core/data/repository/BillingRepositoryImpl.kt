@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Singleton
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 private const val PRO_PRODUCT_ID = "pro_unlock"
 
@@ -94,8 +95,15 @@ class BillingRepositoryImpl constructor(
                         )
                         .build()
                     billingClient.launchBillingFlow(activity, billingFlowParams)
+                    if (cont.isActive) cont.resume(Unit)
+                } else {
+                    // Product query failed or pro_unlock isn't configured in Play.
+                    // Previously this still resumed as success, so the buy button
+                    // did nothing with no error. Now it fails so the UI can react.
+                    if (cont.isActive) cont.resumeWithException(
+                        IllegalStateException("Compra no disponible (código ${result.responseCode})")
+                    )
                 }
-                cont.resume(Unit)
             }
         }
     }
