@@ -12,22 +12,24 @@ import com.lumiai.flashlight.core.domain.model.FlashMode
  */
 object EnergyEstimator {
 
-    // Base drain rate (% battery/hour) per mode at intensity 1.0
+    // Base drain rate (% battery/hour) per mode at intensity 1.0.
+    // Calibrated to realistic phone-LED magnitudes: a steady torch lasts
+    // ~3-4h, not the ~28h the previous (10x too low) values implied.
     private fun baseDrainPctPerHour(mode: FlashMode): Float = when (mode) {
-        is FlashMode.Steady          -> 3.5f   // LED always on, highest drain
-        is FlashMode.Strobe          -> 1.8f   // 50% duty cycle average
-        is FlashMode.Disco           -> 1.5f   // random ~40% duty cycle
-        is FlashMode.Sos             -> 1.2f   // ~35% duty cycle ITU pattern
-        is FlashMode.MorseCustom     -> 1.4f   // similar to SOS
-        is FlashMode.Screen          -> 6.5f   // screen at full brightness
-        is FlashMode.SmartBrightness -> 2.0f   // pulsing, sensor active
-        is FlashMode.ReadingMode     -> 3.0f   // steady + gradual dim
-        is FlashMode.AmbientSmart    -> 3.2f   // steady + light sensor
-        is FlashMode.CustomRhythm    -> 1.6f   // slow pulsing
-        is FlashMode.SleepTimer      -> 2.5f   // fading torch
-        is FlashMode.Music           -> 1.0f   // mic-triggered bursts
-        is FlashMode.Walk            -> 0.8f   // step-triggered bursts
-        is FlashMode.Voice           -> 0.9f   // voice-triggered bursts
+        is FlashMode.Steady          -> 30f    // LED always on, highest drain (~3.3h)
+        is FlashMode.Screen          -> 22f    // screen at full brightness
+        is FlashMode.AmbientSmart    -> 26f    // steady + light sensor
+        is FlashMode.ReadingMode     -> 24f    // steady + gradual dim
+        is FlashMode.SleepTimer      -> 20f    // fading torch
+        is FlashMode.SmartBrightness -> 16f    // pulsing, sensor active
+        is FlashMode.Strobe          -> 15f    // ~50% duty cycle average
+        is FlashMode.CustomRhythm    -> 13f    // slow pulsing
+        is FlashMode.Disco           -> 12f    // random ~40% duty cycle
+        is FlashMode.MorseCustom     -> 11f    // similar to SOS
+        is FlashMode.Sos             -> 10f    // ~35% duty cycle ITU pattern
+        is FlashMode.Music           -> 8f     // mic-triggered bursts
+        is FlashMode.Voice           -> 7f     // voice-triggered bursts
+        is FlashMode.Walk            -> 6f     // step-triggered bursts
     }
 
     /**
