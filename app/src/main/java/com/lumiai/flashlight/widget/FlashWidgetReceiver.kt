@@ -3,10 +3,16 @@ package com.lumiai.flashlight.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import com.lumiai.flashlight.R
+import com.lumiai.flashlight.core.di.TorchControllerEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class FlashWidgetReceiver : AppWidgetProvider() {
 
@@ -32,56 +38,50 @@ class FlashWidgetReceiver : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == "com.lumiai.flashlight.TOGGLE_FLASH") {
-            toggleTorchCamera2(context)
+        if (intent.action != "com.lumiai.flashlight.TOGGLE_FLASH") return
+
+        // Toggle the real torch via the single source of truth. goAsync() keeps the
+        // broadcast alive while the suspend call runs.
+        val pending = goAsync()
+        val controller = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            TorchControllerEntryPoint::class.java,
+        ).torchController()
+
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val newState = !controller.torchState.value // REAL state, not a cached prefs bool
+                controller.setEnabled(newState)
+                renderWidget(context, newState)
+            } finally {
+                pending.finish()
+            }
         }
     }
 
-    private fun toggleTorchCamera2(context: Context) {
-        val cm = context.getSystemService(Context.CAMERA_SERVICE)
-                as android.hardware.camera2.CameraManager
-        try {
-            val backId = cm.cameraIdList.firstOrNull { id ->
-                cm.getCameraCharacteristics(id)
-                    .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING) ==
-                android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK
-            } ?: return
-
-            // Register a one-shot callback to read the ACTUAL current state
-            // before toggling — avoids desync if app or another widget changed torch
-            val prefs = context.getSharedPreferences("widget_prefs", 0)
-            val currentlyOn = prefs.getBoolean("torch_on", false)
-            val newState = !currentlyOn
-
-            cm.setTorchMode(backId, newState)
-            prefs.edit().putBoolean("torch_on", newState).apply()
-
-            // Update widget appearance immediately
-            val manager = android.appwidget.AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(
-                android.content.ComponentName(context, FlashWidgetReceiver::class.java)
+    /** Update every widget instance's button tint to reflect the torch state. */
+    private fun renderWidget(context: Context, on: Boolean) {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(
+            ComponentName(context, FlashWidgetReceiver::class.java)
+        )
+        ids.forEach { id ->
+            val views = RemoteViews(context.packageName, R.layout.widget_flash)
+            views.setInt(
+                R.id.widget_btn, "setBackgroundResource",
+                if (on) android.R.color.holo_orange_light else android.R.color.transparent,
             )
-            ids.forEach { id ->
-                val views = android.widget.RemoteViews(
-                    context.packageName, R.layout.widget_flash
-                )
-                // Tint the button to reflect state (amber=on, default=off)
-                views.setInt(R.id.widget_btn, "setBackgroundResource",
-                    if (newState) android.R.color.holo_orange_light
-                    else android.R.color.transparent)
-                manager.updateAppWidget(id, views)
-            }
-        } catch (e: Exception) { /* camera busy or no flash */ }
+            manager.updateAppWidget(id, views)
+        }
     }
 
-    /**
-     * Sync widget state with the actual torch state reported by CameraManager.
-     * Called from MainActivity.onResume to keep widget in sync.
-     */
     companion object {
+        /**
+         * Refresh widget tint from the real torch state. Called from MainActivity.onResume
+         * to keep the widget in sync with what the app shows.
+         */
         fun syncState(context: Context, isOn: Boolean) {
-            context.getSharedPreferences("widget_prefs", 0)
-                .edit().putBoolean("torch_on", isOn).apply()
+            FlashWidgetReceiver().renderWidget(context, isOn)
         }
     }
 }
