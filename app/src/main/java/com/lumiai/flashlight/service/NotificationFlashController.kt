@@ -1,35 +1,27 @@
 package com.lumiai.flashlight.service
 
-import android.content.Context
-import android.hardware.camera2.CameraManager
+import com.lumiai.flashlight.core.torch.TorchController
 import kotlinx.coroutines.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Controls flash pulses for notification alerts.
- * Uses camera2 directly — works even when the app is in background.
+ * Routes the LED through [TorchController] so pulses are serialized with the rest of
+ * the app and never race the camera (REL-T1/T3). Still works in the background — the
+ * controller actuates via camera2 setTorchMode.
  */
 @Singleton
 class NotificationFlashController @Inject constructor(
-    context: Context,
+    private val torch: TorchController,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var flashJob: Job? = null
-    private val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
     var isEnabled: Boolean = false
     var enabledForCalls: Boolean    = true
     var enabledForMessages: Boolean = true
     var enabledForOther: Boolean    = false
-
-    private val backCameraId: String? by lazy {
-        cameraManager.cameraIdList.firstOrNull { id ->
-            cameraManager.getCameraCharacteristics(id)
-                .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING) ==
-                android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK
-        }
-    }
 
     fun flash(pattern: NotificationPattern) {
         // Check per-type toggle
@@ -51,17 +43,12 @@ class NotificationFlashController @Inject constructor(
         flashJob = scope.launch {
             try {
                 pulses.forEach { (onMs, offMs) ->
-                    torch(true);  delay(onMs)
-                    torch(false); if (offMs > 0) delay(offMs)
+                    torch.setEnabled(true);  delay(onMs)
+                    torch.setEnabled(false); if (offMs > 0) delay(offMs)
                 }
             } catch (e: Exception) {
-                runCatching { torch(false) }
+                runCatching { torch.setEnabled(false) }
             }
         }
-    }
-
-    private fun torch(on: Boolean) {
-        try { backCameraId?.let { cameraManager.setTorchMode(it, on) } }
-        catch (e: Exception) { /* camera busy */ }
     }
 }

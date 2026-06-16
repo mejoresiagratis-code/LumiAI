@@ -29,8 +29,8 @@ object AppModule {
 
     @Provides @Singleton
     fun provideNotificationFlashController(
-        @ApplicationContext context: Context,
-    ): NotificationFlashController = NotificationFlashController(context)
+        torchController: TorchController,
+    ): NotificationFlashController = NotificationFlashController(torchController)
 
     @Provides @Singleton
     fun provideAiModeController(
