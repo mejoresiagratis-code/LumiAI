@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares the locales the app ships translations for, so Android 13+ shows the
+  per-app language picker (Settings → Apps → LumiAI → Language). Additive: the
+  in-app LanguageManager selector keeps working independently. (UX-4)
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="es" />
+</locale-config>
