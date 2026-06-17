@@ -30,7 +30,7 @@ El código está en `/home/claude/LumiAI` cuando trabajas en sesión con herrami
 
 ---
 
-## Estado actual — v2.5.7 (versionCode 87)
+## Estado actual — v2.5.8 (versionCode 88)
 
 ### Versiones recientes
 
@@ -257,4 +257,4 @@ SCREEN_TEXT, CUSTOM_PATTERN
 
 ---
 
-*Actualizado: 17/06/2026 — v2.5.7 (versionCode 87) · Music + Voice + SleepTimer activados*
+*Actualizado: 17/06/2026 — v2.5.8 (versionCode 88) · permisos runtime completos*

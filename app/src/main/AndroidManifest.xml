@@ -3,26 +3,37 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ═══ Permisos requeridos ═══════════════════════════════════════════════ -->
+
+    <!-- Torch hardware (core feature) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FLASHLIGHT" />
-    <!-- WAKE_LOCK removed: screen kept on via WindowManager.FLAG_KEEP_SCREEN_ON in MainActivity -->
+
+    <!-- Network (AdMob, Firebase, UMP consent) -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- RECORD_AUDIO removed: only the hidden Music/Voice Pro modes use the mic.
-         Re-add it (and request at runtime) when those modes are enabled. -->
+
+    <!-- Boot restore (recover last flash state after reboot) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- Android 13+ (API 33): required to post any notification (flash alerts feature) -->
+    <!-- Android 13+ (API 33): required to post any notification -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- ACTIVITY_RECOGNITION removed: only the hidden Walk mode (TYPE_STEP_DETECTOR)
-         needs it. Re-add it (and request at runtime) when Walk mode is enabled. -->
+    <!-- Microphone: Music and Voice Pro modes use AudioRecord for beat/sound detection.
+         Requested at runtime when the user selects Music or Voice mode. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Step detector: Walk Pro mode uses TYPE_STEP_DETECTOR sensor.
+         Required on Android 10+ (API 29+). Requested at runtime when Walk is selected. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 
     <!-- AdMob advertising ID -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-    <!-- ═══ Features: required=false permite instalar en tablets sin flash ══ -->
-    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
-    <uses-feature android:name="android.hardware.camera"       android:required="false" />
+    <!-- ═══ Features: required=false permite instalar en tablets sin flash/mic ══ -->
+    <uses-feature android:name="android.hardware.camera.flash"    android:required="false" />
+    <uses-feature android:name="android.hardware.camera"          android:required="false" />
+    <uses-feature android:name="android.hardware.microphone"      android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter"  android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />
 
     <application
         tools:replace="android:allowBackup"

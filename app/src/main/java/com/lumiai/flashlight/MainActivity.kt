@@ -2,6 +2,7 @@ package com.lumiai.flashlight
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -53,13 +54,17 @@ class MainActivity : ComponentActivity() {
             if (granted) bindCameraIfPermitted()
         }
 
-    // RECORD_AUDIO — lazy: only asked when Music or Voice mode is selected
+    // RECORD_AUDIO — lazy: asked when Music or Voice mode is selected
     private val requestMicPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* mic granted/denied — MusicBeatDetector handles gracefully */ }
 
-    // POST_NOTIFICATIONS / ACTIVITY_RECOGNITION are no longer requested at startup
-    // (UX-1). They belong with the feature that needs them — notifications when the
-    // flash-alert toggle is enabled, activity recognition when Walk mode ships.
+    // POST_NOTIFICATIONS — API 33+ runtime permission for flash alerts feature
+    private val requestNotifPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* granted/denied — notification flash optional feature */ }
+
+    // ACTIVITY_RECOGNITION — API 29+ runtime permission for Walk mode step detector
+    private val requestActivityPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* granted/denied — Walk mode checks at activation */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -88,11 +93,21 @@ class MainActivity : ComponentActivity() {
             requestCameraPermission.launch(Manifest.permission.CAMERA)
         }
 
-        // UX-1: only CAMERA is requested at launch (the torch is the core feature).
-        // Notifications / activity-recognition are requested contextually by the
-        // features that use them, not bundled into a first-run permission burst.
+        // ── POST_NOTIFICATIONS — API 33+: request after camera so dialogs don't stack ──
+        // Needed for the flash-alerts feature (FlashNotificationService).
+        // Shown once; user can always enable later in Settings → Flash Notifications.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                // Delay slightly so camera dialog (if shown) finishes first
+                lifecycleScope.launch {
+                    kotlinx.coroutines.delay(800L)
+                    requestNotifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
 
-        // ── RECORD_AUDIO — lazy: only when Music or Voice is selected ─────
+        // ── RECORD_AUDIO — lazy: only when Music or Voice is selected ─────────
         lifecycleScope.launch {
             flashViewModel.uiState.collect { state ->
                 val needsMic = state.currentMode is FlashMode.Music ||
@@ -102,6 +117,21 @@ class MainActivity : ComponentActivity() {
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
                     requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
+        }
+
+        // ── ACTIVITY_RECOGNITION — API 29+: lazy when Walk mode selected ─────
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            lifecycleScope.launch {
+                flashViewModel.uiState.collect { state ->
+                    val needsStep = state.currentMode is FlashMode.Walk
+                    if (needsStep && ContextCompat.checkSelfPermission(
+                            this@MainActivity, Manifest.permission.ACTIVITY_RECOGNITION
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        requestActivityPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                    }
                 }
             }
         }
