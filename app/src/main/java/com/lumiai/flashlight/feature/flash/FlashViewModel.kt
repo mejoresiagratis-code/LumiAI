@@ -259,7 +259,9 @@ class FlashViewModel @Inject constructor(
         val rawStatus = if (debugProOverride) ProStatus.Pro else args[2] as ProStatus
         val settings  = args[3] as com.lumiai.flashlight.core.domain.model.UserSettings
         @Suppress("UNCHECKED_CAST")
-        val (rewarded, devMode) = args[4] as Pair<RewardedState, DevProMode>
+        val rewardedDevPair = args[4] as Pair<RewardedState, DevProMode>
+        val rewarded = rewardedDevPair.first
+        val devMode  = rewardedDevPair.second
 
         // Dev override (debug builds only — release always NONE)
         val proStatus: ProStatus = when {
