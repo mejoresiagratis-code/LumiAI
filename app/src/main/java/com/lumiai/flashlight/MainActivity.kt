@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import com.lumiai.flashlight.ui.theme.LumiAITheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import com.lumiai.flashlight.feature.flash.RewardedAdEvent
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -144,6 +145,22 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             flashViewModel.showInterstitialEvent.collect {
                 adManager.showInterstitialIfReady(this@MainActivity)
+            }
+        }
+
+        // ── Rewarded ad — for temporary Pro unlock ────────────────────────────
+        lifecycleScope.launch {
+            flashViewModel.rewardedAdEvent.collect { event ->
+                when (event) {
+                    RewardedAdEvent.ShowAd -> {
+                        adManager.showRewarded(
+                            activity   = this@MainActivity,
+                            onRewarded = { flashViewModel.onAdRewardEarned() },
+                            onDismissed = { flashViewModel.onAdDismissedWithoutReward() },
+                            onFailed   = { _ -> flashViewModel.onAdDismissedWithoutReward() },
+                        )
+                    }
+                }
             }
         }
 

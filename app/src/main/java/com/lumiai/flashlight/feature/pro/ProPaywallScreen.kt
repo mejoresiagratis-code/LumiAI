@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +24,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lumiai.flashlight.BuildConfig
 import com.lumiai.flashlight.core.domain.model.ProStatus
+import com.lumiai.flashlight.core.domain.model.isProActive
+import com.lumiai.flashlight.feature.flash.DevProMode
 import com.lumiai.flashlight.feature.flash.FlashViewModel
 import com.lumiai.flashlight.ui.theme.LumiColor
 
@@ -32,12 +36,19 @@ fun ProPaywallScreen(
     onBack: () -> Unit,
     viewModel: FlashViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isPro = uiState.proStatus == ProStatus.Pro
-    val isRestoring by viewModel.isRestoringPurchases.collectAsState()
-    val context = LocalContext.current
+    val uiState        by viewModel.uiState.collectAsState()
+    val rewardedState  by viewModel.rewardedState.collectAsState()
+    val adLoading      by viewModel.rewardedAdLoading.collectAsState()
+    val context        = LocalContext.current
 
-    LaunchedEffect(isPro) { if (isPro) onBack() }
+    val isPro          = uiState.proStatus.isProActive
+    val isRewardedActive = uiState.proStatus is ProStatus.ProRewarded && isPro
+
+    // Logo tap counter for dev mode (7 taps, debug only)
+    var logoTapCount by remember { mutableIntStateOf(0) }
+
+    // Auto-dismiss when Pro becomes active (permanent purchase or rewarded granted)
+    LaunchedEffect(isPro) { if (isPro && !isRewardedActive) onBack() }
 
     Box(
         modifier = Modifier
@@ -49,6 +60,7 @@ fun ProPaywallScreen(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+
             // ── Top bar ────────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
@@ -69,7 +81,53 @@ fun ProPaywallScreen(
                 ) { Text("✕", fontSize = 14.sp, color = LumiColor.Gray400) }
                 Text("LumiAI Pro", fontSize = 15.sp, fontWeight = FontWeight.W600,
                     color = LumiColor.White, letterSpacing = 0.02.sp)
-                Spacer(Modifier.size(32.dp))
+                // Dev mode badge (debug only)
+                if (BuildConfig.IS_DEBUG && uiState.devMode != DevProMode.NONE) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(LumiColor.Amber400.copy(0.2f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = when (uiState.devMode) {
+                                DevProMode.FREE_OVERRIDE     -> "DEV:FREE"
+                                DevProMode.REWARDED_OVERRIDE -> "DEV:REWARDED"
+                                DevProMode.PRO_OVERRIDE      -> "DEV:PRO"
+                                else -> ""
+                            },
+                            fontSize = 10.sp, color = LumiColor.Amber400,
+                            fontWeight = FontWeight.W700,
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.size(32.dp))
+                }
+            }
+
+            // ── Rewarded active banner ─────────────────────────────────────
+            if (isRewardedActive) {
+                val remaining = (uiState.proStatus as ProStatus.ProRewarded).let {
+                    ((it.expiresAt - System.currentTimeMillis()) / 60_000L).toInt().coerceAtLeast(0)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(LumiColor.Green500.copy(0.15f))
+                        .border(1.dp, LumiColor.Green500.copy(0.4f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    Column {
+                        Text("✓ Pro activo — $remaining min restantes",
+                            fontSize = 13.sp, fontWeight = FontWeight.W600,
+                            color = LumiColor.Green400)
+                        Text("Vuelve aquí cuando expire para renovar viendo más anuncios.",
+                            fontSize = 11.sp, color = LumiColor.Gray500,
+                            modifier = Modifier.padding(top = 2.dp))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
             }
 
             // ── Icon + headline ────────────────────────────────────────────
@@ -78,7 +136,19 @@ fun ProPaywallScreen(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(LumiColor.Purple500.copy(0.9f)),
+                    .background(LumiColor.Purple500.copy(0.9f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {
+                            if (!BuildConfig.IS_DEBUG) return@clickable
+                            logoTapCount++
+                            if (logoTapCount >= 7) {
+                                logoTapCount = 0
+                                viewModel.cycleDevMode()
+                            }
+                        },
+                    ),
                 contentAlignment = Alignment.Center,
             ) { Text("✦", fontSize = 22.sp, color = Color.White) }
             Spacer(Modifier.height(10.dp))
@@ -134,7 +204,104 @@ fun ProPaywallScreen(
 
             Spacer(Modifier.weight(1f))
 
-            // ── CTA button ─────────────────────────────────────────────────
+            // ── Rewarded ad section ────────────────────────────────────────
+            val adsNeeded   = rewardedState.adsNeeded
+            val adsPending  = rewardedState.adsPending
+            val nextCost    = rewardedState.nextCost
+            val progress    = if (nextCost > 0) adsPending.toFloat() / nextCost else 0f
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(LumiColor.Navy800)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Probar Pro gratis — 1 hora",
+                        fontSize = 13.sp, fontWeight = FontWeight.W600,
+                        color = LumiColor.White)
+                    Text("$adsPending/$nextCost anuncios",
+                        fontSize = 11.sp, color = LumiColor.Gray500)
+                }
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                    color = LumiColor.Purple400,
+                    trackColor = LumiColor.Navy700,
+                )
+                Spacer(Modifier.height(10.dp))
+
+                // Watch ad button
+                val rewardedSource = remember { MutableInteractionSource() }
+                val isRewardedPressed by rewardedSource.collectIsPressedAsState()
+                val rewardedScale by animateFloatAsState(
+                    if (isRewardedPressed) 0.97f else 1f,
+                    animationSpec = spring(stiffness = 400f), label = "reward_btn"
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .scale(rewardedScale)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            when {
+                                adLoading -> LumiColor.Navy700
+                                isRewardedActive -> LumiColor.Green500.copy(0.3f)
+                                else -> LumiColor.Purple500.copy(0.25f)
+                            }
+                        )
+                        .border(1.dp,
+                            when {
+                                adLoading -> LumiColor.Navy600
+                                isRewardedActive -> LumiColor.Green500.copy(0.5f)
+                                else -> LumiColor.Purple400.copy(0.5f)
+                            },
+                            RoundedCornerShape(12.dp))
+                        .clickable(
+                            interactionSource = rewardedSource,
+                            indication = null,
+                            enabled = !adLoading,
+                            onClick = { viewModel.requestRewardedAd() },
+                        )
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = when {
+                            adLoading        -> "Cargando anuncio…"
+                            isRewardedActive -> "✓ Pro activo — ver más para renovar"
+                            adsNeeded == 1   -> "▶  Ver 1 anuncio más — desbloquear"
+                            else             -> "▶  Ver anuncio ($adsPending/$nextCost)"
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.W600,
+                        color = when {
+                            adLoading        -> LumiColor.Gray600
+                            isRewardedActive -> LumiColor.Green400
+                            else             -> LumiColor.Purple300
+                        },
+                    )
+                }
+
+                if (nextCost > RewardedProRepository.BASE_AD_COST) {
+                    Text(
+                        "Cada desbloqueo diario cuesta el doble. Se reinicia a medianoche.",
+                        fontSize = 10.sp, color = LumiColor.Gray600,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // ── Purchase CTA ───────────────────────────────────────────────
             val btnSource = remember { MutableInteractionSource() }
             val isPressed by btnSource.collectIsPressedAsState()
             val btnScale by animateFloatAsState(if (isPressed) 0.96f else 1f,
@@ -151,9 +318,7 @@ fun ProPaywallScreen(
                         indication = null,
                         onClick = {
                             val activity = context as? android.app.Activity
-                            if (activity != null) {
-                                viewModel.purchasePro(activity)
-                            }
+                            if (activity != null) viewModel.purchasePro(activity)
                         },
                     )
                     .padding(vertical = 16.dp),
@@ -165,16 +330,17 @@ fun ProPaywallScreen(
             }
 
             // ── Footer ─────────────────────────────────────────────────────
+            val isRestoringPurchases by viewModel.isRestoringPurchases.collectAsState()
             Text(
-                if (isRestoring) "Buscando compra…" else "Restaurar compra",
+                if (isRestoringPurchases) "Buscando compra…" else "Restaurar compra",
                 fontSize = 12.sp,
-                color = if (isRestoring) LumiColor.Amber400.copy(.6f) else LumiColor.Gray600,
+                color = if (isRestoringPurchases) LumiColor.Amber400.copy(.6f) else LumiColor.Gray600,
                 modifier = Modifier
                     .padding(top = 10.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        enabled = !isRestoring,
+                        enabled = !isRestoringPurchases,
                         onClick = { viewModel.restorePurchases() },
                     )
             )
@@ -195,3 +361,6 @@ fun ProPaywallScreen(
         }
     }
 }
+
+// Companion reference for BASE_AD_COST in the UI
+private val RewardedProRepository = com.lumiai.flashlight.core.data.repository.RewardedProRepository

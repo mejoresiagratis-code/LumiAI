@@ -78,4 +78,10 @@ object AppModule {
     @Provides @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         context.dataStore
+
+    @Provides @Singleton
+    fun provideRewardedProRepository(
+        dataStore: DataStore<Preferences>,
+    ): com.lumiai.flashlight.core.data.repository.RewardedProRepository =
+        com.lumiai.flashlight.core.data.repository.RewardedProRepository(dataStore)
 }

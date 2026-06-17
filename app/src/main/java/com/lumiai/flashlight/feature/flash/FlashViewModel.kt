@@ -27,6 +27,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.lumiai.flashlight.core.data.repository.RewardedProRepository
+import com.lumiai.flashlight.core.data.repository.RewardedState
+import com.lumiai.flashlight.core.domain.model.isProActive
+import com.lumiai.flashlight.core.domain.usecase.WatchAdForProUseCase
 
 /** Active animated effect in Screen mode. Null = static color. */
 enum class ScreenEffect { CANDELA, POLICE, RAINBOW, STROBE }
@@ -35,6 +39,7 @@ data class FlashUiState(
     val isFlashOn: Boolean           = false,
     val currentMode: FlashMode       = FlashMode.Steady,
     val proStatus: ProStatus         = ProStatus.Loading,
+    val rewardedState: RewardedState = RewardedState(),
     // Settings — read from DataStore
     val strobeHz: Float              = 5f,
     val discoBpm: Float              = 120f,
@@ -42,7 +47,11 @@ data class FlashUiState(
     val screenColor: ScreenColor     = ScreenColor.WHITE,
     val autoOffOption: AutoOffOption = AutoOffOption.NONE,
     val screenBrightness: Float    = 1f,
+    // Dev mode: cycles through Free / ProRewarded(mock) / Pro
+    val devMode: DevProMode          = DevProMode.NONE,
 )
+
+enum class DevProMode { NONE, FREE_OVERRIDE, REWARDED_OVERRIDE, PRO_OVERRIDE }
 
 @HiltViewModel
 class FlashViewModel @Inject constructor(
@@ -53,10 +62,28 @@ class FlashViewModel @Inject constructor(
     private val billingRepository: BillingRepository,
     private val batteryRepository: BatteryRepository,
     private val settingsRepository: SettingsRepository,
+    private val rewardedProRepository: RewardedProRepository,
+    private val watchAdForProUseCase: WatchAdForProUseCase,
 ) : ViewModel() {
 
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    // Rewarded ad state (escalating cost per day)
+    val rewardedState: StateFlow<RewardedState> = rewardedProRepository.rewardedStatusFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RewardedState())
+
+    // Dev mode override: cycles Free → ProRewarded(mock) → Pro → None on each tap
+    private val _devMode = MutableStateFlow(DevProMode.NONE)
+    val devMode: StateFlow<DevProMode> = _devMode.asStateFlow()
+
+    // Rewarded ad flow events
+    private val _rewardedAdEvent = MutableSharedFlow<RewardedAdEvent>(extraBufferCapacity = 1)
+    val rewardedAdEvent: SharedFlow<RewardedAdEvent> = _rewardedAdEvent.asSharedFlow()
+
+    // Pending reward: true while ad is loading/showing, blocks second tap
+    private val _rewardedAdLoading = MutableStateFlow(false)
+    val rewardedAdLoading: StateFlow<Boolean> = _rewardedAdLoading.asStateFlow()
 
     // Battery state — exposed for PowerArcWidget
     val batteryState: StateFlow<BatteryState> = batteryRepository.batteryState
@@ -225,21 +252,48 @@ class FlashViewModel @Inject constructor(
         flashRepository.currentMode,
         getProStatusUseCase(),
         settingsRepository.settings,
+        combine(rewardedProRepository.rewardedStatusFlow, _devMode) { r, d -> Pair(r, d) },
     ) { args ->
         val isOn      = args[0] as Boolean
         val mode      = args[1] as FlashMode
-        val proStatus = if (debugProOverride) ProStatus.Pro else args[2] as ProStatus
+        val rawStatus = if (debugProOverride) ProStatus.Pro else args[2] as ProStatus
         val settings  = args[3] as com.lumiai.flashlight.core.domain.model.UserSettings
+        @Suppress("UNCHECKED_CAST")
+        val (rewarded, devMode) = args[4] as Pair<RewardedState, DevProMode>
+
+        // Dev override (debug builds only — release always NONE)
+        val proStatus: ProStatus = when {
+            !BuildConfig.IS_DEBUG || devMode == DevProMode.NONE -> {
+                // Production path: permanent IAP OR active rewarded window
+                if (rawStatus is ProStatus.Pro) ProStatus.Pro
+                else if (rewarded.isActive) ProStatus.ProRewarded(
+                    expiresAt       = rewarded.expiresAt,
+                    adsWatchedToday = rewarded.adsWatchedToday,
+                    nextCost        = rewarded.nextCost,
+                ) else rawStatus
+            }
+            devMode == DevProMode.FREE_OVERRIDE     -> ProStatus.Free
+            devMode == DevProMode.REWARDED_OVERRIDE -> ProStatus.ProRewarded(
+                expiresAt       = System.currentTimeMillis() + 3_600_000L,
+                adsWatchedToday = 3,
+                nextCost        = 6,
+            )
+            devMode == DevProMode.PRO_OVERRIDE      -> ProStatus.Pro
+            else -> rawStatus
+        }
+
         FlashUiState(
             isFlashOn        = isOn,
             currentMode      = mode,
             proStatus        = proStatus,
+            rewardedState    = rewarded,
             strobeHz         = settings.strobeHz,
             discoBpm         = settings.discoBpm,
             shakeToToggle    = settings.shakeToToggle,
             screenBrightness = settings.screenBrightness,
             screenColor      = _currentScreenColor.value,
             autoOffOption    = AutoOffOption.entries.firstOrNull { it.minutes == settings.autoOffMinutes } ?: AutoOffOption.NONE,
+            devMode          = devMode,
         )
     }.stateIn(
         scope         = viewModelScope,
@@ -321,7 +375,7 @@ class FlashViewModel @Inject constructor(
                 autoOffJob?.cancel()
                 toggleFlashUseCase.turnOff()
             } else {
-                val isPro = state.proStatus == com.lumiai.flashlight.core.domain.model.ProStatus.Pro
+                val isPro = state.proStatus.isProActive
                 toggleFlashUseCase(state.currentMode, isPro)
                 scheduleAutoOff(_autoOff.value)
             }
@@ -331,7 +385,7 @@ class FlashViewModel @Inject constructor(
     fun activateMode(mode: FlashMode) {
         viewModelScope.launch {
             val state = uiState.value
-            val isPro = state.proStatus == ProStatus.Pro
+            val isPro = state.proStatus.isProActive
             if (mode.isPro && !isPro) {
                 flashRepository.setCurrentMode(mode)
                 showPaywall()
@@ -476,5 +530,52 @@ class FlashViewModel @Inject constructor(
 
     fun releaseCamera() {
         flashRepository.release()
+    }
+
+    // ── Rewarded ad for Pro ─────────────────────────────────────────────────
+
+    /**
+     * Request a rewarded ad. The Activity observes [rewardedAdEvent] and calls
+     * AdManager.showRewarded() — ViewModel stays Activity-agnostic.
+     */
+    fun requestRewardedAd() {
+        if (_rewardedAdLoading.value) return
+        viewModelScope.launch {
+            _rewardedAdLoading.value = true
+            _rewardedAdEvent.emit(RewardedAdEvent.ShowAd)
+        }
+    }
+
+    /** Called by Activity after the user fully watched the ad and earned the reward. */
+    fun onAdRewardEarned() {
+        viewModelScope.launch {
+            val newState = watchAdForProUseCase()
+            _rewardedAdLoading.value = false
+            if (newState.isActive) {
+                // Pro unlocked — dismiss paywall if showing
+                _showPaywallEvent.tryEmit(Unit)   // paywall observes isPro and auto-dismisses
+            }
+        }
+    }
+
+    /** Called when the ad is dismissed without reward (user skipped or error). */
+    fun onAdDismissedWithoutReward() {
+        _rewardedAdLoading.value = false
+    }
+
+    // ── Dev mode (debug builds only) ────────────────────────────────────────
+
+    /**
+     * Cycle: NONE → FREE_OVERRIDE → REWARDED_OVERRIDE → PRO_OVERRIDE → NONE
+     * Triggered by 7 taps on the logo in ProPaywallScreen (debug builds only).
+     */
+    fun cycleDevMode() {
+        if (!BuildConfig.IS_DEBUG) return
+        _devMode.value = when (_devMode.value) {
+            DevProMode.NONE              -> DevProMode.FREE_OVERRIDE
+            DevProMode.FREE_OVERRIDE     -> DevProMode.REWARDED_OVERRIDE
+            DevProMode.REWARDED_OVERRIDE -> DevProMode.PRO_OVERRIDE
+            DevProMode.PRO_OVERRIDE      -> DevProMode.NONE
+        }
     }
 }
