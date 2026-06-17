@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lumiai.flashlight.BuildConfig
+import com.lumiai.flashlight.core.domain.model.FlashMode
 import com.lumiai.flashlight.core.domain.model.ProStatus
 import com.lumiai.flashlight.core.domain.model.isProActive
 import com.lumiai.flashlight.feature.flash.DevProMode
@@ -378,18 +379,17 @@ private val RewardedProRepository = com.lumiai.flashlight.core.data.repository.R
  * glyphs ModePanel draws so the two surfaces read as the same feature set.
  */
 private fun paywallFeatureFor(
-    mode: com.lumiai.flashlight.core.domain.model.FlashMode,
+    mode: FlashMode,
 ): Triple<String, String, String> {
-    val M = com.lumiai.flashlight.core.domain.model.FlashMode
     return when (mode) {
-        is M.SmartBrightness -> Triple("◎", "Brillo adaptativo", "Ajusta la intensidad según el sensor de luz")
-        is M.ReadingMode     -> Triple("◑", "Modo lectura", "Luz cálida y estable, cómoda para los ojos")
-        is M.AmbientSmart    -> Triple("⬨", "Modo ambiental", "Elige el brillo según la luz del entorno")
-        is M.CustomRhythm    -> Triple("⬡", "Ritmos personalizados", "Patrones de parpadeo configurables")
-        is M.SleepTimer      -> Triple("◌", "Temporizador de sueño", "Atenuación gradual hasta apagarse")
-        is M.Music           -> Triple("♫", "Sincronización musical", "El flash sigue el ritmo de la música")
-        is M.Voice           -> Triple("●", "Reactivo a voz", "Reacciona a la voz y los sonidos")
-        is M.Walk            -> Triple("↹", "Modo caminar", "Pulso de luz con cada paso")
-        else                 -> Triple("✦", mode.id, "Función Pro")
+        is FlashMode.SmartBrightness -> Triple("◎", "Brillo adaptativo", "Ajusta la intensidad según el sensor de luz")
+        is FlashMode.ReadingMode     -> Triple("◑", "Modo lectura", "Luz cálida y estable, cómoda para los ojos")
+        is FlashMode.AmbientSmart    -> Triple("⬨", "Modo ambiental", "Elige el brillo según la luz del entorno")
+        is FlashMode.CustomRhythm    -> Triple("⬡", "Ritmos personalizados", "Patrones de parpadeo configurables")
+        is FlashMode.SleepTimer      -> Triple("◌", "Temporizador de sueño", "Atenuación gradual hasta apagarse")
+        is FlashMode.Music           -> Triple("♫", "Sincronización musical", "El flash sigue el ritmo de la música")
+        is FlashMode.Voice           -> Triple("●", "Reactivo a voz", "Reacciona a la voz y los sonidos")
+        is FlashMode.Walk            -> Triple("↹", "Modo caminar", "Pulso de luz con cada paso")
+        else                         -> Triple("✦", mode.id, "Función Pro")
     }
 }

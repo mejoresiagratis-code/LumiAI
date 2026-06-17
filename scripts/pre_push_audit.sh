@@ -165,6 +165,21 @@ else
   pass "No title=when() block found"
 fi
 
+# ── 17. VAL-ALIAS USED AS TYPE IN is-PATTERN (compiles never, audit missed it) ─
+header "17. val alias used as type in is-pattern"
+alias_bug=0
+for f in $(grep -rl "val [A-Z] *= .*FlashMode$" "$SRC" 2>/dev/null || true); do
+  # a 'val X = SomeType' followed later by 'is X.' is a compile error in Kotlin
+  aliases=$(grep -oE "val [A-Z] *=" "$f" | grep -oE "[A-Z]" || true)
+  for a in $aliases; do
+    if grep -qE "is $a\\." "$f" 2>/dev/null; then
+      fail "val-alias '$a' used as type in is-pattern in $(basename $f) — won't compile"
+      alias_bug=1
+    fi
+  done
+done
+[ $alias_bug -eq 0 ] && pass "No val-alias used as is-pattern type"
+
 # ── SUMMARY (must stay LAST so every check above runs) ───────────────────────
 echo ""
 echo "────────────────────────────────────────"

@@ -257,7 +257,7 @@ SCREEN_TEXT, CUSTOM_PATTERN
 
 ---
 
-*Actualizado: 17/06/2026 — v2.6.8 (versionCode 89) · paywall sync + slider intensidad*
+*Actualizado: 17/06/2026 — v2.6.9 (versionCode 90) · fix compile paywall + slider intensidad*
 
 ## Sesión 17/06/2026 — fixes UI (v2.6.8)
 
@@ -265,3 +265,4 @@ SCREEN_TEXT, CUSTOM_PATTERN
 - **Slider de intensidad reactivado**: en `ModeConfigSheet` para Steady/Strobe/Disco/Morse (`hasTorchIntensity`). El backend (`setTorchStrength` con fallback PWM, `torchIntensityProvider`, DataStore `TORCH_INTENSITY`) ya existía; solo faltaba la UI. Live-apply reactivado en `FlashViewModel.setTorchIntensity()` para Steady. El comentario "torch strength API unstable" era obsoleto — hay fallback PWM cross-device.
 - Estado modos Pro: SleepTimer, Music, Voice `hidden=false`; resto `hidden=true`.
 - **Privacy Policy**: `privacy-policy.html` generada (pendiente subir a hosting + rellenar nombre/correo).
+- **HOTFIX v2.6.9**: el build v2.6.8 falló en CI (`compileReleaseKotlin`) — `paywallFeatureFor()` usaba `val M = FlashMode` como tipo en patrones `is M.X`, que Kotlin no permite. Corregido a `is FlashMode.X` con import directo. Añadido **check 17** al auditor para detectar `val-alias usado como tipo en is-pattern`. Recordatorio: el auditor es heurístico, NO compila — un push verde en audit puede fallar en CI.
