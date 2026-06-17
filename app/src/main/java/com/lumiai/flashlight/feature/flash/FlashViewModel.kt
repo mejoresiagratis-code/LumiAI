@@ -117,12 +117,14 @@ class FlashViewModel @Inject constructor(
         _torchIntensity.value = clamped
         viewModelScope.launch {
             settingsRepository.setTorchIntensity(clamped)
-            // Live-apply disabled — torch strength API unstable on most devices.
-            // Re-enable when a reliable cross-device implementation is ready:
-            // val state = uiState.value
-            // if (state.isFlashOn && state.currentMode is FlashMode.Steady) {
-            //     flashRepository.setTorchStrength(clamped)
-            // }
+            // Live-apply for steady-light mode: setTorchStrength uses the API-33
+            // strength control where available and falls back to PWM simulation on
+            // all other devices, so this is safe cross-device. Strobe/Disco/Morse
+            // read torchIntensityProvider on their next pulse, so no live call needed.
+            val state = uiState.value
+            if (state.isFlashOn && state.currentMode is FlashMode.Steady) {
+                flashRepository.setTorchStrength(clamped)
+            }
         }
     }
 

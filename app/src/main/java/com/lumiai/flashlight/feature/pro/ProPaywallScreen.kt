@@ -160,15 +160,19 @@ fun ProPaywallScreen(
                 textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
 
             // ── Feature list ───────────────────────────────────────────────
+            // Synced with the AI Modes grid: derived from the same visible Pro
+            // modes (hidden=false in release, all in debug) so the paywall can
+            // never advertise a mode the user can't actually see. "Sin anuncios"
+            // is always first since ad-removal is part of Pro regardless of modes.
             Spacer(Modifier.height(12.dp))
-            val features = listOf(
-                Triple("✦", "Sin anuncios", "Experiencia limpia, sin interrupciones"),
-                Triple("◎", "Brillo adaptativo", "Ajusta la intensidad según el sensor de luz"),
-                Triple("◑", "Modo lectura", "Luz cálida y estable, cómoda para los ojos"),
-                Triple("⬨", "Modo ambiental", "Elige el brillo según la luz del entorno"),
-                Triple("⬡", "Ritmos personalizados", "Patrones de parpadeo configurables"),
-                Triple("◌", "Temporizador de sueño", "Atenuación gradual hasta apagarse"),
-            )
+            val features = remember(uiState.proStatus) {
+                buildList {
+                    add(Triple("✦", "Sin anuncios", "Experiencia limpia, sin interrupciones"))
+                    com.lumiai.flashlight.core.domain.model.FlashMode.proModes()
+                        .filter { BuildConfig.IS_DEBUG || !it.hidden }
+                        .forEach { mode -> add(paywallFeatureFor(mode)) }
+                }
+            }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -364,3 +368,28 @@ fun ProPaywallScreen(
 
 // Companion reference for BASE_AD_COST in the UI
 private val RewardedProRepository = com.lumiai.flashlight.core.data.repository.RewardedProRepository
+
+/**
+ * Maps a Pro [FlashMode] to its paywall row (icon, title, description).
+ *
+ * Kept in sync with the AI Modes grid copy in ModePanel.kt. When a new Pro mode
+ * is added or its grid copy changes, update the matching case here so the paywall
+ * and the grid never describe the same mode differently. The icons mirror the
+ * glyphs ModePanel draws so the two surfaces read as the same feature set.
+ */
+private fun paywallFeatureFor(
+    mode: com.lumiai.flashlight.core.domain.model.FlashMode,
+): Triple<String, String, String> {
+    val M = com.lumiai.flashlight.core.domain.model.FlashMode
+    return when (mode) {
+        is M.SmartBrightness -> Triple("◎", "Brillo adaptativo", "Ajusta la intensidad según el sensor de luz")
+        is M.ReadingMode     -> Triple("◑", "Modo lectura", "Luz cálida y estable, cómoda para los ojos")
+        is M.AmbientSmart    -> Triple("⬨", "Modo ambiental", "Elige el brillo según la luz del entorno")
+        is M.CustomRhythm    -> Triple("⬡", "Ritmos personalizados", "Patrones de parpadeo configurables")
+        is M.SleepTimer      -> Triple("◌", "Temporizador de sueño", "Atenuación gradual hasta apagarse")
+        is M.Music           -> Triple("♫", "Sincronización musical", "El flash sigue el ritmo de la música")
+        is M.Voice           -> Triple("●", "Reactivo a voz", "Reacciona a la voz y los sonidos")
+        is M.Walk            -> Triple("↹", "Modo caminar", "Pulso de luz con cada paso")
+        else                 -> Triple("✦", mode.id, "Función Pro")
+    }
+}

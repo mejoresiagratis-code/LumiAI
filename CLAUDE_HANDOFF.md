@@ -257,4 +257,11 @@ SCREEN_TEXT, CUSTOM_PATTERN
 
 ---
 
-*Actualizado: 17/06/2026 — v2.5.8 (versionCode 88) · permisos runtime completos*
+*Actualizado: 17/06/2026 — v2.5.9 (versionCode 89) · paywall sync + slider intensidad*
+
+## Sesión 17/06/2026 — fixes UI (v2.5.9)
+
+- **Paywall sincronizado con la grid**: `ProPaywallScreen` ya no tiene la lista de features hardcodeada. Ahora deriva de `FlashMode.proModes().filter { IS_DEBUG || !it.hidden }` + helper `paywallFeatureFor()`. Antes el paywall mostraba modos ocultos (Brillo/Lectura/Ambiental) que no están en la grid en release. Al añadir/ocultar un modo, actualizar el `when` de `paywallFeatureFor()`.
+- **Slider de intensidad reactivado**: en `ModeConfigSheet` para Steady/Strobe/Disco/Morse (`hasTorchIntensity`). El backend (`setTorchStrength` con fallback PWM, `torchIntensityProvider`, DataStore `TORCH_INTENSITY`) ya existía; solo faltaba la UI. Live-apply reactivado en `FlashViewModel.setTorchIntensity()` para Steady. El comentario "torch strength API unstable" era obsoleto — hay fallback PWM cross-device.
+- Estado modos Pro: SleepTimer, Music, Voice `hidden=false`; resto `hidden=true`.
+- **Privacy Policy**: `privacy-policy.html` generada (pendiente subir a hosting + rellenar nombre/correo).

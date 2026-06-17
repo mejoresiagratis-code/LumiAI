@@ -47,7 +47,7 @@ fun ModeConfigScreen(
 ) {
     val uiState        by viewModel.uiState.collectAsState()
     val morseText      by viewModel.morseText.collectAsState()
-    // val torchIntensity — disabled until torch strength API is stable
+    val torchIntensity by viewModel.torchIntensity.collectAsState()
     val morseSpeed     by viewModel.morseSpeed.collectAsState()
     val strobePattern  by viewModel.strobePattern.collectAsState()
     val smartSpeed     by viewModel.smartSpeed.collectAsState()
@@ -187,7 +187,7 @@ fun ModeConfigScreen(
                 mode               = configMode,
                 uiState            = uiState,
                 morseText          = morseText,
-                // torchIntensity disabled
+                torchIntensity     = torchIntensity,
                 morseSpeed         = morseSpeed,
                 strobePattern      = strobePattern,
                 smartSpeed         = smartSpeed,
