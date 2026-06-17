@@ -38,6 +38,10 @@ object LumiColor {
     val Gray700   = Color(0xFF374151)
     val Gray800   = Color(0xFF1F2937)
 
+    // Green (rewarded Pro active state)
+    val Green400  = Color(0xFF4ADE80)
+    val Green500  = Color(0xFF22C55E)
+
     // Semantic
     val Success   = Color(0xFF34D399)
     val Error     = Color(0xFFF87171)
